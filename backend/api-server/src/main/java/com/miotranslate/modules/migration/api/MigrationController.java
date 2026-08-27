@@ -76,4 +76,19 @@ public class MigrationController {
     public ResponseEntity<Map<String, Object>> getMockLsStatus() {
         return ResponseEntity.ok(migrationService.getMockLsSyncStatus());
     }
+
+    @DeleteMapping("/reset")
+    public ResponseEntity<Map<String, Object>> resetDataDelete() {
+        return ResponseEntity.ok(migrationService.deleteAllMigratedData());
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<Map<String, Object>> resetDataPost() {
+        return ResponseEntity.ok(migrationService.deleteAllMigratedData());
+    }
+
+    @DeleteMapping("/all-data")
+    public ResponseEntity<Map<String, Object>> deleteAllData() {
+        return ResponseEntity.ok(migrationService.deleteAllMigratedData());
+    }
 }

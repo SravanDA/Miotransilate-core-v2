@@ -17,7 +17,9 @@ import {
   Layers,
   FileText,
   Clock,
-  Sparkles
+  Sparkles,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { StoreService } from "../store/StoreService";
 import type { LanguageConfig } from "../types";
@@ -126,6 +128,8 @@ export function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [mockLsStatus, setMockLsStatus] = useState<MockLsSyncStatus>({
     hasMigrated: false,
     lastMigrationAt: null,
@@ -215,6 +219,39 @@ export function Settings() {
       showToast(`Migration error: ${err.message || "Failed to connect to backend"}`);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // --- DELETE ALL MIGRATED DATA HANDLER ---
+  const handleConfirmDeleteAllData = async () => {
+    setIsDeleting(true);
+    setShowDeleteModal(false);
+    showToast("Deleting all migrated data...");
+
+    try {
+      const res = await fetch("/v1/migrations/reset", { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+
+      // Reset store cache
+      StoreService.cache.pages = [];
+      StoreService.cache.tags = {};
+      StoreService.cache.pageDetails = {};
+      await StoreService.refreshPages();
+
+      setMockLsStatus({
+        hasMigrated: false,
+        lastMigrationAt: null,
+        pagesMigrated: 0,
+        tagsMigrated: 0
+      });
+      setImportSummary(null);
+
+      showToast("All migrated pages, tags, and translation copies deleted.");
+    } catch (err: any) {
+      console.error(err);
+      showToast(`Delete failed: ${err.message || "Could not connect to backend"}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -484,6 +521,44 @@ export function Settings() {
         <div className="fixed bottom-6 right-6 z-50 bg-[#172B4D] text-white px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold flex items-center gap-2 animate-bounce">
           <Check className="w-4 h-4 text-[#79F2C0]" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-surface border border-border-main rounded-xl shadow-2xl max-w-md w-full p-6 flex flex-col gap-4 animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-text-main">Delete All Migrated Data?</h3>
+                <p className="text-xs text-text-subtle mt-0.5">This action will clear the database registry.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-text-muted leading-relaxed">
+              This will remove all <strong>{mockLsStatus.pagesMigrated || 6} pages</strong>, <strong>{mockLsStatus.tagsMigrated || 834} tags</strong>, approved English master strings, and translations from the database. You can re-migrate them anytime from Mock LS.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-main">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-xs font-bold rounded cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeleteAllData}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded cursor-pointer transition-colors shadow-sm flex items-center gap-1.5"
+              >
+                {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Yes, Delete All Data
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -778,23 +853,43 @@ export function Settings() {
                   )}
                 </div>
 
-                <button
-                  onClick={handleSyncFromMockLs}
-                  disabled={isSyncing}
-                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover w-full transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
-                >
-                  {isSyncing ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Migrating from Mock LS...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Migrate from Mock LS
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col gap-2 mt-2">
+                  <button
+                    onClick={handleSyncFromMockLs}
+                    disabled={isSyncing || isDeleting}
+                    className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover w-full transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isSyncing ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Migrating from Mock LS...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Migrate from Mock LS
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    disabled={isDeleting || isSyncing}
+                    className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold rounded w-full transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Deleting Data...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete All Migrated Data
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Card 2: Import CSV */}

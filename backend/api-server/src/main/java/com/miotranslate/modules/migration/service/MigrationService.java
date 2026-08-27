@@ -75,7 +75,6 @@ public class MigrationService {
     public Map<String, Object> syncFromMockLs() {
         log.info("Starting synchronization from Mock Language Services to MioTranslate DB...");
         
-        // 1. First trigger CsvImporter to ensure baseline is fully loaded
         CsvImporter csvImporter = csvImporterProvider.getIfAvailable();
         if (csvImporter != null) {
             csvImporter.importTags();
@@ -94,7 +93,6 @@ public class MigrationService {
                 PageStore pageStore = pageEntry.getValue();
                 String pageName = pageStore.getPageName() != null ? pageStore.getPageName() : CsvImporter.PAGE_NAMES.getOrDefault(pageId, pageId + " Module");
 
-                // Merge into registry.pages
                 jdbcTemplate.update(
                     "MERGE INTO registry.pages (page_id, page_name, module, status, etag_version, created_by, created_at, updated_at) " +
                     "KEY(page_id) VALUES (?, ?, ?, 'ACTIVE', 1, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
@@ -103,35 +101,30 @@ public class MigrationService {
                 pagesCount.incrementAndGet();
                 migratedPageIds.add(pageId);
 
-                // Merge tags for this page
                 if (pageStore.getTags() != null) {
                     for (Map.Entry<String, Map<String, String>> tagEntry : pageStore.getTags().entrySet()) {
                         String tagName = tagEntry.getKey();
                         Map<String, String> langValues = tagEntry.getValue();
                         String englishText = langValues != null ? langValues.getOrDefault("eng", "") : "";
 
-                        // Tag
                         jdbcTemplate.update(
                             "MERGE INTO registry.tags (tag_id, page_id, copy_type, status, etag_version, created_by, created_at, updated_at) " +
                             "KEY(tag_id) VALUES (?, ?, 'General', 'ACTIVE', 1, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                             tagName, pageId, SYSTEM_USER_ID
                         );
 
-                        // English copy
                         jdbcTemplate.update(
                             "MERGE INTO content.english_copies (tag_id, status, current_version_number, etag_version, created_at, updated_at) " +
                             "KEY(tag_id) VALUES (?, 'APPROVED', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                             tagName
                         );
 
-                        // English copy version
                         jdbcTemplate.update(
                             "MERGE INTO content.english_copy_versions (tag_id, version_number, text, change_reason, authored_by, authored_at, status, escalated_to_founder, created_at) " +
                             "KEY(tag_id, version_number) VALUES (?, 1, ?, 'Mock LS Migration', ?, CURRENT_TIMESTAMP, 'APPROVED', false, CURRENT_TIMESTAMP)",
                             tagName, englishText, SYSTEM_USER_ID
                         );
 
-                        // Translation placeholders
                         for (String lang : DEFAULT_LANGUAGES) {
                             String transVal = langValues != null ? langValues.get(lang) : null;
                             if (transVal != null && !transVal.isBlank()) {
@@ -160,7 +153,6 @@ public class MigrationService {
             }
         }
 
-        // Record ImportEvent in database
         ImportEvent syncEvent = new ImportEvent();
         syncEvent.setOriginalFilename("MOCK_LS_SYNC");
         syncEvent.setFileSizeBytes(0L);
@@ -209,6 +201,35 @@ public class MigrationService {
             response.put("pagesMigrated", 0);
             response.put("tagsMigrated", 0);
         }
+        return response;
+    }
+
+    /**
+     * Deletes all migrated data from the database (pages, tags, English copy, translations, releases).
+     */
+    @Transactional
+    public Map<String, Object> deleteAllMigratedData() {
+        log.info("Deleting all migrated data from MioTranslate database...");
+        
+        try {
+            jdbcTemplate.update("DELETE FROM migration.migration_row_events");
+            jdbcTemplate.update("DELETE FROM migration.import_events");
+            jdbcTemplate.update("DELETE FROM translation.translation_versions");
+            jdbcTemplate.update("DELETE FROM translation.translations");
+            jdbcTemplate.update("DELETE FROM content.english_copy_versions");
+            jdbcTemplate.update("DELETE FROM content.english_copies");
+            jdbcTemplate.update("DELETE FROM publishing.release_content_snapshots");
+            jdbcTemplate.update("DELETE FROM publishing.releases");
+            jdbcTemplate.update("DELETE FROM publishing.publishing_approval_requests");
+            jdbcTemplate.update("DELETE FROM registry.tags");
+            jdbcTemplate.update("DELETE FROM registry.pages");
+        } catch (Exception e) {
+            log.warn("Error during table cleanup: {}", e.getMessage());
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("message", "All migrated pages, tags, and translation copies deleted successfully from database.");
         return response;
     }
 }

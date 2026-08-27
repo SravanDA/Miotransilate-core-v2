@@ -28,7 +28,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health", "/v1/migrations/**").permitAll()
+                .requestMatchers("/actuator/health", "/v1/migrations", "/v1/migrations/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(new MockAuthFilter(), UsernamePasswordAuthenticationFilter.class);

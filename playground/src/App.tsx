@@ -5,12 +5,14 @@ import type { Environment, Language } from "./types";
 import { Toolbar } from "./components/Toolbar";
 import { PageRenderer } from "./components/PageRenderer";
 import { ChangedTagsPanel } from "./components/ChangedTagsPanel";
+import { DataImportSettings } from "./components/DataImportSettings";
 
 function App() {
   const [pages, setPages] = useState<PageSummary[]>([]);
   const [selectedPage, setSelectedPage] = useState<string>("SERSET");
   const [selectedLang, setSelectedLang] = useState<Language>("eng");
   const [selectedEnv, setSelectedEnv] = useState<Environment>("DEV");
+  const [currentView, setCurrentView] = useState<'playground' | 'settings'>('playground');
   
   const [renderData, setRenderData] = useState<RenderResult | null>(null);
   const [changeData, setChangeData] = useState<ChangeResult | null>(null);
@@ -68,19 +70,28 @@ function App() {
         showChanges={showChanges}
         onToggleChanges={setShowChanges}
         onReset={handleReset}
+        currentView={currentView}
+        onViewChange={setCurrentView}
       />
       
-      <div className="flex-1 overflow-auto p-8 flex justify-center">
-        <div className="w-full max-w-4xl">
-          {renderData ? (
-            <PageRenderer renderData={renderData} changeData={changeData} showChanges={showChanges} />
-          ) : (
-            <div className="text-center p-8 text-gray-500">Loading...</div>
-          )}
+      {currentView === 'settings' ? (
+        <div className="flex-1 overflow-auto p-8">
+          <DataImportSettings />
         </div>
-      </div>
-
-      <ChangedTagsPanel changeData={changeData} showChanges={showChanges} />
+      ) : (
+        <>
+          <div className="flex-1 overflow-auto p-8 flex justify-center">
+            <div className="w-full max-w-4xl">
+              {renderData ? (
+                <PageRenderer renderData={renderData} changeData={changeData} showChanges={showChanges} />
+              ) : (
+                <div className="text-center p-8 text-gray-500">Loading...</div>
+              )}
+            </div>
+          </div>
+          <ChangedTagsPanel changeData={changeData} showChanges={showChanges} />
+        </>
+      )}
     </div>
   );
 }

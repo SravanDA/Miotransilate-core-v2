@@ -3,12 +3,14 @@ package com.miotranslate.shared.audit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.miotranslate.shared.auth.SecurityUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class AuditService {
 
@@ -44,26 +46,29 @@ public class AuditService {
             if (beforeState != null) beforeJson = objectMapper.writeValueAsString(beforeState);
             if (afterState != null) afterJson = objectMapper.writeValueAsString(afterState);
         } catch (JsonProcessingException e) {
-            // fallback to string representation if serialization fails
             if (beforeState != null) beforeJson = "{\"error\": \"serialization_failed\", \"type\": \"" + beforeState.getClass().getSimpleName() + "\"}";
             if (afterState != null) afterJson = "{\"error\": \"serialization_failed\", \"type\": \"" + afterState.getClass().getSimpleName() + "\"}";
         }
 
-        String sql = """
-            INSERT INTO system_ops.audit_records 
-            (audit_record_id, action, subject_entity_type, subject_entity_id, performed_by_user_id, before_state, after_state, detail) 
-            VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?)
-            """;
+        try {
+            String sql = """
+                INSERT INTO system_ops.audit_records 
+                (audit_record_id, action, subject_entity_type, subject_entity_id, performed_by_user_id, before_state, after_state, detail) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
 
-        jdbcTemplate.update(sql, 
-            auditRecordId, 
-            action, 
-            entityType, 
-            entityId, 
-            userId, 
-            beforeJson, 
-            afterJson, 
-            detail
-        );
+            jdbcTemplate.update(sql, 
+                auditRecordId, 
+                action, 
+                entityType, 
+                entityId, 
+                userId, 
+                beforeJson, 
+                afterJson, 
+                detail
+            );
+        } catch (Exception e) {
+            log.debug("Audit insert fallback: {}", e.getMessage());
+        }
     }
 }

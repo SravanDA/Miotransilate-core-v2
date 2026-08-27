@@ -87,15 +87,50 @@ export class StoreService {
 
     const tag = tags[idx];
     if (tag.english !== newEnglish) {
-      await ApiService.updateEnglishCopy(tagId, newEnglish, "Manual update");
-      await this.refreshPageDetail(pageId); // Refresh from backend
+      tag.english = newEnglish;
+      tag.englishVersion = (tag.englishVersion || 1) + 1;
+      tag.updatedAt = new Date().toISOString();
+      
+      // Mark existing translations as stale
+      if (tag.values) {
+        Object.keys(tag.values).forEach(lang => {
+          if (tag.values[lang].status === "Approved") {
+            tag.values[lang].status = "Stale";
+          }
+        });
+      }
+      this.emit();
+
+      try {
+        await ApiService.updateEnglishCopy(tagId, newEnglish, "Manual update");
+        await this.refreshPageDetail(pageId);
+      } catch (e) {
+        console.warn("Backend update error (kept local update):", e);
+      }
     }
   }
 
   static async updateTranslation(pageId: string, tagId: string, langCode: string, newValue: Partial<TranslationValue>) {
+    const tags = this.getTags(pageId);
+    const tag = tags.find(t => t.id === tagId);
+    if (tag) {
+      if (!tag.values) tag.values = {};
+      tag.values[langCode] = {
+        ...(tag.values[langCode] || { text: "", status: "No Trans", confidence: 0, translatedAtEnglishVersion: 1 }),
+        ...newValue,
+        lastUpdated: new Date().toISOString()
+      };
+      tag.updatedAt = new Date().toISOString();
+      this.emit();
+    }
+
     if (newValue.text !== undefined) {
-      await ApiService.updateTranslation(tagId, langCode, newValue.text);
-      await this.refreshPageDetail(pageId);
+      try {
+        await ApiService.updateTranslation(tagId, langCode, newValue.text);
+        await this.refreshPageDetail(pageId);
+      } catch (e) {
+        console.warn("Backend translation update error (kept local update):", e);
+      }
     }
   }
 

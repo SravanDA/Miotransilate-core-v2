@@ -54,21 +54,23 @@ export function TagDetail() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleSaveEnglish = () => {
+  const handleSaveEnglish = async () => {
     if (!pageId || !tagId) return;
-    StoreService.updateEnglish(pageId, tagId, englishCopy);
+    const textToSave = englishCopy;
     setIsEditingEnglish(false);
+    await StoreService.updateEnglish(pageId, tagId, textToSave);
     showToast("Master English updated. Older translations marked as Stale.");
   };
 
-  const handleSaveTranslation = () => {
+  const handleSaveTranslation = async () => {
     if (!pageId || !tagId) return;
-    StoreService.updateTranslation(pageId, tagId, selectedLanguage, {
-      text: transCopy,
+    const textToSave = transCopy;
+    setIsEditingTrans(false);
+    await StoreService.updateTranslation(pageId, tagId, selectedLanguage, {
+      text: textToSave,
       status: "Approved", // Direct edits become approved
       confidence: 100
     });
-    setIsEditingTrans(false);
     showToast("Translation saved manually");
   };
 

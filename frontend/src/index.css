@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@import "./miosalon.css";
+
+@theme {
+  --color-app: var(--app);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-border-main: var(--border-main);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+}
+
+:root {
+  --app: #F8FAFC;
+  --surface: #ffffff;
+  --surface-hover: #F8FAFC;
+  --surface-active: #E8F0FE;
+  
+  --text-main: #172B4D;
+  --text-muted: #42526E;
+  --text-subtle: #6B778C;
+  
+  --border-main: #EAECF0;
+  
+  --primary: #0052CC;
+  --primary-hover: #0065FF;
+  --primary-light: #4C9AFF;
+  --primary-bg: #E8F0FE;
+  
+  --danger: #DE350B;
+  --success: #00875A;
+  --warning: #FF8B00;
+}
+
+.dark {
+  --app: #191919;
+  --surface: #202020;
+  --surface-hover: #2C2C2C;
+  --surface-active: #333333;
+  
+  --text-main: rgba(255, 255, 255, 0.81);
+  --text-muted: rgba(255, 255, 255, 0.44);
+  --text-subtle: rgba(255, 255, 255, 0.28);
+  
+  --border-main: rgba(255, 255, 255, 0.09);
+  
+  --primary: #0052CC;
+  --primary-hover: #0065FF;
+  --primary-light: #4C9AFF;
+  
+  --danger: #DE350B;
+  --success: #006644;
+  --warning: #FF8B00;
+}
+
+@layer base {
+  body, p, h1, h2, h3, h4, h5, h6, span, div, a, button, input, textarea, select, label, li {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+  }
+}

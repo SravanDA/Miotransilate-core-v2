@@ -1,0 +1,275 @@
+PageId,TagName,Tag Content
+STAFFSET,STAFFSET_All_Product,All Product
+STAFFSET,STAFFSET_Staff_active_confirm,Do you want to active this staff?
+STAFFSET,STAFFSET_No,No
+STAFFSET,REC_BLOCK_TIME_CANCEL,Cancel
+STAFFSET,REC_BLOCK_TIME_START_TIME,Start Time
+STAFFSET,STAFFSET_Closed_date_deleted_successfully,Closed date deleted successfully
+STAFFSET,STAFFSET_Available_Qty,Available Qty.
+STAFFSET,REC_BLOCK_TIME_ENDS,Ends
+STAFFSET,REC_BLOCK_TIME_CUSTOM,Custom
+STAFFSET,STAFFSET_ADD_SHIFT,Add Shift
+STAFFSET,STAFFSET_CREATE_NEW_ROLE,Create New Role
+STAFFSET,STAFFSET_SELECT,Select
+STAFFSET,REC_BLOCK_TIME_UPDATE_RECURRING_DESCRIPTION,You have edited a recurring block time. Select which block time should be updated.
+STAFFSET,REC_BLOCK_TIME_MONTH,Month(s)
+STAFFSET,STAFFSET_Please_enter_start_time,Please enter start time
+STAFFSET,REC_BLOCK_TIME_END_TIME,End Time
+STAFFSET,STAFFSET_Assign_Qty,Assign Qty.
+STAFFSET,STAFFSET_129,Enable
+STAFFSET,STAFFSET_Select_Role_To_View,Select a role to view permissions
+STAFFSET,STAFFSET_Closed_date_created_successfully,Closed date created successfully
+STAFFSET,REC_BLOCK_TIME_DELETE_BLOCK_TIME,Delete Block Time
+STAFFSET,STAFFSET_Select_Staff,Select Staff
+STAFFSET,STAFFSET_13,Email 
+STAFFSET,STAFFSET_12,Provide valid mobile number
+STAFFSET,STAFFSET_11,Mobile Number
+STAFFSET,STAFFSET_Individual_Permissions,Individual Permissions
+STAFFSET,STAFFSET_10,Provide valid last name
+STAFFSET,STAFFSET_Consumption,Consumption
+STAFFSET,STAFFSET_Save,Save
+STAFFSET,REC_BLOCK_TIME_OCCURRENCES_PLACEHOLDER,Eg: 2
+STAFFSET,REC_BLOCK_TIME_DELETE_RECURRING_DESCRIPTION,This is a recurring block time. Which instances would you like to delete?
+STAFFSET,STAFFSET_WORKING_HOURS,Working Hours
+STAFFSET,STAFFSET_SELECT_ATLEAT_ONE_ROLE,Select at least one role
+STAFFSET,STAFFSET_PRODUCT,PRODUCT
+STAFFSET,REC_BLOCK_TIME_AFTER,After
+STAFFSET,STAFFSET_This_staff_name_will_appear,This staff name will appear on appointment booking calendar
+STAFFSET,REC_BLOCK_TIME_TITLE_PLACEHOLDER,"Enter a title (e.g., Lunch Break, Personal Time)"
+STAFFSET,REC_BLOCK_TIME_OCCURRENCES,Occurrences
+STAFFSET,STAFFSET_100,Inactive
+STAFFSET,STAFFSET_101,By Percent
+STAFFSET,STAFFSET_102,By Value
+STAFFSET,STAFFSET_103,Apply All
+STAFFSET,STAFFSET_104,Commission
+STAFFSET,STAFFSET_Package,Package
+STAFFSET,STAFFSET_No_Records,No Records
+STAFFSET,STAFFSET_DO_YOU_WANT_TO_CREATE_ATTENDANCE_ENTRY,Do you want to create attendance entry for the staff on
+STAFFSET,REC_BLOCK_TIME_DESCRIPTION_PLACEHOLDER,Enter a description. Eg: Staff is on a lunch break
+STAFFSET,STAFFSET_Commission_profile_created_successfully,Commission profile created successfully!
+STAFFSET,STAFFSET_Product_assigned_successfully,Product assigned successfully!
+STAFFSET,STAFFSET_Staff_access_updated,Staff access updated
+STAFFSET,REC_BLOCK_TIME_EVERY_WEEK,Every Week
+STAFFSET,STAFFSET_Staff_inactive_confirm,"Inactivating this staff member will restrict their login and performing tasks like appointments, billings, and other controls. Do you want to inactivate this staff?"
+STAFFSET,REC_BLOCK_TIME_UPDATE_THE_ENTIRE_BLOCK_TIME,Update the entire block time
+STAFFSET,STAFFSET_Tag_Staff,Tag Staff
+STAFFSET,STAFFSET_PRICE,Price
+STAFFSET,REC_BLOCK_TIME,Block Time
+STAFFSET,STAFFSET_User_updated_successfully,User updated successfully
+STAFFSET,STAFFSET_New_stock,New stock
+STAFFSET,STAFFSET_Already_you_have_created_the_attendance,Already you have created the attendance
+STAFFSET,STAFFSET_Cascading,Cascading
+STAFFSET,STAFFSET_Service,Service
+STAFFSET,REC_BLOCK_TIME_CONFIRMATION_YES,Yes
+STAFFSET,STAFFSET_Product,Product
+STAFFSET,STAFFSET_SELECT_STAFF,Select Staff
+STAFFSET,STAFFSET_Not_enabling_cascade_will_apply,Not enabling cascade will apply the commission percent of corresponding slab to the slabs met by the employee.
+STAFFSET,STAFFSET_Permission,Permission
+STAFFSET,STAFFSET_Please_choose_commission_profile,Please choose commission profile
+STAFFSET,STAFFSET_Choose_Staff,Choose Staff
+STAFFSET,STAFFSET_Action,Action
+STAFFSET,STAFFSET_Product_Stock,Product Stock
+STAFFSET,STAFFSET_TOTAL,TOTAL
+STAFFSET,STAFFSET_Staff_member_added_successfully,Staff member added successfully!
+STAFFSET,REC_BLOCK_TIME_UPDATE_ONE_TIME_DESCRIPTION,Are you sure you want to update the current block time?
+STAFFSET,STAFFSET_Commission_Percent,Commission Percent
+STAFFSET,REC_BLOCK_TIME_EDIT_BLOCK_TIME,Edit Block Time
+STAFFSET,STAFFSET_Available_quantity_is_zero,Available quantity is zero
+STAFFSET,STAFFSET_No_Cascading,No Cascading
+STAFFSET,ERROR_NO_FREQUENCY_GENERATOR,No block times were created between the selected start and end dates. Adjust the recurrence or date range to create block times.
+STAFFSET,STAFFSET_Example,Example
+STAFFSET,STAFFSET_Staff_deleted_updated,Staff deleted successfully
+STAFFSET,STAFFSET_Today,Today
+STAFFSET,REC_BLOCK_TIME_EVERY,Every
+STAFFSET,REC_BLOCK_TIME_TITLE,Title
+STAFFSET,STAFFSET_Daily,Daily
+STAFFSET,STAFFSET_Choose_Product,Choose Product
+STAFFSET,STAFFSET_SELECT_ROLES,Select Roles
+STAFFSET,STAFFSET_ASSIGNED_TO,Assigned To
+STAFFSET,STAFFSET_Previous,Previous
+STAFFSET,STAFFSET_This_allows_you_to_set_commission_slab,This allows you to set commission slab for staff to meet in a given time period.
+STAFFSET,STAFFSET_Please_enter_a_description,Please enter a description
+STAFFSET,STAFFSET_Working_hours_updated_successfully,Working hours updated successfully
+STAFFSET,STAFFSET_75,Include tax amount in incentive calculation
+STAFFSET,STAFFSET_Blocked_Hours,Blocked Hours
+STAFFSET,STAFFSET_74,Please choose items
+STAFFSET,STAFFSET_73,Qualifying Item
+STAFFSET,STAFFSET_72,Please choose period
+STAFFSET,STAFFSET_Staff_actived_updated,Staff actived successfully
+STAFFSET,REC_BLOCK_TIME_CONFIRMATION_NO,No
+STAFFSET,STAFFSET_You_have_added,You have added
+STAFFSET,STAFFSET_79,From
+STAFFSET,STAFFSET_STAFF_ACTIVED_UPDATED,Staff Actived Successfully!
+STAFFSET,STAFFSET_77,Cascading Commission
+STAFFSET,STAFFSET_Are_sure_want_to_delete_closed_dates,Are sure want to delete closed dates?
+STAFFSET,STAFFSET_76,Target Tier
+STAFFSET,type,document
+STAFFSET,STAFFSET_71,Calculation Interval
+STAFFSET,STAFFSET_70,Please enter profile name
+STAFFSET,STAFFSET_REC_ADD_BLOCK_TIME,Add Block Time
+STAFFSET,REC_BLOCK_TIME_END_DATE,End Date
+STAFFSET,STAFFSET_Permissions_Description,"Streamline scheduling with multi-platform booking, staff selection, pricing display, address collection, and gift voucher sales."
+STAFFSET,REC_BLOCK_TIME_ON_SPECIFIC_DATE,On Specific Date
+STAFFSET,STAFFSET_Stock_in_hand,Stock in hand
+STAFFSET,STAFFSET_OD_PACKAGE_HINT,Based on service selected
+STAFFSET,STAFFSET_Please_enter_start_date,Please enter start date
+STAFFSET,REC_BLOCK_TIME_DELETE_THE_CURRENT_AND_UPCOMING_BLOCK_TIME,Delete the current and all upcoming block time
+STAFFSET,REC_BLOCK_TIME_WEEK,Week(s)
+STAFFSET,STAFFSET_Commission_profile_updated_successfully,Commission profile updated successfully!
+STAFFSET,STAFFSET_TARGET,Target
+STAFFSET,STAFFSET_Assign_Quantity_should_not_greater,Assign Quantity should not greater than available quantity
+STAFFSET,STAFFSET_Please_select_the_staff,Please select the staff
+STAFFSET,STAFFSET_63,No of Days
+STAFFSET,STAFFSET_62,Date Range
+STAFFSET,STAFFSET_61,Description
+STAFFSET,STAFFSET_68,Commission by item
+STAFFSET,STAFFSET_67,Commission by target
+STAFFSET,STAFFSET_66,Add Commission Profile
+STAFFSET,REC_BLOCK_TIME_DESCRIPTION,Description
+STAFFSET,STAFFSET_65,Commission Profile
+STAFFSET,STAFFSET_Prepaid,Prepaid
+STAFFSET,STAFFSET_out_of,out of
+STAFFSET,STAFFSET_60,End Date
+STAFFSET,STAFFSET_Do_you_want_to_delete_this_staff,Do you want to delete this staff?
+STAFFSET,STAFFSET_7,First Name
+STAFFSET,STAFFSET_This_allows_you_to_set_commission_by,"This allows you to set commission by % or by value for items like services, products, gift vouchers etc."
+STAFFSET,STAFFSET_8,Provide valid first name
+STAFFSET,STAFFSET_5,Add New Staff
+STAFFSET,STAFFSET_6,Add Staff
+STAFFSET,STAFFSET_GENERATE_SHIFT,Generate Shift
+STAFFSET,STAFFSET_Commission_profile_assigned_successfully,Commission profile assigned successfully
+STAFFSET,REC_BLOCK_TIME_START_DATE,Start Date
+STAFFSET,STAFFSET_9,Last Name
+STAFFSET,REC_BLOCK_TIME_RECURRING_FREQUENCY,Recurring Frequency
+STAFFSET,STAFFSET_59,Start Date
+STAFFSET,REC_BLOCK_TIME_RECURRING_SUMMARY,Recurring Summary
+STAFFSET,STAFFSET_58,Closed Dates
+STAFFSET,STAFFSET_3,Staff List
+STAFFSET,STAFFSET_Please_enter_end_time,Please enter end time
+STAFFSET,STAFFSET_4,Search mobile number/email id/staff name
+STAFFSET,STAFFSET_1,Settings
+STAFFSET,STAFFSET_Provide_valid_mobile_number,Provide valid mobile number
+STAFFSET,STAFFSET_2,Staff
+STAFFSET,STAFFSET_Enabling_cascade_will,Enabling cascade will use the commission percent of highest slab met by an employee to calculate commissions to all slabs.
+STAFFSET,STAFFSET_97,Enabled
+STAFFSET,STAFFSET_96,Loading...
+STAFFSET,REC_BLOCK_TIME_UPDATE_THE_CURRENT_BLOCK_TIME,Update the current block time
+STAFFSET,STAFFSET_95,Select valid image
+STAFFSET,STAFFSET_94,"Accepted formats: PNG, GIF or JPG Maximum file size is 200x200"
+STAFFSET,STAFFSET_99,Active
+STAFFSET,STAFFSET_98, Disabled
+STAFFSET,STAFFSET_ASSIGNED_DATE,ASSIGNED DATE
+STAFFSET,STAFFSET_Cancel,Cancel
+STAFFSET,STAFFSET_Yes,Yes
+STAFFSET,STAFFSET_93,Choose Photo
+STAFFSET,STAFFSET_92,Upload profile photo
+STAFFSET,STAFFSET_91,Profile Name
+STAFFSET,STAFFSET_90,Assign Staff Commission
+STAFFSET,STAFFSET_Commission_profile_deleted_successfully,Commission profile deleted successfully!
+STAFFSET,STAFFSET_AASIGNED_QTY,ASSIGNED QTY
+STAFFSET,REC_BLOCK_TIME_DELETE,Delete
+STAFFSET,STAFFSET_This_staff_will_be_given_permission,The default username and password will be sent to staff email address
+STAFFSET,STAFFSET_Staff_login_confirm,"Disabling login will prevent this staff member from accessing their account and performing tasks like appointments, billings, and other controls. Do you want to disable their login access?"
+STAFFSET,REC_BLOCK_TIME_UPDATE,Update
+STAFFSET,STAFFSET_86,Staff Commission
+STAFFSET,STAFFSET_85,No Record
+STAFFSET,STAFFSET_84,Profile Type
+STAFFSET,REC_BLOCK_TIME_UPDATE_THE_CURRENT_AND_UPCOMING_BLOCK_TIME,Update the current and all upcoming block time
+STAFFSET,STAFFSET_SELECT_ITEMS,Select Items
+STAFFSET,STAFFSET_87,Assigned Profiles
+STAFFSET,STAFFSET_Allow_Appointment_Scheduling_For_This_Staff,Allow appointment scheduling for this staff
+STAFFSET,STAFFSET_Choose_profile,Choose profile
+STAFFSET,STAFFSET_Assign_Role_Permissions_MODAL_HEAD,Assign Roles & Permissions
+STAFFSET,STAFFSET_82,Add Target Tier
+STAFFSET,STAFFSET_81,Calculate by Percentage / Fixed Value
+STAFFSET,STAFFSET_80,To
+STAFFSET,STAFFSET_ROLE_AND_PERMISSIONS,Roles & Permissions
+STAFFSET,STAFFSET_Days,Days
+STAFFSET,STAFFSET_Mins,Mins
+STAFFSET,STAFFSET_Working_hours_created_successfully,Working hours created successfully
+STAFFSET,STAFFSET_STAFF_INACTIVED_UPDATED,Staff Inactived Successfully!
+STAFFSET,REC_BLOCK_TIME_CONFIRMATION_SAVE,Save
+STAFFSET,STAFFSET_Roles,Roles
+STAFFSET,STAFFSET_31,Staff Name
+STAFFSET,STAFFSET_30,Delete
+STAFFSET,STAFFSET_35,Login Access
+STAFFSET,STAFFSET_Show_This_Staff_For_Online_Booking,Show this staff for online booking
+STAFFSET,STAFFSET_34,Appointment 
+STAFFSET,STAFFSET_Add,Add
+STAFFSET,STAFFSET_32,Mobile
+STAFFSET,STAFFSET_Mark_as_absent,Mark as absent
+STAFFSET,STAFFSET_Working_hours_deleted_successfully,Working hours deleted successfully
+STAFFSET,REC_BLOCK_TIME_DELETE_THE_CURRENT_BLOCK_TIME,Delete current block time
+STAFFSET,STAFFSET_Access,Access
+STAFFSET,STAFFSET_Roles_Description,Choose what this role can view or manage. You can update permissions anytime.
+STAFFSET,STAFFSET_Assigned_date,Assigned date
+STAFFSET,STAFFSET_Attendance,Attendance
+STAFFSET,STAFFSET_Hrs,Hrs
+STAFFSET,STAFFSET_28,Cancel
+STAFFSET,STAFFSET_27,Select employee working days
+STAFFSET,STAFFSET_26,End Time
+STAFFSET,STAFFSET_25,Start Time
+STAFFSET,REC_BLOCK_TIME_EVERY_MONTH,Every Month
+STAFFSET,STAFFSET_29,Save
+STAFFSET,STAFFSET_Membership,Membership
+STAFFSET,STAFFSET_All_staff,All staff
+STAFFSET,STAFFSET_24,Day
+STAFFSET,STAFFSET_23,Work Schedule
+STAFFSET,STAFFSET_21,Allow scheduling of appointments for this staff
+STAFFSET,STAFFSET_Working_Shift_should_not_be_empty,Working Shift should not be empty
+STAFFSET,REC_BLOCK_TIME_SELECT_STAFF,Select Staff
+STAFFSET,STAFFSET_Staff_member_updated,Staff member updated!
+STAFFSET,STAFFSET_Block_Time,Block Time
+STAFFSET,REC_BLOCK_TIME_RECURRING_HAPPENS,Happens
+STAFFSET,STAFFSET_ASSIGNED_FROM,Assigned From
+STAFFSET,STAFFSET_Permissions,Permissions
+STAFFSET,STAFFSET_17,Select branch 
+STAFFSET,STAFFSET_16,Select valid service
+STAFFSET,STAFFSET_15,Select Service 
+STAFFSET,STAFFSET_14,Provide valid email address
+STAFFSET,STAFFSET_Add_Product,Add Product
+STAFFSET,STAFFSET_19,Provide login access to this staff
+STAFFSET,STAFFSET_18,Select valid branch
+STAFFSET,STAFFSET_Target_met_by_employee,Target met by employee
+STAFFSET,STAFFSET_End_date_must_be_greater_than_start_date,End date must be greater than start date
+STAFFSET,STAFFSET_57,Add Closed Dates
+STAFFSET,STAFFSET_56,Business Closed Dates
+STAFFSET,STAFFSET_55,Update
+STAFFSET,STAFFSET_Closed_date_updated_successfully,Closed date updated successfully
+STAFFSET,STAFFSET_54,Add Shift
+STAFFSET,STAFFSET_Staff_active_alert,Please wait till you get the previous staff status.
+STAFFSET,STAFFSET_Are_sure_want_to_delete_commission_profile,Are sure want to delete commission profile?
+STAFFSET,STAFFSET_Absent,Absent
+STAFFSET,STAFFSET_Are_you_sure_want_to_delete,Are you sure want to delete?
+STAFFSET,STAFFSET_Monthly,Monthly
+STAFFSET,STAFFSET_Please_enter_end_date,Please enter end date
+STAFFSET,STAFFSET_User_added_successfully,User added successfully
+STAFFSET,STAFFSET_Next,Next
+STAFFSET,STAFFSET_49,Daily Working Hours
+STAFFSET,STAFFSET_48,Update User
+STAFFSET,STAFFSET_47,Disable/Enable
+STAFFSET,STAFFSET_Please_Select_the_product,Please Select the product
+STAFFSET,STAFFSET_42,Add User
+STAFFSET,STAFFSET_41,Add New User
+STAFFSET,REC_BLOCK_TIME_CREATE,Create
+STAFFSET,STAFFSET_40,Search user name
+STAFFSET,STAFFSET_to,to
+STAFFSET,STAFFSET_46,Features
+STAFFSET,STAFFSET_45,Staff Access
+STAFFSET,REC_BLOCK_TIME_DAY,Day(s)
+STAFFSET,STAFFSET_44,Provide valid user name
+STAFFSET,STAFFSET_43,Name
+STAFFSET,STAFFSET_Select_Products,Select Products
+STAFFSET,REC_BLOCK_TIME_EVERY_DAY,Every Day
+STAFFSET,STAFFSET_Assign_Product,Assign Product
+STAFFSET,REC_BLOCK_TIME_DELETE_ONE_TIME_DESCRIPTION,Are you sure you want to delete the block time?
+STAFFSET,REC_BLOCK_TIME_DOEST_REPEAT,Dosen’t Repeat
+STAFFSET,STAFFSET_39,User List
+STAFFSET,STAFFSET_Assigned_By,Assigned By
+STAFFSET,STAFFSET_38,Update Staff
+STAFFSET,REC_BLOCK_TIME_DELETE_THE_ENTIRE_BLOCK_TIME,Delete the entire block time
+STAFFSET,STAFFSET_37,Access Control
+STAFFSET,STAFFSET_36,Status
+STAFFSET,STAFFSET_Confirmation,Confirmation
+STAFFSET,POSMENU_REC_ONE_TIME_ONLY,One Time Only
+STAFFSET,STAFFSET_REC_BLOCK_TIME,Block Time

@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: miotranslate-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/miotranslate
+    username: miotranslate
+    password: password
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.miotranslate: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+miotranslate:
+  language-services:
+    domain: "miosalon"
+    endpoints:
+      DEV: "http://localhost:9090/multilingual/bulkImportPages"
+      QA: "http://localhost:9090/multilingual/bulkImportPages"
+      PRODUCTION: "https://languageservices.example.com/multilingual/bulkImportPages"

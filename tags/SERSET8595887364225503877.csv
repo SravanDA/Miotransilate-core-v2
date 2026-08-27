@@ -1,0 +1,73 @@
+PageId,TagName,Tag Content
+SERSET,SERSET_Volume_should_not_zero,Enter the product volume to use
+SERSET,SERSET_VOLUME,Volume
+SERSET,SERSET_34,Invalid special price Special price must be less than full price
+SERSET,SERSET_32,Invalid full price
+SERSET,SERSET_33,Special Price (Seasonal Offer)
+SERSET,SERSET_30,Tax Applicable
+SERSET,SERSET_31,Full Price
+SERSET,SERSET_eg_Facial,e.g. Facial
+SERSET,SERSET_eg_30_mins,e.g. 30 mins
+SERSET,SERSET_29,Please enter valid duration
+SERSET,SERSET_28,Mins
+SERSET,SERSET_7,Import Services to your account
+SERSET,SERSET_6,Import Services
+SERSET,SERSET_25,Please enter valid service name
+SERSET,SERSET_5,Search service name
+SERSET,SERSET_26,Service Duration
+SERSET,SERSET_Not_applicable,Not applicable
+SERSET,SERSET_4,Service Group
+SERSET,SERSET_3,First create Service Group and add Service in it. e.g. Service Group - Facial; Service Name - Whitening Facial...
+SERSET,SERSET_2,Service
+SERSET,SERSET_1,Settings
+SERSET,SERSET_Tax_Group,Tax Group
+SERSET,SERSET_ENTER_THE_PRODUCT_QUANTITY_TO_USE_FOR,Enter the product quantity to use for the service.
+SERSET,SERSET_60,Tag Staff
+SERSET,SERSET_CLICK_HERE,Click Here
+SERSET,SERSET_23,Service Name
+SERSET,SERSET_21,Update
+SERSET,SERSET_Add_the_product_and_the_quantity,"Add the product and the quantity used for the service. If a product can be used for multiple services, quantity can be represented in decimals. Example, 0.2 as quantity if the product can be used for 5 such a service."
+SERSET,SERSET_22, Add Service
+SERSET,SERSET_63,Delete All
+SERSET,SERSET_20,Delete
+SERSET,SERSET_61,Select the product
+SERSET,SERSET_62,For Booking Widget
+SERSET,SERSET_19,Provide valid service group name 
+SERSET,SERSET_Select_staff,Select staff
+SERSET,SERSET_16, Edit Group
+SERSET,SERSET_17,Update Service Group
+SERSET,SERSET_14,Cancel
+SERSET,SERSET_58,Customer Readiness Duration 
+SERSET,SERSET_15,Save
+SERSET,SERSET_59,Special price must be less than full price
+SERSET,SERSET_Download_the_import_file_format,"Download the import file format, fill in the necessary details and upload services to your account"
+SERSET,SERSET_CHARS_REMAINING, chars remaining
+SERSET,SERSET_12,New Service Group
+SERSET,SERSET_56,Staff needs to clean the resources to make it available for next service. During this time staff will not be available to take new service
+SERSET,SERSET_13,Group Name
+SERSET,SERSET_57,Staff Sign-Off Duration
+SERSET,SERSET_54,No Records
+SERSET,SERSET_10,Download Template.
+SERSET,SERSET_11,Add New Group
+SERSET,SERSET_55,Update Service
+SERSET,SERSET_52,Drag & Drop groups and services within the group to change position.
+SERSET,SERSET_53,No Services Found
+SERSET,SERSET_50,Quantity
+SERSET,SERSET_51,Quantity should not be zero
+SERSET,SERSET_Import_Services_to_your_account,Import Services to your account
+SERSET,SERSET_49,Select Product
+SERSET,SERSET_47,No Products
+SERSET,SERSET_48,Add Product
+SERSET,SERSET_ENTER_THE_CONSUMED_VOLUME,"New Products: Enter the consumed volume. For example, if 100 ml is used from a 1000 ml bottle, enter ""100ml""."
+SERSET,SERSET_SERVICE_REARRANGED_SUCCESSFULLY,Service Rearranged Successfully!
+SERSET,SERSET_Taxes,Taxes
+SERSET,SERSET_45,Product Consumption
+SERSET,SERSET_43,Description (To be shown in the booking widget)
+SERSET,SERSET_44,Allow online booking for this service
+SERSET,SERSET_41,Select valid image
+SERSET,SERSET_40,Remove Image
+SERSET,SERSET_38,Add Image
+SERSET,SERSET_36,HSN/SAC Code
+SERSET,SERSET_37,Service Image
+SERSET,SERSET_Example,"Example : Customer wait for 30 minutes after hair color to continue service. During this time, the staff will be available to take other services. But customer will be blocked for service duration and readiness duration"
+SERSET,SERSET_ENTER_THE_QUANTITY_AS_A_DECIMAL_BASED,"Existing Products: Enter the quantity as a decimal based on the portion used. For example, if 100 ml is used from a 1000 ml bottle, enter ""0.1 Qty""."

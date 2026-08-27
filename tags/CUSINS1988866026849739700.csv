@@ -1,0 +1,72 @@
+PageId,TagName,Tag Content
+CUSINS,CUSINS_37,Prepaid Redemption vs Non Prepaid Redemption
+CUSINS,CUSINS_Total,Total
+CUSINS,CUSINS_38,Today
+CUSINS,CUSINS_35,Last 30 days
+CUSINS,CUSINS_Churn_Prediction_retained_new,Revenue from Churn Prediction
+CUSINS,CUSINS_Prepaid_Redemption,Prepaid Redemption
+CUSINS,CUSINS_CUSTOM_RANGE,Custom range
+CUSINS,CUSINS_33,Last 7 days
+CUSINS,CUSINS_34,Last 14 days
+CUSINS,CUSINS_Total_Customer,Total Customer
+CUSINS,No_Data_Available,No Data Available
+CUSINS,COMING_SOON,Coming Soon!
+CUSINS,CUSINS_32,Current Month
+CUSINS,CUSINS_No_Payment_data,No Payment data
+CUSINS,CUSINS_39,Yesterday 
+CUSINS,CUSINS_Defected_retained,Defected (retained)
+CUSINS,CUSINS_48,Churn (Retained)
+CUSINS,CUSINS_Non_Membership,Non-Membership
+CUSINS,CUSINS_49,Defected (Retained)
+CUSINS,CUSINS_46,New Customers
+CUSINS,CUSINS_47,Retained Customers
+CUSINS,CUSINS_Defected_Customer,Defected Customer
+CUSINS,CUSINS_44,All
+CUSINS,CUSINS_45,Total Customers
+CUSINS,CUSINS_42,Last 3 months
+CUSINS,CUSINS_43,Last 6 months
+CUSINS,CUSINS_6,View
+CUSINS,CUSINS_7,Please choose correct date filter
+CUSINS,CUSINS_8,No Gender based revenue data
+CUSINS,CUSINS_9,Make some bills for gender based revenue data to appear
+CUSINS,CUSINS_4,Revenue by gender  
+CUSINS,MALE,Male
+CUSINS,CUSINS_5,To
+CUSINS,FEMALE,Female
+CUSINS,CUSINS_Make_some_bills_for_Payment_data,Make some bills for Payment data to appear
+CUSINS,CUSINS_Churn_Prediction_retained,Churn Prediction (retained)
+CUSINS,CUSINS_40,Last 1 month
+CUSINS,CUSINS_41,Last 2 months
+CUSINS,CUSINS_New_Customer,New Customer
+CUSINS,CUSINS_Active_Customer,Active Customer
+CUSINS,CUSINS_New,New
+CUSINS,CUSINS_15,Customer Retention
+CUSINS,CUSINS_16,Churn prediction & Defected Customers
+CUSINS,CUSINS_50_1,Churn Prediction
+CUSINS,CUSINS_13,Customer Segmentation
+CUSINS,CUSINS_14,No Data Available
+CUSINS,CUSINS_11,No membership based revenue data
+CUSINS,CUSINS_12,Make some bills for membership based revenue data to appear
+CUSINS,CUSINS_10,Membership Vs Non-Membership Revenue
+CUSINS,CUSINS_19,Custom Offer
+CUSINS,CUSINS_17,Revenue 
+CUSINS,CUSINS_18,Campaign Usage Metrics
+CUSINS,CUSINS_Churn_Prediction,Churn Prediction
+CUSINS,CUSINS_49_1,Defected Customers
+CUSINS,CUSINS_26,Reward Points
+CUSINS,CUSINS_27,Weekly Sales Trend
+CUSINS,CUSINS_24,Promotional Offer
+CUSINS,CUSINS_25,Discount Coupons
+CUSINS,CUSINS_22,Discount Coupon
+CUSINS,CUSINS_23,Customer Conversion  
+CUSINS,CUSINS_20,Reminders
+CUSINS,CUSINS_21,Greetings
+CUSINS,CUSINS_Defected,Defected
+CUSINS,CUSINS_Defected_retained_new,Retained Defected Customers
+CUSINS,Revenue_Insight_under_development,Revenue Insight under development
+CUSINS,CUSINS_Membership,Membership
+CUSINS,CUSINS_Retained,Retained
+CUSINS,CUSINS_Defected_new,Defected Customers
+CUSINS,OTHERS,Others
+CUSINS,CUSINS_Retained_Customer,Retained Customer
+CUSINS,CUSINS_Non_Prepaid_Redemption,Non Prepaid Redemption

@@ -1,0 +1,363 @@
+PageId,TagName,Tag Content
+POTSALESET,POTSALESET_Update_Tax_Group,Update Tax Group
+POTSALESET,POTSALESET_REASON_FOR_DELETION_UPDATED_SUCCESSFFULY,Reason for deletion updated successfully
+POTSALESET,POTSALESET_Custom_Prefix,Custom Prefix
+POTSALESET,POTSALESET_Membership_and_package_discounts_are_ful,"Membership and package discounts are fully applied during Quick Sales, even if they exceed the set discount limit."
+POTSALESET,POTSALESET_Allow_for_assigning_maximum_discount_lim,Allow for assigning maximum discount limits for selected staff/admin user members.
+POTSALESET,SAMPLE_QUANTITY,Qty
+POTSALESET,POTSALESET_TAX_DELETED_SUCCESSFULLY,Tax deleted successfully
+POTSALESET,POTSALESET_Turn_on_to_assign_maximum_discount_limit,Turn on to assign maximum discount limits for selected roles.
+POTSALESET,GSTSETTINGLISTSTATUS,Status
+POTSALESET,POTSALESET_Info,Info
+POTSALESET,TAXSETTINGENTER,Enter 
+POTSALESET,POTSALESET_PAYMENT_MODES,Payment Methods
+POTSALESET,POTSALESET_CUSTOM_PREFIX_INVOICE_BILL_NUMBER,Custom Prefix for Invoice/Bill Number
+POTSALESET,POTSALESET_Invoice_Receipt_past_dates,Invoice/Receipt for past dates
+POTSALESET,POTSALESET_LOGO_PLACEMENT_FOR_A4_BASE,Configure the placement of the logo on the A4 invoice according to your preference
+POTSALESET,POTSALESET_tax_amount_excluded_service,The tax amount is excluded from the cost of the saleable item
+POTSALESET,POTSALESET_Apply_Priority_Based_Limit,Apply Priority-Based Limit
+POTSALESET,POTSALESET_User_Name,User Name
+POTSALESET,SAMPLE_CUSTOMER_NAME_LABEL,Cust No
+POTSALESET,POTSALESET_Invoice_prefix_Desc,Enter the invoice prefix
+POTSALESET,POTSALESET_Role_Level_Discount_Restrictions,Role-Level Discount Restrictions
+POTSALESET,SAMPLE_STAFF_NAME,(Alex)
+POTSALESET,GSTSETTINGADDNUMBERPH,Enter GST Number
+POTSALESET,GSTSETTINGACTIONCONFIRMYES,Yes
+POTSALESET,POTSALESET_Deactivate,Deactivate
+POTSALESET,POTSALESET_Reset_invoice_sequence_automatically,Reset invoice sequence automatically
+POTSALESET,POTSALESET_Enable_User_Level_Limits,Enable User-Level Limits
+POTSALESET,POTSALESET_tax_amount_include_excluded_product,Include or exclude tax in the unit price of the product
+POTSALESET,POTSALESET_PRICE_INDICATED_FOR_SERVICE_ETC,"The price indicated for services, membership, vouchers, etc are [including/excluding] tax."
+POTSALESET,POTSALESET_Add_Reason_for_Deletion,Add Reason for Deletion
+POTSALESET,POTSALESET_Location,Location
+POTSALESET,POTSALESET_Action,Action
+POTSALESET,POTSALESET_Discount_before_tax,Discount before tax
+POTSALESET,POTSALESET_Store_restriction_status_updated,Store restriction status updated
+POTSALESET,SAMPLE_TOTAL_AMOUNT,Total Amount
+POTSALESET,POTSALESET_Maximum_Discount,Maximum Discount
+POTSALESET,POTSALESET_Custom_Prefix_Desc,Configure custom prefix on the invoice number
+POTSALESET,POTSALESET_FEBRUARY,February
+POTSALESET,POTSALESET_JANUARY,January
+POTSALESET,POTSALESET_Select,Select
+POTSALESET,POTSALESET_TAX_Settings_Info_3_P1,The active 
+POTSALESET,POTSALESET_Reasons_for_Invoice_Receipt_Deletion,Reasons for Invoice/Receipt Deletion
+POTSALESET,SAMPLE_PRICE_AMOUNT,150.00
+POTSALESET,GSTSETTINGLISTACTION,Action
+POTSALESET,POTSALESET_All_Product,All product
+POTSALESET,POTSALESET_For_example_if_the_limit_is_30_and_the_c,"For example, if the limit is 30% and the client has a 40% membership and package discount, the full 40% will be applied."
+POTSALESET,POTSALESET_Info_Tax_Name,Why custom tax name?
+POTSALESET,POTSALESET_TAX_Settings_Info_3_P2,number will be displayed on the invoice.
+POTSALESET,INVOICE_PREVIEW,Invoice Preview
+POTSALESET,POTSALESET_Tax_amount_is_included_from,Tax amount is included from the unit price of any saleable item
+POTSALESET,SAMPLE_SERVICE_TOTAL,Service Total
+POTSALESET,POTSALESET_User_name,User name
+POTSALESET,POTSALESET_MAY,May
+POTSALESET,POTSALESET_Print_Configuration,Print Configuration
+POTSALESET,POTSALESET_Enter_the_second_line_of_footer_message,Enter the second line of footer message
+POTSALESET,POTSALESET_Store_Level_Discount_Limit_Applied,Store-Level Discount Limit Applied
+POTSALESET,POTSALESET_Role_Selection,Role Selection
+POTSALESET,POTSALESET_tax_amount_included_product,The tax amount is included in the unit price of the product
+POTSALESET,POTSALESET_Provide_the_tax_group_name,Provide the tax group name
+POTSALESET,POTSALESET_Enter_the_tax_group_name,Enter the tax group name
+POTSALESET,POTSALESET_MARCH,March
+POTSALESET,GSTSETTINGACTIONADD,Add
+POTSALESET,POTSALESET_Invoice_Sequence,Invoice Sequence
+POTSALESET,POTSALESET_SELECT,Select
+POTSALESET,POTSALESET_Select_atleast_one_location,Select atleast one location
+POTSALESET,POTSALESET_Delete,Delete
+POTSALESET,SUCCESS,Deleted successfully
+POTSALESET,POTSALESET_Enter_the_payment_method,Enter the payment method
+POTSALESET,POTSALESET_No_role_has_been_assigned_with_discount,No role has been assigned with discount limit
+POTSALESET,POTSALESET_Role_Name,Role Name
+POTSALESET,POTSALESET_LOGO_LEFT,Display the logo in the top left corner
+POTSALESET,POTSALESET_Sets_a_maximum_discount_limit_for_all_Us,Sets a maximum discount limit for all Users/staff across the store.
+POTSALESET,GSTSETTINGADDNUMBERERROR,Please enter valid GST number
+POTSALESET,POTSALESET_Round_off_value,Round-off value
+POTSALESET,POTSALESET_Restrict_Discount_No_Discount_Allowed,Restrict Discount (No Discount Allowed)
+POTSALESET,POTSALESET_Enter_the_invoice_name,"Enter the name, such as invoice, bill or receipt"
+POTSALESET,SAMPLE_TAX_AMOUNT_ZERO,0.00
+POTSALESET,POTSALESET_Round_off_value_Desc,Round off the invoice value to the nearest whole number
+POTSALESET,POTSALESET_OCTOBER,October
+POTSALESET,GSTSETTINGLISTNUMBER,GST Number
+POTSALESET,POTSALESET_Do_you_want_to_delete_tax,Do you want to delete tax?
+POTSALESET,PREVIEW_INVOICE,Show Invoice Preview
+POTSALESET,POTSALESET_Print_Settings,Print Settings
+POTSALESET,POTSALESET_Controls_how_discounts_are_applied_by_se,"Controls how discounts are applied by setting limits at the user, role, or store level."
+POTSALESET,POTSALESET_DISCOUNT_BEFORE_TAX_SETTINGS_UPDATED_SUCCESSFULLY,Discount before tax settings updated successfully
+POTSALESET,HIDE_INVOICE_BUTTON,Hide Invoice Preview
+POTSALESET,POTSALESET_TAX_ADDED_SUCCESSFULLY,Tax added successfully
+POTSALESET,HIDE_INVOICE_PREVIEW,Hide Invoice Preview
+POTSALESET,POTSALESET_Provide_tax_name,Provide a tax name
+POTSALESET,POTSALESET_Add_Tax,Add Tax
+POTSALESET,POTSALESET_Define_how_discount_limits_are_applied_w,"Define how discount limits are applied when multiple rules exist across user, role, and store levels."
+POTSALESET,FOOTER_MSG_TWO,Thank you! Come again!
+POTSALESET,GSTSETTINGACTIONCONFIRMMSG,"Are you sure, do you want to deactivate?"
+POTSALESET,POTSALESET_No,No
+POTSALESET,POTSALESET_Invoice_Configuration,Invoice Configuration
+POTSALESET,POTSALESET_Invoice,Invoice
+POTSALESET,POTSALESET_Please_enter_reason,Please enter a reason
+POTSALESET,POTSALESET_Customize_the_appearance_of_the_invoices,Customize the appearance and details of the invoices
+POTSALESET,POTSALESET_Enter_Tax_Name,"Enter your tax name (e.g., VAT, GST, IVA)"
+POTSALESET,POTSALESET_Added_on,Added on
+POTSALESET,POTSALESET_Allow_Discount_No_Restriction,Allow Discount (No Restriction)
+POTSALESET,POTSALESET_Tax,Tax
+POTSALESET,POTSALESET_Select_anyone_of_the_tax_group,Select anyone of the tax group
+POTSALESET,POTSALESET_Role_level,Role level
+POTSALESET,POTSALESET_Tax_prefix,Tax Name
+POTSALESET,POTSALESET_Payment_Method,Payment Method
+POTSALESET,POTSALESET_Discount_Limit_Rules,Discount Limit Rules
+POTSALESET,POTSALESET_Information,Information
+POTSALESET,POTSALESET_TAX_NAME_UPDATED_SUCCESSFULLY,Tax name updated successfully
+POTSALESET,POTSALESET_Add_Tax_Group,Add Tax Group
+POTSALESET,POTSALESET_Tax_Configuration_Desc,Customize tax groups and taxes that align with business needs
+POTSALESET,POTSALESET_Add_Reason,Add Reason
+POTSALESET,SHOW_INVOICE_BUTTON,Show Invoice Preview
+POTSALESET,POTSALESET_Search_roles,Search roles
+POTSALESET,SAMPLE_CASHIER_NAME,Vikram
+POTSALESET,POTSALESET_JUNE,June
+POTSALESET,POTSALESET_Are_you_sure_to_reset_the_invoice,Are you sure to reset the invoice/bill number now? You cannot undo this action.
+POTSALESET,POTSALESET_NOVEMBER,November
+POTSALESET,POTSALESET_Tax_Note,"Note: Once saved, this tax name will update across customer details, invoices, and POS bill-related screens."
+POTSALESET,GSTSETTINGADDNUMBER,GST Number
+POTSALESET,POTSALESET_Configure,Configure
+POTSALESET,POTSALESET_Enter_the_first_line_of_footer_message,Enter the first line of footer message
+POTSALESET,POTSALESET_Search_adminstaff_members,Search admin/staff members
+POTSALESET,POTSALESET_Discount,Discount
+POTSALESET,POTSALESET_Payment_method,Payment method
+POTSALESET,POTSALESET_TAX_UPDATED_SUCCESSFULLY,Tax updated successfully
+POTSALESET,POTSALESET_LOGO_PLACEMENT_FOR_A4,Logo Placement for A4 Invoice Printing
+POTSALESET,POTSALESET_Automatically_select_a_prefered,Automatically select a prefered payment type while generating invoice
+POTSALESET,GSTSETTINGINFO2,"Invoices created for the clients (services, products, etc) will use this GST number."
+POTSALESET,POTSALESET_ROUND_OFF_VALUE_SETTINGS_UPDATED_SUCCESSFULLY,Round-off value settings updated successfully
+POTSALESET,POTSALESET_No_user_has_been_assigned_with_discount,No user has been assigned with discount limit
+POTSALESET,GSTSETTINGACTIONDEACTIVED,Deactivated
+POTSALESET,GSTSETTINGACTIONCANCEL,Cancel
+POTSALESET,POTSALESET_Enter_the_tax_name,Enter the tax name
+POTSALESET,POTSALESET_Configure_Tax_details,details for the invoice
+POTSALESET,POTSALESET_PosTour_Heading,"Simplify operations, maintain accuracy, facilitate secure transactions, experience error-free billing and enhance customer satisfaction."
+POTSALESET,POTSALESET_Deactivate_current,Deactivate current
+POTSALESET,POTSALESET_Allows_users_to_apply_discounts_during_c,Allows users to apply discounts during checkout without any restrictions.
+POTSALESET,TAX_NO_258945631,Tax no : 258945631
+POTSALESET,GSTSETTINGADDTITLE,Add GST Number
+POTSALESET,POTSALESET_TAX_GROUP,Tax Group
+POTSALESET,POTSALESET_Settings,Settings
+POTSALESET,POTSALESET_SELECT_Tax_Type,Select Tax Type
+POTSALESET,POTSALESET_Discount_before_tax_Desc,Apply discounts before tax for service and product sales
+POTSALESET,POTSALESET_BASICALLY_THE_OUTLET_SHOULD_HAVE_ONLY_GST_NUMBER_MORE_THAN_ONE_GST_NUMBER_PREVIOUS_GST_NEED_DEACTIVATED,"An Outlet (business location) can have only one GST number. If you add more than one GST number, previously specified GST number needs to be deactivated."
+POTSALESET,FOOTER_MSG_ONE,Type some message to print in the invoice
+POTSALESET,POTSALESET_User_level,User level
+POTSALESET,POTSALESET_Tax_Settings,Settings
+POTSALESET,SAMPLE_TAX_AMOUNT,0.00
+POTSALESET,POTSALESET_Apply_taxes_to_services_and_products,Apply taxes to saleable items
+POTSALESET,SAMPLE_SERVICE,Hair Cut
+POTSALESET,SAMPLE_PARTICULAR,Particular
+POTSALESET,POTSALESET_Invoice_preview,Invoice preview
+POTSALESET,POTSALESET_Do_you_want_to_reset_the_invoice_sequence_number,Do you want to reset the invoice sequence number?
+POTSALESET,POTSALESET_Payment_Method_Configuration,Payment Method Configuration
+POTSALESET,TAXSETTINGNUMBER, Number
+POTSALESET,POTSALESET_The_store_level_discount_limit_will_be_a,"The store-level discount limit will be applied by default, including for newly created or unconfigured users and roles."
+POTSALESET,POTSALESET_107,Tax name already exists!
+POTSALESET,POTSALESET_All_services,All services
+POTSALESET,POTSALESET_Select_starting_month,Select a starting month
+POTSALESET,POTSALESET_36,Update
+POTSALESET,POTSALESET_Are_you_sure_you_want_to_deactivate,Are you sure you want to deactivate
+POTSALESET,POTSALESET_User_restriction_status_updated,User restriction status updated
+POTSALESET,POTSALESET_38,Choose payment methods for all of your locations
+POTSALESET,POTSALESET_Reasons_for_Invoice_Receipt_Deletion_Desc,Add a reason that will be listed while deleting the invoice/receipt
+POTSALESET,POTSALESET_32,All Services
+POTSALESET,POTSALESET_33,All Products
+POTSALESET,POTSALESET_34,Update Tax
+POTSALESET,POTSALESET_Enter_the_header_message,Enter the header message
+POTSALESET,POTSALESET_35,Delete
+POTSALESET,SAMPLE_CUSTOMER_MOBILE_NUMBER,9863xxx265
+POTSALESET,POTSALESET_INVOICE_OR_RECEIPT_FOR_PAST_DATES_SETTINGS_UPDATED_SUCCESSFULLY,Invoice or receipt for past dates settings updated successfully
+POTSALESET,POTSALESET_Invoice_Settings,Invoice Settings
+POTSALESET,GSTSETTINGLISTDEACTIVATEON,Deactivated on: 
+POTSALESET,POTSALESET_30,Tax
+POTSALESET,POTSALESET_Deactivated_on,Deactivated on
+POTSALESET,POTSALESET_31,Percentage
+POTSALESET,POTSALESET_tax_amount_excluded_product,The tax amount is excluded from the unit price of the product
+POTSALESET,POTSALESET_Shows_the_discount_limit_applied_to_each,"Shows the discount limit applied to each staff member at the billing screen, based on your current settings."
+POTSALESET,POTSALESET_Applies_discount_limits_in_order_User_Ro,Applies discount limits in order: User -> Role -> Store. The first available limit is used.
+POTSALESET,POTSALESET_tax_amount_include_excluded_service,"Include or exclude taxes for services, memberships, gift vouchers, packages, prepaid"
+POTSALESET,POTSALESET_Delete_Confirmation,Delete Confirmation
+POTSALESET,POTSALESET_Configure_multiple_payment_methods,Configure multiple payment methods
+POTSALESET,GSTSETTINGACTIONDEACTIVE,Deactivate
+POTSALESET,POTSALESET_Reason,Reason
+POTSALESET,POTSALESET_Collect_the_payment_code_details_during_checkout,Collect the payment code details during checkout
+POTSALESET,POTSALESET_29,Please select any one tax
+POTSALESET,POTSALESET_INVALID_DATA_NOT_ALLOWED,Invalid Data! These Values are not allowed.
+POTSALESET,POTSALESET_25,Add New Tax Group
+POTSALESET,POTSALESET_ITEM_PRICE_ADJUSTMENT_SETTINGS_UPDATED_SUCCESSFULLY,Item price adjustment settings updated successfully
+POTSALESET,POTSALESET_Discount_Limit,Discount Limit
+POTSALESET,POTSALESET_26,Tax Group Name
+POTSALESET,POTSALESET_27,Please enter valid tax group name
+POTSALESET,POTSALESET_Make_it_mandatory,Make it mandatory
+POTSALESET,POTSALESET_28,Tax Value (%)
+POTSALESET,POTSALESET_21,Please enter valid tax name
+POTSALESET,POTSALESET_22,Tax Percentage
+POTSALESET,POTSALESET_23,Please enter valid tax percentage
+POTSALESET,POTSALESET_24,Cancel
+POTSALESET,POTSALESET_YEARLY,Yearly
+POTSALESET,POTSALESET_Discount_settings_saved_successfully,Discount settings saved successfully
+POTSALESET,POTSALESET_Cancel,Cancel
+POTSALESET,POTSALESET_20,Tax Name
+POTSALESET,POTSALESET_Control_how_much_discount_your_user_can,Control how much discount your user can apply during billing.
+POTSALESET,POTSALESET_INVOICE_PREFIX_UPDATED_SUCCESSFULLY,Invoice prefix updated successfully
+POTSALESET,POTSALESET_Control_how_discounts_are_applied_across,Control how discounts are applied across the entire store during checkout.
+POTSALESET,POTSALESET_Set_discount_limits_for_individual_staff,Set discount limits for individual staff/admin users to control the maximum discount they can apply at checkout.
+POTSALESET,POTSALESET_Deactivate_Confirmation,Deactivate Confirmation
+POTSALESET,POTSALESET_User_discount_limits_saved,User discount limits saved
+POTSALESET,POTSALESET_Tax_name,Tax name
+POTSALESET,INVOICE_PREVIEW_DESC,"Preview the invoice to review the details, layout, and formatting"
+POTSALESET,POTSALESET_Tax_Settings_Info,"Different countries use different tax systems. Add your own tax name here, and it will automatically appear wherever tax details are captured or shown in Add customer, Customer Segmentation, invoices, POS bill and Product supplier related screens."
+POTSALESET,POTSALESET_Item_price_adjustments,Item price adjustments
+POTSALESET,POTSALESET_APRIL,April
+POTSALESET,POTSALESET_INVOICE_SEQUENCE_UPDATED_SUCCESSFULLY,Invoice sequence updated successfully
+POTSALESET,POTSALESET_18,"Enable taxes (You can apply only one tax component for the services and products. In order to apply more than one tax, create a tax group and choose appropriately)."
+POTSALESET,POTSALESET_No_reasons_found,No reasons found
+POTSALESET,POTSALESET_19,Add New Tax
+POTSALESET,POTSALESET_Tax_Group_Assigned_Error,This tax is assigned to a tax group and cannot be deleted.
+POTSALESET,POTSALESET_TO_ADD,to add a new one
+POTSALESET,POTSALESET_15,"Allow staff to edit the price for the selected items like (service, product, package)."
+POTSALESET,POTSALESET_16,Apply discount before tax. This is applicable only for services and products sales.
+POTSALESET,POTSALESET_Reset_Monthy_Yearly,Reset (monthly or yearly)
+POTSALESET,POTSALESET_Reset_invoice_sequence_instantly,Reset invoice sequence instantly
+POTSALESET,POTSALESET_10,Save
+POTSALESET,POTSALESET_12,Round-Off the invoice value to the nearest whole number.
+POTSALESET,POTSALESET_13,"Allow billing for the past dates, example user can create invoice for "
+POTSALESET,POTSALESET_PRODUCT_TAX_AMOUNT_IS_EXCLUDE_FROM,Tax amount is exclude from the unit price of any saleable item in product
+POTSALESET,POTSALESET_Tax_group_name,Tax group name
+POTSALESET,POTSALESET_Payment_Methods,Payment Methods
+POTSALESET,POTSALESET_PosTour_Desc_4,Configure flexible and multiple payment methods.
+POTSALESET,POTSALESET_PosTour_Desc_3,"Define tax rates, exemptions, and categories for accurate calculations."
+POTSALESET,POTSALESET_PosTour_Desc_2,"Configure round-off settings, past billing preferences and edit permissions."
+POTSALESET,POTSALESET_Get_Started,Get Started
+POTSALESET,GSTSETTINGLISTCREATEDON,Added on: 
+POTSALESET,POTSALESET_PosTour_Desc_1,Customize invoices to display relevant business information.
+POTSALESET,POTSALESET_Invoice_Settings_Desc,Configure general settings for the invoice
+POTSALESET,POTSALESET_Select_adminstaff_members,Select admin/staff members
+POTSALESET,POTSALESET_Applies_the_highest_discount_available_a,"Applies the highest discount available across user, role, and store limits."
+POTSALESET,GSTSETTINGACTIONCONFIRM,Confirmation
+POTSALESET,POTSALESET_Point_of_Sale,Point of Sale
+POTSALESET,POTSALESET_Store_discount_limit_saved,Store discount limit saved
+POTSALESET,POTSALESET_JULY,July
+POTSALESET,POTSALESET_Tax_Configuration,Tax Configuration
+POTSALESET,GSTSETTINGADDLEBEL,Add New GST Number
+POTSALESET,POTSALESET_Enter_the_tax_percentage,Enter the tax percentage
+POTSALESET,POTSALESET_Enter_the_reason_for_deletion,Enter the reason for deletion
+POTSALESET,POTSALESET_AUGUST,August
+POTSALESET,POTSALESET_Learn_More,Learn More
+POTSALESET,POTSALESET_CHOOSE_LOGO_POSITION,Select the desired logo position
+POTSALESET,POTSALESET_Enter_a_valid_payment_method,Enter a valid payment method
+POTSALESET,SAMPLE_CASHIER_NAME_LABEL,Cashier Name
+POTSALESET,POTSALESET_Each_item_can_have_only_one_tax_component,"Each item can have only one tax component. For multiple taxes, create a tax group and select the appropriate options."
+POTSALESET,POTSALESET_Reset_invoice_sequence_automatically_Desc,Automatically reset the invoice sequence number to 1 at the beginning of each month or year
+POTSALESET,POTSALESET_Mark_default,Mark default
+POTSALESET,POTSALESET_TAX_Settings_Info_1_P1,Each business location (outlet) can have only one active
+POTSALESET,POTSALESET_Sure_you_want_to_delete_this_payment,Sure you want to delete this payment?
+POTSALESET,POTSALESET_INVOICE_PRINT_SETTING_UPDATED_SUCCESSFULLY,Invoice print setting updated successfully
+POTSALESET,GSTSETTINGHEADER,GST Number Setting
+POTSALESET,POTSALESET_TAX_NAME_REQUIRE,Tax Name Required
+POTSALESET,POTSALESET_DECEMBER,December
+POTSALESET,POTSALESET_TAX_NUMBER_DEACTIVATED_SUCCESSFULLY,Tax number deactivated successfully
+POTSALESET,POTSALESET_Invoice_prefix_Note,Note: Adding 'Inv-' as the prefix displays as '#Inv-01' along with the sequence number.
+POTSALESET,POTSALESET_Discount_settings,Discount settings
+POTSALESET,POTSALESET_Limit_Level,Limit Level
+POTSALESET,POTSALESET_Choose_month_to_reset,Choose starting month to reset
+POTSALESET,CASHIER_NAME,Cashier Name
+POTSALESET,POTSALESET_Selected_user_restrictions_deleted_succe,Selected user restrictions deleted successfully
+POTSALESET,POTSALESET_User_Selection,User Selection
+POTSALESET,POTSALESET_Discount_Restriction_Summary,Discount Restriction Summary
+POTSALESET,POTSALESET_Choose_the_details_to_print_on_the_invoice,Choose the details to print on the invoice
+POTSALESET,POTSALESET_Tax_Setting,Tax Setting
+POTSALESET,POTSALESET_TAX_NUMBER_ADDED_SUCCESSFULLY,Tax number added successfully
+POTSALESET,GSTSETTINGLISTINACTIVE,Inactive
+POTSALESET,POTSALESET_PRICE_INDICATED_FOR_PRODUCTS,The price indicated for products are [including/excluding] tax.
+POTSALESET,SHOW_WITH_TAX,Show with Tax
+POTSALESET,POTSALESET_TAX_Settings_Info_2_P2,number to add a new one.
+POTSALESET,POTSALESET_TAX_Settings_Info_2_P1,Deactivate the current
+POTSALESET,POTSALESET_LOGO_RIGHT,Display the logo in the top right corner
+POTSALESET,TAXSETTINGADDTITLE,Add 
+POTSALESET,POTSALESET_Configure_Discount_Restrictions,Configure Discount Restrictions
+POTSALESET,POTSALESET_Tax_percentage,Tax percentage
+POTSALESET,POTSALESET_Custom_Prefix_Tax,Custom Tax Name
+POTSALESET,POTSALESET_INVOICE_SEQUENCE_RESET_SUCCESSFULLY,Invoice sequence reset successfully
+POTSALESET,SAMPLE_AMOUNT,Amt
+POTSALESET,POTSALESET_PROVIDE_VALID_NAME,Provide valid payment method
+POTSALESET,POTSALESET_Reasons,Reasons
+POTSALESET,POTSALESET_65,Payment Methods Setting
+POTSALESET,POTSALESET_Store_Level_Discount_Restrictions,Store-Level Discount Restrictions
+POTSALESET,POTSALESET_66,Invoice Print Settings
+POTSALESET,POTSALESET_67,Tax Settings
+POTSALESET,POTSALESET_61,Bill Number Setting
+POTSALESET,POTSALESET_7,Select option to print in the invoice
+POTSALESET,POTSALESET_ENTER_INVOICE_BILL_NUMBER,Enter invoice/bill number
+POTSALESET,POTSALESET_Confirmation,Confirmation
+POTSALESET,POTSALESET_62,Reset Interval
+POTSALESET,POTSALESET_63,"For yearly Interval option, choose the starting month to reset"
+POTSALESET,POTSALESET_5,chars remaining
+POTSALESET,POTSALESET_64,Please select reset type
+POTSALESET,POTSALESET_6,Invoice footer message 1
+POTSALESET,POTSALESET_3,Invoice header message
+POTSALESET,POTSALESET_4,Invoice footer message 2
+POTSALESET,POTSALESET_Enable_Role_Level_Limits,Enable Role-Level Limits
+POTSALESET,POTSALESET_1,Settings
+POTSALESET,POTSALESET_Do_you_want_to_delete,Do you want to delete
+POTSALESET,POTSALESET_60,Invoice name
+POTSALESET,POTSALESET_2,Point of Sale
+POTSALESET,POTSALESET_Reason_already_exists,This reason already exists
+POTSALESET,POTSALESET_Apply_Highest_Limit,Apply Highest Limit
+POTSALESET,SAMPLE_TAX_LABEL,Tax
+POTSALESET,POTSALESET_User_Level_Discount_Restrictions,User-Level Discount Restrictions
+POTSALESET,POTSALESET_SEPTEMBER,September
+POTSALESET,POTSALESET_TAX_AMOUNT_IS_EXCLUDE_FROM,Tax amount is exclude from the unit price of any saleable item
+POTSALESET,POTSALESET_INVOICE_PREVIEW_SETTINGS_UPDATED_SUCCESSFULLY,Invoice preview settings updated successfully
+POTSALESET,GSTSETTINGACTIONCONFIRMNO,No
+POTSALESET,POTSALESET_PRODUCT_TAX_AMOUNT_IS_INCLUDE_FROM,Tax amount is included from the unit price of any saleable item in product
+POTSALESET,POTSALESET_Marked_payment_method,The marked payment method will be automatically selected at checkout
+POTSALESET,POTSALESET_Item_price_adjustments_Desc,"Allow staff to adjust prices for selected items, such as services, products, and packages"
+POTSALESET,POTSALESET_58,Exclude Tax
+POTSALESET,POTSALESET_LOGO_CENTER,Display the logo at the top centre
+POTSALESET,POTSALESET_59,Reset the invoice/bill sequence number to 1.
+POTSALESET,POTSALESET_Payment_method_exists,Payment method already exists
+POTSALESET,POTSALESET_54,No Records
+POTSALESET,POTSALESET_NUMBER,number.
+POTSALESET,POTSALESET_55,Update Tax Group
+POTSALESET,POTSALESET_56,Add Payment Method
+POTSALESET,POTSALESET_tax_amount_included_service,The tax amount is included in the cost of the saleable item
+POTSALESET,POTSALESET_57,Include Tax
+POTSALESET,POTSALESET_50,Invoice General Setting
+POTSALESET,INVOICE_NAME,Invoice Receipt
+POTSALESET,POTSALESET_Role_discount_limits_saved,Role discount limits saved
+POTSALESET,POTSALESET_Yes,Yes
+POTSALESET,POTSALESET_Users_will_not_be_able_to_apply_any_disc,Users will not be able to apply any discounts during checkout.
+POTSALESET,POTSALESET_Error,"Internal server error, try again"
+POTSALESET,SAMPLE_QUANTITY_COUNT,1
+POTSALESET,POTSALESET_Role_restriction_status_updated,Role restriction status updated
+POTSALESET,POTSALESET_Select_roles,Select roles
+POTSALESET,GSTSETTINGLISTACTIVE,Active
+POTSALESET,POTSALESET_47,Automate invoice/bill sequence
+POTSALESET,POTSALESET_48,Customer Number
+POTSALESET,POTSALESET_Enable_Store_Level_Limit,Enable Store-Level Limit
+POTSALESET,POTSALESET_49,Staff Name
+POTSALESET,POTSALESET_Reset_invoice_sequence_instantly_Desc,Instantly reset the invoice sequence number to 1
+POTSALESET,POTSALESET_43,Choose Location
+POTSALESET,POTSALESET_MONTHLY,Monthly
+POTSALESET,POTSALESET_SAVE,Save
+POTSALESET,POTSALESET_Configure_invoice_sequence_number,Configure invoice sequence number
+POTSALESET,POTSALESET_44,Collect coupon code
+POTSALESET,POTSALESET_45,Mandatory 
+POTSALESET,POTSALESET_46,Reset Now
+POTSALESET,POTSALESET_40,Make Default 
+POTSALESET,POTSALESET_Invoice_Receipt_past_dates_Desc,Allow the creation of invoices/recepit for past dates
+POTSALESET,POTSALESET_41,Add Payment Method
+POTSALESET,POTSALESET_GST,GST
+POTSALESET,POTSALESET_Selected_role_restrictions_deleted_succe,Selected role restrictions deleted successfully
+POTSALESET,POTSALESET_Store_level,Store level
+POTSALESET,POTSALESET_42,Payment Method
+POTSALESET,SAMPLE_PRICE_AMOUNT_WITH_TAX,177.00
+POTSALESET,POTSALESET_Provide_a_tax_percentage,Provide a tax percentage
+POTSALESET,POTSALESET_Invoice_preview_Desc,Show an invoice preview before generating the invoice
+POTSALESET,DISCOUNT_INFO_TITLE,Info
+POTSALESET,POTSALESET_Invoice_prefix,Invoice prefix

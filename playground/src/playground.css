@@ -1,0 +1,92 @@
+@import "./miosalon.css";
+
+/* 
+  MioSalon's purged CSS bundle is missing standard Tailwind utilities used in our playground layout.
+  We recreate them here using the official CSS variables from miosalon.css.
+*/
+
+.tw-root .bg-white { background-color: var(--color-white); }
+.tw-root .bg-slate-50 { background-color: var(--color-slate-50); }
+.tw-root .bg-gray-50 { background-color: var(--color-gray-50); }
+.tw-root .bg-gray-100 { background-color: var(--color-gray-100); }
+.tw-root .bg-gray-200 { background-color: var(--color-gray-200); }
+
+/* Banned: generic blue. Redirecting to MioSalon Primary */
+.tw-root .bg-blue-50 { background-color: #0052cc1a; } /* 10% opacity for hover/active */
+.tw-root .bg-blue-100 { background-color: #0052cc26; } /* 15% opacity */
+.tw-root .bg-blue-500, .tw-root .bg-blue-600, .tw-root .bg-blue-700 { background-color: #0052CC; }
+
+.tw-root .text-gray-900 { color: var(--color-gray-900); }
+.tw-root .text-gray-800 { color: var(--color-gray-800); }
+.tw-root .text-gray-700 { color: var(--color-gray-700); }
+.tw-root .text-gray-600 { color: var(--color-gray-600); }
+.tw-root .text-gray-500 { color: var(--color-gray-500); }
+.tw-root .text-gray-400 { color: var(--color-gray-400); }
+
+/* Banned: generic blue text. Redirecting to MioSalon Primary */
+.tw-root .text-blue-500, .tw-root .text-blue-600, .tw-root .text-blue-700 { color: #0052CC; }
+.tw-root .text-white { color: var(--color-white); }
+
+/* Banned: generic blue border. Redirecting to MioSalon Primary */
+.tw-root .border-blue-500, .tw-root .border-blue-600 { border-color: #0052CC; }
+
+.tw-root .p-2 { padding: calc(var(--spacing) * 2); }
+.tw-root .p-3 { padding: calc(var(--spacing) * 3); }
+.tw-root .p-4 { padding: calc(var(--spacing) * 4); }
+.tw-root .p-5 { padding: calc(var(--spacing) * 5); }
+.tw-root .p-6 { padding: calc(var(--spacing) * 6); }
+.tw-root .p-8 { padding: calc(var(--spacing) * 8); }
+
+.tw-root .px-2 { padding-left: calc(var(--spacing) * 2); padding-right: calc(var(--spacing) * 2); }
+.tw-root .px-3 { padding-left: calc(var(--spacing) * 3); padding-right: calc(var(--spacing) * 3); }
+.tw-root .px-4 { padding-left: calc(var(--spacing) * 4); padding-right: calc(var(--spacing) * 4); }
+.tw-root .px-6 { padding-left: calc(var(--spacing) * 6); padding-right: calc(var(--spacing) * 6); }
+.tw-root .py-1 { padding-top: calc(var(--spacing) * 1); padding-bottom: calc(var(--spacing) * 1); }
+.tw-root .py-2 { padding-top: calc(var(--spacing) * 2); padding-bottom: calc(var(--spacing) * 2); }
+.tw-root .py-3 { padding-top: calc(var(--spacing) * 3); padding-bottom: calc(var(--spacing) * 3); }
+.tw-root .py-4 { padding-top: calc(var(--spacing) * 4); padding-bottom: calc(var(--spacing) * 4); }
+
+.tw-root .shadow-sm { box-shadow: var(--drop-shadow-sm); }
+.tw-root .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+.tw-root .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+.tw-root .hover\:bg-gray-50:hover { background-color: var(--color-gray-50); }
+.tw-root .hover\:bg-gray-100:hover { background-color: var(--color-gray-100); }
+.tw-root .hover\:bg-blue-700:hover { background-color: #0747A6; } /* MioSalon Primary Hover */
+.tw-root .hover\:text-blue-700:hover { color: #0747A6; }
+
+.tw-root .text-xs { font-size: var(--text-xs); line-height: var(--text-xs--line-height); }
+.tw-root .text-sm { font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
+.tw-root .text-base { font-size: var(--text-base); line-height: var(--text-base--line-height); }
+.tw-root .text-lg { font-size: var(--text-lg); line-height: var(--text-lg--line-height); }
+.tw-root .text-xl { font-size: var(--text-xl); line-height: var(--text-xl--line-height); }
+.tw-root .text-2xl { font-size: var(--text-2xl); line-height: var(--text-2xl--line-height); }
+
+.tw-root .font-normal { font-weight: var(--font-weight-normal); }
+.tw-root .font-medium { font-weight: var(--font-weight-medium); }
+.tw-root .font-semibold { font-weight: 600; font-family: Segoe UI Semibold, sans-serif; }
+.tw-root .font-bold { font-weight: var(--font-weight-extrabold); font-family: Segoe UI Bold, sans-serif; }
+
+/* Flex layout tweaks needed by playground */
+.tw-root .justify-end { justify-content: flex-end; }
+.tw-root .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+    margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+.tw-root .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-right: calc(1rem * var(--tw-space-x-reverse));
+    margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+/* Semantic utility classes mapping for fixtures */
+.tw-root .bg-surface { background-color: var(--color-white); }
+.tw-root .border-border-main { border-color: #DFE1E6; }
+.tw-root .text-text-main { color: var(--color-gray-900); }
+.tw-root .text-text-subtle { color: #6B778C; }
+.tw-root .text-danger { color: #DE350B; }
+.tw-root .border-input-border { border-color: #DFE1E6; }
+.tw-root .bg-primary { background-color: #0052cc; } /* MioSalon primary color */
+.tw-root .text-primary { color: #0052cc; }
+.tw-root .border-primary { border-color: #0052cc; }

@@ -1,0 +1,68 @@
+      {isAddTagModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#091E42]/50 p-4">
+          <div className="bg-surface rounded-lg shadow-lg w-full max-w-md flex flex-col border border-border-main">
+            <div className="px-5 py-3.5 border-b border-border-main flex items-center justify-between">
+              <h2 className="text-sm font-bold text-text-main">Create New Tag</h2>
+              <button 
+                onClick={() => setIsAddTagModalOpen(false)}
+                className="text-text-subtle hover:text-text-main cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if(newTagId) {
+                setTags([{ id: newTagId, type: newCopyType, english: "", trans: "", confidence: 0, status: 'Draft' as any }, ...tags]);
+                setIsAddTagModalOpen(false);
+                setNewTagId("");
+              }
+            }} className="p-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-text-muted uppercase">Tag ID</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g., QUICK_7"
+                  value={newTagId}
+                  onChange={(e) => setNewTagId(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
+                  className="w-full h-8 px-3 bg-surface border border-border-main rounded text-xs text-text-main font-mono focus:border-primary outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-text-muted uppercase">Copy Type</label>
+                <select 
+                  value={newCopyType}
+                  onChange={(e) => setNewCopyType(e.target.value)}
+                  className="w-full h-8 px-2.5 bg-surface border border-border-main rounded text-xs text-text-main focus:border-primary outline-none cursor-pointer"
+                >
+                  <option>Button</option>
+                  <option>Label</option>
+                  <option>Header</option>
+                  <option>Placeholder</option>
+                  <option>Helper Text</option>
+                  <option>Error</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-border-main">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddTagModalOpen(false)}
+                  className="px-3 py-1.5 text-xs font-semibold text-text-muted hover:bg-surface-hover rounded transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-3.5 py-1.5 bg-primary text-white text-xs font-semibold rounded hover:bg-primary-hover transition-colors shadow-2xs cursor-pointer"
+                >
+                  Create Tag
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

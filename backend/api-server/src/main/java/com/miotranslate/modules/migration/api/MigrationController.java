@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -57,5 +58,22 @@ public class MigrationController {
     @GetMapping("/{id}/report")
     public ResponseEntity<List<MigrationRowEvent>> getMigrationValidationReport(@PathVariable UUID id) {
         return ResponseEntity.ok(migrationRowEventRepository.findByImportEventIdOrderBySourceRowNumberAsc(id));
+    }
+
+    @GetMapping("/sync-from-mock-ls")
+    public ResponseEntity<Map<String, Object>> syncFromMockLsGet() {
+        Map<String, Object> result = migrationService.syncFromMockLs();
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/sync-from-mock-ls")
+    public ResponseEntity<Map<String, Object>> syncFromMockLsPost() {
+        Map<String, Object> result = migrationService.syncFromMockLs();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/mock-ls/status")
+    public ResponseEntity<Map<String, Object>> getMockLsStatus() {
+        return ResponseEntity.ok(migrationService.getMockLsSyncStatus());
     }
 }

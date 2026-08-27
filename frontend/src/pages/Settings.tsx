@@ -15,7 +15,9 @@ import {
   Search,
   RefreshCw,
   Layers,
-  FileText
+  FileText,
+  Clock,
+  Sparkles
 } from "lucide-react";
 import { StoreService } from "../store/StoreService";
 import type { LanguageConfig } from "../types";
@@ -50,6 +52,13 @@ interface ImportSummary {
   translationsCount: number;
   timestamp: string;
   rows: ImportValidationRow[];
+}
+
+interface MockLsSyncStatus {
+  hasMigrated: boolean;
+  lastMigrationAt: string | null;
+  pagesMigrated: number;
+  tagsMigrated: number;
 }
 
 function parseCsv(text: string): string[][] {
@@ -116,6 +125,14 @@ export function Settings() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [mockLsStatus, setMockLsStatus] = useState<MockLsSyncStatus>({
+    hasMigrated: false,
+    lastMigrationAt: null,
+    pagesMigrated: 0,
+    tagsMigrated: 0
+  });
+
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [reportSearch, setReportSearch] = useState("");
   const [reportFilter, setReportFilter] = useState<"ALL" | "IMPORTED" | "UPDATED" | "SKIPPED">("ALL");
@@ -131,6 +148,18 @@ export function Settings() {
   const [newLangName, setNewLangName] = useState("");
   const [configEtag, setConfigEtag] = useState(0);
 
+  const fetchMockLsStatus = async () => {
+    try {
+      const res = await fetch("/v1/migrations/mock-ls/status");
+      if (res.ok) {
+        const data = await res.json();
+        setMockLsStatus(data);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch Mock LS sync status:", e);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       setLanguages(StoreService.getLanguages());
@@ -144,6 +173,7 @@ export function Settings() {
       } catch (e) {
         console.error(e);
       }
+      fetchMockLsStatus();
     };
     load();
     return StoreService.subscribe(() => setLanguages(StoreService.getLanguages()));
@@ -157,6 +187,35 @@ export function Settings() {
     const newLangs = languages.map(l => l.code === code ? { ...l, active: !l.active } : l);
     StoreService.saveLanguages(newLangs);
     showToast("Language configuration updated");
+  };
+
+  // --- MOCK LS SYNC HANDLER ---
+  const handleSyncFromMockLs = async () => {
+    setIsSyncing(true);
+    showToast("Migrating all pages & tags from Mock Language Services...");
+
+    try {
+      const res = await fetch("/v1/migrations/sync-from-mock-ls");
+      if (!res.ok) throw new Error("Sync API failed");
+      const data = await res.json();
+
+      setMockLsStatus({
+        hasMigrated: true,
+        lastMigrationAt: data.lastMigrationAt,
+        pagesMigrated: data.pagesMigrated,
+        tagsMigrated: data.tagsMigrated
+      });
+
+      // Refresh app-wide store cache
+      await StoreService.refreshPages();
+
+      showToast(`Migration complete! ${data.tagsMigrated} tags across ${data.pagesMigrated} pages migrated to DB.`);
+    } catch (err: any) {
+      console.error(err);
+      showToast(`Migration error: ${err.message || "Failed to connect to backend"}`);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // --- CSV FILE UPLOAD HANDLER ---
@@ -196,7 +255,6 @@ export function Settings() {
           else if (col.includes("tag") || col.includes("key")) tagIdx = idx;
           else if (col.includes("content") || col.includes("english") || col.includes("text")) englishIdx = idx;
           else {
-            // Check if column is a language code like ar, es, fr, de, etc.
             const matchedLang = languages.find(l => l.code.toLowerCase() === col || l.name.toLowerCase() === col);
             if (matchedLang) {
               extraLangIndices[matchedLang.code] = idx;
@@ -231,7 +289,6 @@ export function Settings() {
 
         touchedPages.add(pageId);
 
-        // Ensure page exists in StoreService
         let page = StoreService.getPage(pageId);
         if (!page) {
           const pageName = PAGE_NAME_MAPPINGS[pageId] || `${pageId} Module`;
@@ -245,11 +302,9 @@ export function Settings() {
           StoreService.createPage(page);
         }
 
-        // Check if tag already exists
         const existingTag = StoreService.getTag(pageId, tagName);
         const values: Record<string, any> = existingTag?.values || {};
 
-        // Ingest extra translations from other columns if present
         Object.entries(extraLangIndices).forEach(([langCode, colIdx]) => {
           const transText = (row[colIdx] || "").trim();
           if (transText) {
@@ -302,7 +357,7 @@ export function Settings() {
         }
       }
 
-      // 2. Also send to backend /v1/migrations API if backend is running
+      // 2. Also send to backend /v1/migrations API
       try {
         const formData = new FormData();
         formData.append("file", file);
@@ -319,6 +374,9 @@ export function Settings() {
       } catch (err) {
         console.warn("Backend migration sync fallback (local store updated):", err);
       }
+
+      await StoreService.refreshPages();
+      await fetchMockLsStatus();
 
       const summary: ImportSummary = {
         fileName: file.name,
@@ -391,7 +449,22 @@ export function Settings() {
     }
   };
 
-  // Filtered rows for validation table
+  const formatMigrationTimestamp = (ts: string | null) => {
+    if (!ts) return "Never migrated";
+    try {
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { 
+        month: "short", 
+        day: "numeric", 
+        year: "numeric",
+        hour: "numeric", 
+        minute: "2-digit" 
+      });
+    } catch {
+      return ts;
+    }
+  };
+
   const filteredRows = importSummary?.rows.filter(r => {
     if (reportFilter !== "ALL" && r.status !== reportFilter) return false;
     if (reportSearch) {
@@ -660,8 +733,8 @@ export function Settings() {
         <div className="flex flex-col gap-6">
           <div className="bg-surface border border-border-main rounded-xl shadow-sm p-6 flex flex-col gap-6">
             <div>
-              <h2 className="text-base font-bold text-text-main">Data Export & Import</h2>
-              <p className="text-xs text-text-subtle mt-0.5">Export all localization keys as JSON bundles or import translations from CSV/XLIFF</p>
+              <h2 className="text-base font-bold text-text-main">Data Synchronization & Migration</h2>
+              <p className="text-xs text-text-subtle mt-0.5">Synchronize pages and tags from Mock Language Services or import/export CSV bundles</p>
             </div>
 
             {/* Hidden File Input */}
@@ -673,28 +746,58 @@ export function Settings() {
               className="hidden"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Card 1: Export */}
-              <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3 justify-between bg-surface-hover/30">
+            {/* Action Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Card 1: Migrate from Mock LS */}
+              <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3 justify-between bg-surface-hover/30 relative">
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Download className="w-4 h-4 text-primary" />
-                    <h3 className="text-sm font-bold text-text-main">Export Full Catalog</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <h3 className="text-sm font-bold text-text-main">Migrate from Mock LS</h3>
+                    </div>
+                    {mockLsStatus.hasMigrated && (
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Synced
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-text-subtle">
-                    Download all registered pages, tags, translations, and version history in standard JSON format.
+                    Extract all pages, tags, and English UX copy from Mock MioSalon / Language Services directly into MioTranslate DB.
                   </p>
+                  
+                  {/* Last Migration Timestamp display */}
+                  <div className="mt-2 pt-2 border-t border-border-main/50 flex items-center gap-1.5 text-xs text-text-muted">
+                    <Clock className="w-3.5 h-3.5 text-text-subtle" />
+                    <span>Last Migration: <strong className="text-text-main font-semibold">{formatMigrationTimestamp(mockLsStatus.lastMigrationAt)}</strong></span>
+                  </div>
+                  {mockLsStatus.hasMigrated && mockLsStatus.pagesMigrated > 0 && (
+                    <div className="text-[11px] text-text-subtle">
+                      {mockLsStatus.pagesMigrated} pages • {mockLsStatus.tagsMigrated} tags in database
+                    </div>
+                  )}
                 </div>
+
                 <button
-                  onClick={handleExportJson}
-                  className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-xs font-bold rounded w-fit transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
+                  onClick={handleSyncFromMockLs}
+                  disabled={isSyncing}
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover w-full transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  Export JSON
+                  {isSyncing ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Migrating from Mock LS...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Migrate from Mock LS
+                    </>
+                  )}
                 </button>
               </div>
 
-              {/* Card 2: Import */}
+              {/* Card 2: Import CSV */}
               <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3 justify-between bg-surface-hover/30">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
@@ -708,7 +811,7 @@ export function Settings() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isImporting}
-                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover w-fit transition-colors cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-xs font-bold rounded w-full transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {isImporting ? (
                     <>
@@ -721,6 +824,26 @@ export function Settings() {
                       Upload CSV File
                     </>
                   )}
+                </button>
+              </div>
+
+              {/* Card 3: Export */}
+              <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3 justify-between bg-surface-hover/30">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Download className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-bold text-text-main">Export Full Catalog</h3>
+                  </div>
+                  <p className="text-xs text-text-subtle">
+                    Download all registered pages, tags, translations, and version history in standard JSON format.
+                  </p>
+                </div>
+                <button
+                  onClick={handleExportJson}
+                  className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-xs font-bold rounded w-full transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export JSON
                 </button>
               </div>
             </div>

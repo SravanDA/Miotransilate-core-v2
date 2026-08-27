@@ -29,6 +29,10 @@ export class StoreService {
     try {
       this.cache.pages = await ApiService.getPages();
       this.emit();
+      // Fetch details in background for each page to populate tags & coverage cache
+      Promise.all(this.cache.pages.map(p => this.refreshPageDetail(p.pageId))).then(() => {
+        this.emit();
+      });
     } catch (e) {
       console.error(e);
     }

@@ -1,4 +1,4 @@
-import { Search, ChevronDown, Lock, Unlock, MessageSquare } from "lucide-react";
+import { Search, ChevronDown, Unlock, MessageSquare } from "lucide-react";
 import { Button } from "../components/Button";
 
 interface FixtureProps {

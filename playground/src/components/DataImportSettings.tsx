@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { api } from '../api';
+import React, { useState, useRef } from 'react';
 
 export const DataImportSettings: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [importEvent, setImportEvent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any[]>([]);
@@ -10,7 +9,6 @@ export const DataImportSettings: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
-      setFile(selectedFile);
       
       // Auto-upload
       setLoading(true);
@@ -37,15 +35,16 @@ export const DataImportSettings: React.FC = () => {
 
   const handleExecute = async () => {
     if (!importEvent) return;
+    const eventId = importEvent.importEventId || importEvent.id;
     setLoading(true);
     try {
-      const res = await fetch(`/v1/migrations/${importEvent.id}/execute`, {
+      const res = await fetch(`/v1/migrations/${eventId}/execute`, {
         method: 'POST'
       });
       if (!res.ok) throw new Error('Execute failed');
       
       // Fetch report
-      const reportRes = await fetch(`/v1/migrations/${importEvent.id}/report`);
+      const reportRes = await fetch(`/v1/migrations/${eventId}/report`);
       if (reportRes.ok) {
         const reportData = await reportRes.json();
         setReport(reportData);
@@ -69,19 +68,21 @@ export const DataImportSettings: React.FC = () => {
         </p>
 
         <input 
+          ref={fileInputRef}
           type="file" 
           accept=".csv"
           onChange={handleFileChange}
-          className="hidden"
-          id="csv-upload"
+          style={{ display: 'none' }}
         />
         
-        <label 
-          htmlFor="csv-upload"
+        <button 
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
           className={`inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-white transition-colors cursor-pointer ${loading ? 'bg-[#0052CC]/70' : 'bg-[#0052CC] hover:bg-[#0065FF]'}`}
+          disabled={loading}
         >
           {loading ? 'Uploading...' : 'Upload CSV File'}
-        </label>
+        </button>
         
         {loading && <p className="text-[#0052CC] mt-4 text-sm">Processing...</p>}
 
@@ -90,8 +91,8 @@ export const DataImportSettings: React.FC = () => {
           <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-6">
             <h3 className="text-sm font-semibold text-blue-900 mb-2">File Uploaded Successfully</h3>
             <p className="text-sm text-blue-700 mb-4">
-              Migration ID: {importEvent.id}<br/>
-              Filename: {importEvent.filename}
+              Migration ID: {importEvent.importEventId || importEvent.id}<br/>
+              Filename: {importEvent.originalFilename || importEvent.filename}
             </p>
             
             <button 

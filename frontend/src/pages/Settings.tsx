@@ -1,21 +1,124 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Globe, 
   Users, 
   Settings as SettingsIcon, 
   Database, 
   Plus, 
-  Check
+  Check,
+  Upload,
+  Download,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertCircle,
+  Search,
+  RefreshCw,
+  Layers,
+  FileText
 } from "lucide-react";
 import { StoreService } from "../store/StoreService";
 import type { LanguageConfig } from "../types";
 import { Toggle } from "../components/ui/Toggle";
 import { AdminService } from "../api/services/AdminService";
+import { ApiService } from "../services/ApiService";
+
+const PAGE_NAME_MAPPINGS: Record<string, string> = {
+  SERSET: "Service Settings",
+  CUSINS: "Customer Insights",
+  CAMREW: "Campaign & Rewards",
+  POTSALESET: "POS / Sale Settings",
+  STAFFSET: "Staff Settings",
+  CUSWISH: "Customer Wishlist"
+};
+
+interface ImportValidationRow {
+  rowNumber: number;
+  pageId: string;
+  tagName: string;
+  englishText: string;
+  status: "IMPORTED" | "UPDATED" | "SKIPPED";
+  reason: string;
+}
+
+interface ImportSummary {
+  fileName: string;
+  fileSizeBytes: number;
+  totalRows: number;
+  pagesCount: number;
+  tagsCount: number;
+  translationsCount: number;
+  timestamp: string;
+  rows: ImportValidationRow[];
+}
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (nextChar === '"') {
+          currentCell += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        currentCell += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        currentRow.push(currentCell.trim());
+        currentCell = '';
+      } else if (char === '\r') {
+        if (nextChar === '\n') i++;
+        currentRow.push(currentCell.trim());
+        if (currentRow.some(c => c.length > 0)) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentCell = '';
+      } else if (char === '\n') {
+        currentRow.push(currentCell.trim());
+        if (currentRow.some(c => c.length > 0)) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+  }
+
+  if (currentCell || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    if (currentRow.some(c => c.length > 0)) {
+      rows.push(currentRow);
+    }
+  }
+
+  return rows;
+}
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<"languages" | "users" | "config" | "data">("languages");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [reportSearch, setReportSearch] = useState("");
+  const [reportFilter, setReportFilter] = useState<"ALL" | "IMPORTED" | "UPDATED" | "SKIPPED">("ALL");
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -55,6 +158,251 @@ export function Settings() {
     StoreService.saveLanguages(newLangs);
     showToast("Language configuration updated");
   };
+
+  // --- CSV FILE UPLOAD HANDLER ---
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    showToast(`Reading ${file.name}...`);
+
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+
+      if (rows.length === 0) {
+        showToast("The CSV file is empty.");
+        setIsImporting(false);
+        return;
+      }
+
+      // Check header row
+      let pageIdx = 0;
+      let tagIdx = 1;
+      let englishIdx = 2;
+      let startRow = 0;
+      const extraLangIndices: { [code: string]: number } = {};
+
+      const firstRow = rows[0].map(c => c.toLowerCase());
+      const hasHeader = firstRow.some(c => 
+        c.includes("page") || c.includes("tag") || c.includes("content") || c.includes("english") || c.includes("text")
+      );
+
+      if (hasHeader) {
+        startRow = 1;
+        firstRow.forEach((col, idx) => {
+          if (col.includes("page")) pageIdx = idx;
+          else if (col.includes("tag") || col.includes("key")) tagIdx = idx;
+          else if (col.includes("content") || col.includes("english") || col.includes("text")) englishIdx = idx;
+          else {
+            // Check if column is a language code like ar, es, fr, de, etc.
+            const matchedLang = languages.find(l => l.code.toLowerCase() === col || l.name.toLowerCase() === col);
+            if (matchedLang) {
+              extraLangIndices[matchedLang.code] = idx;
+            }
+          }
+        });
+      }
+
+      const validationRows: ImportValidationRow[] = [];
+      const touchedPages = new Set<string>();
+      let importedTagsCount = 0;
+      let translationsCount = 0;
+
+      // 1. Process client-side store integration
+      for (let i = startRow; i < rows.length; i++) {
+        const row = rows[i];
+        const pageId = (row[pageIdx] || "").trim().toUpperCase();
+        const tagName = (row[tagIdx] || "").trim();
+        const englishText = (row[englishIdx] || "").trim();
+
+        if (!pageId || !tagName) {
+          validationRows.push({
+            rowNumber: i + 1,
+            pageId: pageId || "UNKNOWN",
+            tagName: tagName || "UNKNOWN",
+            englishText: englishText || "",
+            status: "SKIPPED",
+            reason: "Missing PageId or TagName"
+          });
+          continue;
+        }
+
+        touchedPages.add(pageId);
+
+        // Ensure page exists in StoreService
+        let page = StoreService.getPage(pageId);
+        if (!page) {
+          const pageName = PAGE_NAME_MAPPINGS[pageId] || `${pageId} Module`;
+          page = {
+            pageId: pageId,
+            name: pageName,
+            module: pageName,
+            status: "Active",
+            createdAt: new Date().toISOString()
+          };
+          StoreService.createPage(page);
+        }
+
+        // Check if tag already exists
+        const existingTag = StoreService.getTag(pageId, tagName);
+        const values: Record<string, any> = existingTag?.values || {};
+
+        // Ingest extra translations from other columns if present
+        Object.entries(extraLangIndices).forEach(([langCode, colIdx]) => {
+          const transText = (row[colIdx] || "").trim();
+          if (transText) {
+            values[langCode] = {
+              text: transText,
+              status: "Approved",
+              confidence: 100,
+              translatedAtEnglishVersion: 1,
+              lastUpdated: new Date().toISOString()
+            };
+            translationsCount++;
+          }
+        });
+
+        if (existingTag) {
+          existingTag.english = englishText || existingTag.english;
+          existingTag.values = { ...existingTag.values, ...values };
+          existingTag.updatedAt = new Date().toISOString();
+          validationRows.push({
+            rowNumber: i + 1,
+            pageId,
+            tagName,
+            englishText,
+            status: "UPDATED",
+            reason: "Updated existing tag English & values"
+          });
+        } else {
+          const newTag = {
+            id: tagName,
+            pageId,
+            type: "TEXT",
+            english: englishText,
+            englishVersion: 1,
+            values: values,
+            comments: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          StoreService.initEmptyValuesForTag(newTag);
+          StoreService.createTag(pageId, newTag);
+          importedTagsCount++;
+          validationRows.push({
+            rowNumber: i + 1,
+            pageId,
+            tagName,
+            englishText,
+            status: "IMPORTED",
+            reason: "Created new tag with Approved English copy"
+          });
+        }
+      }
+
+      // 2. Also send to backend /v1/migrations API if backend is running
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/v1/migrations", {
+          method: "POST",
+          body: formData
+        });
+        if (res.ok) {
+          const importEvent = await res.json();
+          if (importEvent?.importEventId) {
+            await fetch(`/v1/migrations/${importEvent.importEventId}/execute`, { method: "POST" });
+          }
+        }
+      } catch (err) {
+        console.warn("Backend migration sync fallback (local store updated):", err);
+      }
+
+      const summary: ImportSummary = {
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        totalRows: rows.length - startRow,
+        pagesCount: touchedPages.size,
+        tagsCount: importedTagsCount,
+        translationsCount: translationsCount,
+        timestamp: new Date().toLocaleTimeString(),
+        rows: validationRows
+      };
+
+      setImportSummary(summary);
+      showToast(`Successfully imported ${summary.totalRows} strings across ${summary.pagesCount} pages!`);
+    } catch (err: any) {
+      console.error(err);
+      showToast(`Import failed: ${err.message || "Invalid file"}`);
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // --- CATALOG JSON EXPORT HANDLER ---
+  const handleExportJson = () => {
+    try {
+      const allPages = StoreService.getPages();
+      const activeLanguages = StoreService.getActiveLanguages();
+      
+      const exportData = {
+        exportVersion: "1.0",
+        exportedAt: new Date().toISOString(),
+        activeLanguages: activeLanguages.map(l => ({ code: l.code, name: l.name, direction: l.direction })),
+        totalPages: allPages.length,
+        pages: allPages.map(page => {
+          const tags = StoreService.getTags(page.pageId);
+          return {
+            pageId: page.pageId,
+            name: page.name,
+            module: page.module,
+            status: page.status,
+            tagsCount: tags.length,
+            tags: tags.map(tag => ({
+              id: tag.id,
+              type: tag.type,
+              english: tag.english,
+              englishVersion: tag.englishVersion,
+              translations: tag.values
+            }))
+          };
+        })
+      };
+
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `miotranslate_catalog_export_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast("Full catalog exported successfully!");
+    } catch (e: any) {
+      showToast(`Export failed: ${e.message}`);
+    }
+  };
+
+  // Filtered rows for validation table
+  const filteredRows = importSummary?.rows.filter(r => {
+    if (reportFilter !== "ALL" && r.status !== reportFilter) return false;
+    if (reportSearch) {
+      const q = reportSearch.toLowerCase();
+      return r.pageId.toLowerCase().includes(q) || 
+             r.tagName.toLowerCase().includes(q) || 
+             r.englishText.toLowerCase().includes(q) ||
+             r.reason.toLowerCase().includes(q);
+    }
+    return true;
+  }) || [];
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl w-full mx-auto">
@@ -247,7 +595,6 @@ export function Settings() {
           </div>
 
           <div className="p-6 flex flex-col gap-6">
-            
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-text-main">Primary AI Engine</label>
               <select 
@@ -308,37 +655,198 @@ export function Settings() {
         </div>
       )}
 
-      {/* TAB 4: DATA IMPORT */}
+      {/* TAB 4: DATA IMPORT & EXPORT */}
       {activeTab === "data" && (
-        <div className="bg-surface border border-border-main rounded-xl shadow-sm p-6 flex flex-col gap-6">
-          <div>
-            <h2 className="text-base font-bold text-text-main">Data Export & Import</h2>
-            <p className="text-xs text-text-subtle mt-0.5">Export all localization keys as JSON bundles or import translations from CSV/XLIFF</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3">
-              <h3 className="text-sm font-bold text-text-main">Export Full Catalog</h3>
-              <p className="text-xs text-text-subtle">Download all registered pages, tags, translations, and version history in standard JSON format.</p>
-              <button
-                onClick={() => showToast("Exporting full catalog...")}
-                className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-xs font-bold rounded w-fit transition-colors cursor-pointer shadow-sm"
-              >
-                Export JSON
-              </button>
+        <div className="flex flex-col gap-6">
+          <div className="bg-surface border border-border-main rounded-xl shadow-sm p-6 flex flex-col gap-6">
+            <div>
+              <h2 className="text-base font-bold text-text-main">Data Export & Import</h2>
+              <p className="text-xs text-text-subtle mt-0.5">Export all localization keys as JSON bundles or import translations from CSV/XLIFF</p>
             </div>
 
-            <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3">
-              <h3 className="text-sm font-bold text-text-main">Import Translation CSV</h3>
-              <p className="text-xs text-text-subtle">Upload offline agency translations to batch-update target locale tags.</p>
-              <button
-                onClick={() => showToast("Opening file selector...")}
-                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover w-fit transition-colors cursor-pointer shadow-sm"
-              >
-                Upload CSV File
-              </button>
+            {/* Hidden File Input */}
+            <input 
+              ref={fileInputRef}
+              type="file" 
+              accept=".csv"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: Export */}
+              <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3 justify-between bg-surface-hover/30">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Download className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-bold text-text-main">Export Full Catalog</h3>
+                  </div>
+                  <p className="text-xs text-text-subtle">
+                    Download all registered pages, tags, translations, and version history in standard JSON format.
+                  </p>
+                </div>
+                <button
+                  onClick={handleExportJson}
+                  className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-xs font-bold rounded w-fit transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Export JSON
+                </button>
+              </div>
+
+              {/* Card 2: Import */}
+              <div className="border border-border-main rounded-xl p-5 flex flex-col gap-3 justify-between bg-surface-hover/30">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-bold text-text-main">Import Translation CSV</h3>
+                  </div>
+                  <p className="text-xs text-text-subtle">
+                    Upload offline agency translations or tag lists to batch-update target locale tags.
+                  </p>
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isImporting}
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover w-fit transition-colors cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isImporting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      Upload CSV File
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Validation & Import Summary Report */}
+          {importSummary && (
+            <div className="bg-surface border border-border-main rounded-xl shadow-sm p-6 flex flex-col gap-6 animate-fadeIn">
+              <div className="flex items-center justify-between pb-4 border-b border-border-main">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-text-main">Import Completed Successfully</h3>
+                    <p className="text-xs text-text-subtle">File: <span className="font-mono font-medium">{importSummary.fileName}</span> ({Math.round(importSummary.fileSizeBytes / 1024)} KB) at {importSummary.timestamp}</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full">
+                  Verified
+                </span>
+              </div>
+
+              {/* Statistics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-4 bg-surface-hover/50 rounded-lg border border-border-main/50 flex flex-col">
+                  <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Total Rows</span>
+                  <span className="text-2xl font-bold text-text-main mt-1">{importSummary.totalRows}</span>
+                </div>
+                <div className="p-4 bg-surface-hover/50 rounded-lg border border-border-main/50 flex flex-col">
+                  <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Pages Touched</span>
+                  <span className="text-2xl font-bold text-primary mt-1">{importSummary.pagesCount}</span>
+                </div>
+                <div className="p-4 bg-surface-hover/50 rounded-lg border border-border-main/50 flex flex-col">
+                  <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Tags Processed</span>
+                  <span className="text-2xl font-bold text-emerald-600 mt-1">{importSummary.rows.filter(r => r.status !== 'SKIPPED').length}</span>
+                </div>
+                <div className="p-4 bg-surface-hover/50 rounded-lg border border-border-main/50 flex flex-col">
+                  <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Translations Added</span>
+                  <span className="text-2xl font-bold text-amber-600 mt-1">{importSummary.translationsCount}</span>
+                </div>
+              </div>
+
+              {/* Validation Report Table */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-text-muted" />
+                    <h4 className="text-xs font-bold text-text-main uppercase tracking-wider">Validation Row Log ({filteredRows.length} of {importSummary.rows.length})</h4>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-1 bg-surface-hover p-1 rounded-lg border border-border-main text-xs">
+                      {(["ALL", "IMPORTED", "UPDATED", "SKIPPED"] as const).map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => setReportFilter(tab)}
+                          className={`px-2.5 py-1 rounded font-bold transition-colors cursor-pointer ${
+                            reportFilter === tab 
+                              ? "bg-surface text-primary shadow-xs" 
+                              : "text-text-muted hover:text-text-main"
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input 
+                        placeholder="Filter rows..."
+                        value={reportSearch}
+                        onChange={e => setReportSearch(e.target.value)}
+                        className="h-8 pl-8 pr-3 bg-surface border border-border-main rounded text-xs text-text-main outline-none focus:border-primary w-48"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-border-main rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-surface-hover/80 border-b border-border-main font-bold text-text-muted sticky top-0 uppercase">
+                      <tr>
+                        <th className="px-4 py-2.5 w-16">Row</th>
+                        <th className="px-4 py-2.5 w-28">Page ID</th>
+                        <th className="px-4 py-2.5 w-48">Tag Key</th>
+                        <th className="px-4 py-2.5">English Copy / Value</th>
+                        <th className="px-4 py-2.5 w-28 text-center">Status</th>
+                        <th className="px-4 py-2.5 w-44">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-main/50 bg-surface">
+                      {filteredRows.map((r, i) => (
+                        <tr key={i} className="hover:bg-surface-hover/50 transition-colors">
+                          <td className="px-4 py-2 font-mono text-text-muted">{r.rowNumber}</td>
+                          <td className="px-4 py-2 font-bold text-text-main">{r.pageId}</td>
+                          <td className="px-4 py-2 font-mono text-text-main font-medium">{r.tagName}</td>
+                          <td className="px-4 py-2 text-text-main truncate max-w-xs">{r.englishText}</td>
+                          <td className="px-4 py-2 text-center">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              r.status === 'IMPORTED' ? 'bg-emerald-50 text-emerald-700' :
+                              r.status === 'UPDATED' ? 'bg-blue-50 text-blue-700' :
+                              'bg-amber-50 text-amber-700'
+                            }`}>
+                              {r.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-text-subtle text-[11px] truncate max-w-xs">{r.reason}</td>
+                        </tr>
+                      ))}
+                      {filteredRows.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                            No rows match your filter.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -7,35 +7,31 @@ export const DataImportSettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any[]>([]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) return;
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
       
-      const res = await fetch('/v1/migrations', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          // Add auth headers if required, e.g. 'Authorization': 'Bearer ...'
-        }
-      });
-      
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      setImportEvent(data);
-    } catch (err) {
-      console.error(err);
-      alert('Upload failed');
-    } finally {
-      setLoading(false);
+      // Auto-upload
+      setLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        const res = await fetch('/v1/migrations', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        setImportEvent(data);
+      } catch (err) {
+        console.error(err);
+        alert('Upload failed. Please make sure the backend is running and try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -82,13 +78,7 @@ export const DataImportSettings: React.FC = () => {
               onChange={handleFileChange}
               className="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
-            <button 
-              className="btn btn-primary w-full"
-              disabled={!file || loading}
-              onClick={handleUpload}
-            >
-              {loading ? 'Uploading...' : '1. Upload File'}
-            </button>
+            {loading && <p className="text-blue-600 mt-2">Uploading...</p>}
           </div>
 
           {/* Execute Section */}

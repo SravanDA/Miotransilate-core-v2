@@ -55,8 +55,13 @@ export function PageRenderer({ renderData, changeData, showChanges }: PageRender
     }
   };
 
+  const isRtl = renderData.language === "arabic";
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[600px]">
+    <div 
+      dir={isRtl ? "rtl" : "ltr"}
+      className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[600px] transition-all"
+    >
       {renderContent()}
     </div>
   );

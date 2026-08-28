@@ -47,9 +47,18 @@ export class StoreService {
   }
 
   static async createPage(page: Page) {
-    // Ideally this goes through ApiService.createPage, but keeping local cache updated for now
     this.cache.pages = [...this.cache.pages, page];
     this.emit();
+    try {
+      await ApiService.createPage({
+        pageId: page.pageId,
+        pageName: page.name,
+        module: page.module
+      });
+      await this.refreshPages();
+    } catch (e) {
+      console.warn("Backend create page error (kept local update):", e);
+    }
   }
 
   // --- PAGE DETAILS & TAGS ---
@@ -72,11 +81,21 @@ export class StoreService {
     return this.getTags(pageId).find(t => t.id === tagId);
   }
 
-  static createTag(pageId: string, tag: Tag) {
+  static async createTag(pageId: string, tag: Tag) {
     const tags = this.getTags(pageId);
     if (!tags.find(t => t.id === tag.id)) {
       this.cache.tags[pageId] = [tag, ...tags];
       this.emit();
+    }
+    try {
+      await ApiService.createTag(pageId, {
+        id: tag.id,
+        type: tag.type,
+        english: tag.english
+      });
+      await this.refreshPageDetail(pageId);
+    } catch (e) {
+      console.warn("Backend create tag error (kept local update):", e);
     }
   }
 

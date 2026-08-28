@@ -16,6 +16,21 @@ export class ApiService {
     }));
   }
 
+  static async createPage(page: { pageId: string; pageName: string; module: string }) {
+    const res = await fetch(`${API_BASE}/pages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageId: page.pageId,
+        pageName: page.pageName,
+        module: page.module,
+        status: "ACTIVE"
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create page");
+    return await res.json();
+  }
+
   static async getPageDetail(pageId: string): Promise<{ page: Page, tags: Tag[] }> {
     const res = await fetch(`${API_BASE}/pages/${pageId}/detail`);
     if (!res.ok) throw new Error("Failed to fetch page detail");
@@ -65,34 +80,86 @@ export class ApiService {
     return { page, tags };
   }
 
+  static async createTag(pageId: string, tag: { id: string; type: string; english?: string }) {
+    const res = await fetch(`${API_BASE}/pages/${pageId}/tags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tagId: tag.id,
+        copyType: tag.type.toUpperCase(),
+        status: "ACTIVE"
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create tag");
+
+    if (tag.english && tag.english.trim()) {
+      await this.updateEnglishCopy(tag.id, tag.english, "Initial copy");
+    }
+    return await res.json();
+  }
+
+  static async deprecateTag(tagId: string) {
+    const res = await fetch(`${API_BASE}/tags/${tagId}/deprecate`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error("Failed to deprecate tag");
+    return await res.json();
+  }
+
   static async updateEnglishCopy(tagId: string, text: string, changeReason: string) {
     const res = await fetch(`${API_BASE}/tags/${tagId}/english-copy/draft`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, changeReason })
     });
-    if (!res.ok) throw new Error("Failed to update English copy");
+    if (!res.ok) throw new Error("Failed to update English copy draft");
     
-    // Also approve it right away for simplification in this UI flow
+    // Automatically approve master copy update
     await fetch(`${API_BASE}/tags/${tagId}/english-copy/review`, {
       method: "POST"
     });
   }
 
-  static async updateTranslation(tagId: string, langCode: string, text: string) {
+  static async updateTranslation(
+    tagId: string, 
+    langCode: string, 
+    text: string, 
+    targetStatus: "Approved" | "Pending Review" | "Draft" = "Approved"
+  ) {
     const res = await fetch(`${API_BASE}/tags/${tagId}/translations/${langCode}/draft`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ translatedText: text })
     });
-    if (!res.ok) throw new Error("Failed to update translation");
+    if (!res.ok) throw new Error("Failed to update translation draft");
     
-    // And auto-approve
-    await fetch(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "APPROVE" })
+    if (targetStatus === "Approved") {
+      await fetch(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "APPROVE" })
+      });
+    } else if (targetStatus === "Pending Review") {
+      await fetch(`${API_BASE}/tags/${tagId}/translations/${langCode}/submit`, {
+        method: "POST"
+      });
+    }
+  }
+
+  static async generateAiTranslationsBulk(pageId: string, langCode: string) {
+    const res = await fetch(`${API_BASE}/pages/${pageId}/translations/${langCode}/generate-all`, {
+      method: "POST"
     });
+    if (!res.ok) throw new Error("Failed to generate bulk AI translations");
+    return await res.json();
+  }
+
+  static async bulkApproveTranslations(pageId: string, langCode: string) {
+    const res = await fetch(`${API_BASE}/pages/${pageId}/translations/${langCode}/bulk-approve`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error("Failed to bulk approve translations");
+    return await res.json();
   }
 
   static async publish(pageId: string, languageCode: string, environment: Environment) {
@@ -103,6 +170,22 @@ export class ApiService {
     if (!res.ok) {
       throw new Error(`Failed to publish to ${environment}`);
     }
+    return await res.json();
+  }
+
+  static async getDeploymentHistory(pageId: string, languageCode: string) {
+    const res = await fetch(`${API_BASE}/pages/${pageId}/languages/${languageCode}/deployments`);
+    if (!res.ok) throw new Error("Failed to fetch deployment history");
+    return await res.json();
+  }
+
+  static async rollback(pageId: string, languageCode: string, environment: Environment, targetReleaseId: string) {
+    const res = await fetch(`${API_BASE}/pages/${pageId}/languages/${languageCode}/environments/${environment}/rollback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetReleaseId })
+    });
+    if (!res.ok) throw new Error("Failed to execute rollback");
     return await res.json();
   }
 }

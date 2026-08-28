@@ -16,6 +16,12 @@
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-warning: var(--warning);
+
+  --color-background-card: var(--surface);
+  --color-background-hover: var(--surface-hover);
+  --color-background-selected: var(--surface-active);
+  --color-main: var(--text-main);
+  --color-muted: var(--text-muted);
 }
 
 :root {

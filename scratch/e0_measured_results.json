@@ -1,0 +1,386 @@
+{
+  "metadata": {
+    "model": "gemini-3.5-flash",
+    "targetLanguage": "fr",
+    "targetLanguageName": "French",
+    "timestamp": "2026-08-27T12:29:45.906Z",
+    "apiKeyPrefix": "AQ.Ab8RN...",
+    "totalTestSetSize": 100,
+    "totalDefectsInCatalog": 100
+  },
+  "defectDiagnosis": {
+    "total": 100,
+    "counts": {
+      "wrong sense": 25,
+      "wrong grammatical/UI role": 17,
+      "wrong terminology/register": 16,
+      "structural/placeholder issue": 10,
+      "back-translation false alarm": 19,
+      "no clean target equivalent": 6,
+      "other": 7
+    },
+    "percentages": {
+      "wrong sense": "25.0%",
+      "wrong grammatical/UI role": "17.0%",
+      "wrong terminology/register": "16.0%",
+      "structural/placeholder issue": "10.0%",
+      "back-translation false alarm": "19.0%",
+      "no clean target equivalent": "6.0%",
+      "other": "7.0%"
+    },
+    "falseAlarmShare": "19.0%",
+    "placeholderShare": "10.0%",
+    "catalogSample": [
+      {
+        "id": "DEF-001",
+        "tag": "CUSTOMER_GENDER_FEMALE",
+        "source": "Female",
+        "screen": "Customer Profile",
+        "reportedIssue": "Translated as 'Femelle' (zoological animal sense)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Lack of human profile context; model defaulted to biology terminology."
+      },
+      {
+        "id": "DEF-002",
+        "tag": "POS_BTN_CHARGE",
+        "source": "Charge",
+        "screen": "POS Payment",
+        "reportedIssue": "Translated as 'Charger' (battery/electrical charge)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Model saw isolated verb; picked electrical/physical sense."
+      },
+      {
+        "id": "DEF-003",
+        "tag": "INVOICE_BTN_VOID",
+        "source": "Void",
+        "screen": "Invoice Management",
+        "reportedIssue": "Translated as 'Vide' (empty space / vacuum)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Isolated word; picked physical emptiness rather than fiscal cancellation."
+      },
+      {
+        "id": "DEF-004",
+        "tag": "STAFF_LBL_BREAK",
+        "source": "Break",
+        "screen": "Staff Schedule",
+        "reportedIssue": "Translated as 'Casser' (to physically smash/fracture)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Isolated word; picked physical destruction rather than staff rest intermission."
+      },
+      {
+        "id": "DEF-005",
+        "tag": "REPORT_LBL_CURRENT",
+        "source": "Current",
+        "screen": "Reports Dashboard",
+        "reportedIssue": "Translated as 'Courant' (electrical flow)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Report financial context missing; picked physics sense."
+      },
+      {
+        "id": "DEF-006",
+        "tag": "POS_LBL_BALANCE",
+        "source": "Balance",
+        "screen": "POS Payment",
+        "reportedIssue": "Translated as 'Équilibre' (physical equilibrium)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Isolated word; picked physical stability instead of remaining financial balance due."
+      },
+      {
+        "id": "DEF-007",
+        "tag": "SERVICE_BTN_BOOK",
+        "source": "Book",
+        "screen": "Service Catalog",
+        "reportedIssue": "Translated as 'Livre' (printed paperback book)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Isolated word; picked noun object instead of appointment scheduling verb."
+      },
+      {
+        "id": "DEF-008",
+        "tag": "STAFF_LBL_OFF",
+        "source": "Off",
+        "screen": "Staff Schedule",
+        "reportedIssue": "Translated as 'Éteint' (device powered off)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Isolated word; picked electrical state rather than employee day-off status."
+      },
+      {
+        "id": "DEF-009",
+        "tag": "POS_LBL_TIP",
+        "source": "Tip",
+        "screen": "POS Checkout",
+        "reportedIssue": "Translated as 'Conseil' (advice / piece of guidance)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Isolated word; picked recommendation sense instead of gratuity."
+      },
+      {
+        "id": "DEF-010",
+        "tag": "INVOICE_STATUS_VOID",
+        "source": "Void",
+        "screen": "Invoice Management",
+        "reportedIssue": "Translated as 'Néant' (nothingness/abyss)",
+        "confirmedByReviewer": true,
+        "classification": "wrong sense",
+        "rootCause": "Status word; picked existential nullity instead of annulled invoice status."
+      }
+    ]
+  },
+  "conditionResults": {
+    "A": [],
+    "B": [],
+    "C": [],
+    "D": []
+  },
+  "conditionMetrics": {
+    "A": {
+      "total": 0,
+      "correct": 0,
+      "accuracyRate": "NaN%",
+      "errorsByType": {}
+    },
+    "B": {
+      "total": 0,
+      "correct": 0,
+      "accuracyRate": "NaN%",
+      "errorsByType": {}
+    },
+    "C": {
+      "total": 0,
+      "correct": 0,
+      "accuracyRate": "NaN%",
+      "errorsByType": {}
+    },
+    "D": {
+      "total": 0,
+      "correct": 0,
+      "accuracyRate": "NaN%",
+      "errorsByType": {}
+    }
+  },
+  "batchStressTest": {
+    "10": {
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    "20": {
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    "30": {
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    "40": {
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    "50": {
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    }
+  },
+  "riskEscalationTelemetry": {
+    "totalEvaluated": 0,
+    "riskHighCount": 0,
+    "riskHighPercent": "0%",
+    "resolvedByGuessedCount": 0,
+    "resolvedByGuessedPercent": "0%",
+    "shortAmbiguousCount": 0,
+    "shortAmbiguousPercent": "0%",
+    "softFlagCount": 0,
+    "softFlagPercent": "0%",
+    "totalEscalated": 0,
+    "actualEscalationRatePercent": "0%",
+    "escalatedTagsSample": []
+  },
+  "semanticAuditValidation": {
+    "evaluatedCohortSize": 0,
+    "symmetricAudit": {
+      "verdicts": [],
+      "falseAlarms": 0,
+      "falseAlarmRate": "0%",
+      "humanAgreementRate": "0%"
+    },
+    "blindBackTranslation": {
+      "results": [],
+      "falseAlarms": 0,
+      "falseAlarmRate": "0%",
+      "humanAgreementRate": "0%"
+    }
+  },
+  "deterministicBenchmark": {
+    "totalChecked": 0,
+    "placeholder": {
+      "pass": 0,
+      "fail": 0,
+      "precision": "100%"
+    },
+    "length": {
+      "ok": 0,
+      "flagged": 0
+    },
+    "untranslated": {
+      "ok": 0,
+      "flagged": 0
+    },
+    "markup": {
+      "pass": 0,
+      "fail": 0,
+      "precision": "100%"
+    },
+    "failuresEncountered": []
+  },
+  "confidenceScoreAnalysis": {
+    "totalItems": 0,
+    "distribution": {
+      "aboveOrEqual095": 0,
+      "below095": 0,
+      "minScore": null,
+      "maxScore": null,
+      "meanScore": "N/A"
+    },
+    "threshold095Performance": {
+      "totalAutoApproved": 0,
+      "accuracyInAutoApproved": "0%",
+      "falseApprovalsEscaped": 0,
+      "correctItemsBlockedFromBulkApprove": 0
+    },
+    "recommendation": "Retain confidenceScore field in schema for backwards compatibility with API-0305, but do not rely solely on LLM self-reported scalar floats for automated bulk approval. Require Layer 1 deterministic pass + (resolved_by != 'guessed' AND risk == 'low') as prerequisite filters before API-0305 bulk approval."
+  },
+  "tokenAccounting": {
+    "totalInputTokens": 0,
+    "totalOutputTokens": 0,
+    "totalApiCalls": 0,
+    "totalCostUSD": "0.0000",
+    "costPerTagUSD": "0.00000"
+  },
+  "errors": [
+    {
+      "condition": "A",
+      "pageId": "CUSTOMER_PROFILE",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "A",
+      "pageId": "POS_PAYMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "A",
+      "pageId": "INVOICE_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "B",
+      "pageId": "CUSTOMER_PROFILE",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "B",
+      "pageId": "POS_PAYMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "B",
+      "pageId": "INVOICE_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "C",
+      "pageId": "CUSTOMER_PROFILE",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "C",
+      "pageId": "POS_PAYMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "C",
+      "pageId": "INVOICE_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "D",
+      "pageId": "CUSTOMER_PROFILE",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "D",
+      "pageId": "POS_PAYMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "condition": "D",
+      "pageId": "INVOICE_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "CUSTOMER_PROFILE",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "POS_PAYMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "INVOICE_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "page-calendar-01",
+      "error": "fetch failed"
+    },
+    {
+      "pageId": "page-pos-01",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "page-crm-01",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "EXPENSE_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "APPOINTMENT_CHECKOUT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "CUSTOMER_FEEDBACK",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "PREPAID_SETTING",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "QUICK",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "STAFF_SCHEDULE",
+      "error": "fetch failed"
+    },
+    {
+      "pageId": "SERVICE_CATALOG",
+      "error": "fetch failed"
+    },
+    {
+      "pageId": "REPORTS_DASHBOARD",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "SETTINGS_GENERAL",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    },
+    {
+      "pageId": "MEMBERSHIP_MANAGEMENT",
+      "error": "Gemini API 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-a"
+    }
+  ]
+}

@@ -1,39 +1,54 @@
 // @ts-nocheck
-import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { 
-  Search, 
+  MagnifyingGlass as Search, 
   Bell, 
-  ChevronDown, 
+  CaretDown as ChevronDown, 
   Sun, 
   Moon, 
-  CheckCircle2,
-  Globe
-} from "lucide-react";
+  Globe,
+  SignOut as LogOut,
+  ShieldCheck,
+  Key as KeyRound,
+  Question as HelpCircle
+} from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../ThemeProvider";
 import { useAuth } from "../../contexts/AuthContext";
+import { RoleAccessModal } from "../auth/RoleAccessModal";
 
 const navTabs = [
   { name: "Content", path: "/pages" },
   { name: "My Work", path: "/work" },
   { name: "Coverage", path: "/coverage" },
   { name: "Deployments", path: "/deployments" },
-  { name: "Settings", path: "/settings" },
-  { name: "Guide", path: "/guide" },
+  { name: "Settings", path: "/settings" }
 ];
 
 export function Shell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const { user } = useAuth();
-  
-  const simulatedRole = localStorage.getItem('miotranslate_simulate_role');
-  const activeRole = simulatedRole || (user?.roles?.[0] || "USER");
-  const showSimulator = user?.roles?.includes("DEV") || simulatedRole;
+  const { user, logout } = useAuth();
+  const activeRole = user?.roles?.[0] || "USER";
+  const isDevUser = user?.roles?.includes("DEV") || user?.roles?.includes("FN");
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const isCurrentTab = (path: string) => {
     if (path === "/pages") {
@@ -42,8 +57,24 @@ export function Shell() {
     return location.pathname.startsWith(path);
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
   return (
     <div className="min-h-screen bg-app text-text-main flex flex-col font-sans selection:bg-primary-light selection:text-primary">
+      {/* Role Access Information Modal */}
+      <RoleAccessModal 
+        isOpen={isRoleModalOpen} 
+        onClose={() => setIsRoleModalOpen(false)} 
+      />
+
       {/* Top Header Bar */}
       <header className="bg-surface border-b border-border-main sticky top-0 z-30 shadow-2xs">
         {/* Upper Row: Brand, Global Search, User & Role Controls */}
@@ -52,7 +83,7 @@ export function Shell() {
           <div className="flex items-center gap-3 shrink-0">
             <Link to="/pages" className="flex items-center gap-2.5 group">
               <div className="w-8 h-8 bg-primary text-white rounded flex items-center justify-center font-bold text-sm tracking-tight shadow-xs group-hover:bg-primary-hover transition-colors">
-                <Globe className="w-4 h-4" />
+                <Globe className="w-4 h-4" weight="fill" />
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-base text-text-main tracking-tight leading-none group-hover:text-primary transition-colors">
@@ -67,7 +98,7 @@ export function Shell() {
 
           {/* Global Search Input */}
           <div className="flex-1 max-w-md mx-4 relative hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle pointer-events-none" weight="bold" />
             <input
               type="text"
               value={searchQuery}
@@ -85,98 +116,121 @@ export function Shell() {
               className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-main hover:bg-surface-hover rounded transition-colors cursor-pointer"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {theme === "dark" ? <Sun className="w-4 h-4 text-[#FFAB00]" /> : <Moon className="w-4 h-4 text-text-muted" />}
+              {theme === "dark" ? <Sun className="w-4 h-4 text-[#FFAB00]" weight="bold" /> : <Moon className="w-4 h-4 text-text-muted" weight="bold" />}
             </button>
+
+            {/* Guide Button */}
+            <Link 
+              to="/guide"
+              className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-main hover:bg-surface-hover rounded transition-colors cursor-pointer"
+              title="Help & Guide"
+            >
+              <HelpCircle className="w-4 h-4" weight="bold" />
+            </Link>
 
             {/* Notification Bell */}
             <button 
               className="relative w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-main hover:bg-surface-hover rounded transition-colors cursor-pointer"
               title="Notifications"
             >
-              <Bell className="w-4 h-4 text-text-muted" />
+              <Bell className="w-4 h-4 text-text-muted" weight="bold" />
             </button>
 
             <div className="h-4 w-px bg-border-main mx-1" />
 
-            {/* Role & User Selector Dropdown */}
-            {showSimulator ? (
-              <div className="relative">
-                <button 
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 hover:bg-surface-hover px-2.5 py-1.5 rounded border border-border-main text-xs transition-colors cursor-pointer"
-                >
-                  <div className="w-6 h-6 bg-[#DEEBFF] text-primary font-bold rounded flex items-center justify-center text-[11px]">
-                    {activeRole}
-                  </div>
-                  <span className="font-semibold text-text-main hidden md:inline">{user?.displayName || "User"}</span>
-                  <span className="text-[10px] text-text-subtle font-medium">({activeRole})</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-text-subtle" />
-                </button>
+            {/* User Profile & Account Menu Dropdown */}
+            <div className="relative" ref={menuRef}>
+              <button 
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 hover:bg-surface-hover px-2.5 py-1.5 rounded-lg border border-border-main text-xs transition-all cursor-pointer shadow-2xs hover:border-primary/40"
+              >
+                {/* Avatar Badge */}
+                <div className="w-6 h-6 bg-primary text-white font-bold rounded-md flex items-center justify-center text-[10px] tracking-tight shrink-0">
+                  {getInitials(user?.displayName || activeRole)}
+                </div>
 
-                <AnimatePresence>
-                  {isUserMenuOpen && (
+                <div className="flex flex-col text-left leading-tight hidden md:flex">
+                  <span className="font-semibold text-text-main truncate max-w-[110px]">
+                    {user?.displayName || "User"}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-primary font-bold">
+                      {activeRole}
+                    </span>
+                  </div>
+                </div>
+
+                <ChevronDown className={`w-3.5 h-3.5 text-text-subtle transition-transform duration-200 ${isUserMenuOpen ? "rotate-180" : ""}`} weight="bold" />
+              </button>
+
+              <AnimatePresence>
+                {isUserMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    transition={{ duration: 0.1 }}
-                    className="absolute right-0 top-full mt-1.5 w-56 bg-surface border border-border-main rounded shadow-modal p-2 z-50 text-xs"
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                    transition={{ duration: 0.12 }}
+                    className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border-main rounded-xl shadow-modal p-2 z-50 text-xs"
                   >
-                    <div className="px-2 py-1.5 border-b border-border-main mb-1.5 text-text-subtle font-bold">
-                      Simulate Persona Role
+                    {/* User Identity Card */}
+                    <div className="px-3 py-2.5 border-b border-border-main mb-1.5 bg-surface-hover/50 rounded-lg">
+                      <div className="font-bold text-text-main text-xs truncate">
+                        {user?.displayName || "Logged In User"}
+                      </div>
+                      <div className="text-[11px] text-text-subtle truncate mt-0.5">
+                        {user?.email || "user@miosalonsoftware.com"}
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold">
+                          Role: {activeRole}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Action: Role Access & Permissions (Can Do / Can't Do Info) */}
                     <button
-                        onClick={() => {
-                          localStorage.removeItem('miotranslate_simulate_role');
-                          window.location.reload();
-                        }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-left transition-colors cursor-pointer ${
-                          !localStorage.getItem('miotranslate_simulate_role')
-                            ? "bg-primary-light text-primary font-bold"
-                            : "text-text-main hover:bg-surface-hover font-medium"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded bg-surface-active flex items-center justify-center text-[10px] font-mono">
-                            OFF
-                          </span>
-                          <span>No Simulation</span>
-                        </div>
-                        {!localStorage.getItem('miotranslate_simulate_role') && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        setIsRoleModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-main hover:bg-primary-light hover:text-primary transition-colors cursor-pointer text-left font-medium group"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-primary shrink-0" weight="fill" />
+                      <div className="flex-1">
+                        <div className="font-semibold leading-tight">Role Access & Capabilities</div>
+                        <div className="text-[10px] text-text-subtle group-hover:text-primary/80">View what your role can & cannot do</div>
+                      </div>
                     </button>
-                    {(["PM", "LR", "SR", "FN", "DEV"] as const).map((role) => (
+
+                    {/* Change Password Link */}
+                    <div className="mt-1 pt-1.5 border-t border-border-main">
                       <button
-                        key={role}
                         onClick={() => {
-                          localStorage.setItem('miotranslate_simulate_role', role);
-                          window.location.reload();
+                          setIsUserMenuOpen(false);
+                          navigate("/change-password");
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-left transition-colors cursor-pointer ${
-                          localStorage.getItem('miotranslate_simulate_role') === role
-                            ? "bg-primary-light text-primary font-bold"
-                            : "text-text-main hover:bg-surface-hover font-medium"
-                        }`}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-hover transition-colors cursor-pointer text-left font-medium"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded bg-surface-active flex items-center justify-center text-[10px] font-mono">
-                            {role}
-                          </span>
-                          <span>
-                            {role === "PM" && "Product Manager"}
-                            {role === "LR" && "Language Reviewer"}
-                            {role === "SR" && "Support Reviewer"}
-                            {role === "FN" && "Founder"}
-                            {role === "DEV" && "Developer"}
-                          </span>
-                        </div>
-                        {activeRole === role && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                        <KeyRound className="w-4 h-4 text-text-subtle shrink-0" weight="fill" />
+                        <span>Change Password</span>
                       </button>
-                    ))}
+
+                      {/* Log Out Button */}
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-left font-medium"
+                      >
+                        <LogOut className="w-4 h-4 shrink-0" weight="bold" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
                   </motion.div>
                 )}
-                </AnimatePresence>
-              </div>
-            ) : null}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 

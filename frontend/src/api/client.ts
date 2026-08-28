@@ -16,12 +16,6 @@ apiClient.interceptors.request.use((config) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  
-  const simulatedRole = localStorage.getItem('miotranslate_simulate_role');
-  if (simulatedRole && config.headers) {
-    config.headers['X-Simulate-Roles'] = simulatedRole;
-  }
-  
   return config;
 });
 

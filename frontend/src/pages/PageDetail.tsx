@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Sparkles, Plus, Layers, Check } from "lucide-react";
+import { MagnifyingGlass as Search, Sparkle as Sparkles, Plus, Stack as Layers, Check } from "@phosphor-icons/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { PublishModal } from "../components/publishing/PublishModal";
 import { TranslationStatusBadge } from "../components/translation/TranslationStatusBadge";
 import { StoreService } from "../store/StoreService";
+import { Dropdown } from "../components/ui/Dropdown";
 import { engine } from "../engine/TranslationEngine";
 import type { Tag, CopyType } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -16,6 +18,8 @@ export function PageDetail() {
   const [pageInfo, setPageInfo] = useState<{ name: string; module: string; status: string }>({ name: "Unknown", module: "Unknown", status: "Unknown" });
   const [activeLangs, setActiveLangs] = useState(StoreService.getActiveLanguages());
   const [selectedLanguage, setSelectedLanguage] = useState(activeLangs[0]?.code || "en");
+
+  const parentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (pageId) StoreService.refreshPageDetail(pageId);
@@ -55,13 +59,19 @@ export function PageDetail() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleTranslateAll = () => {
+  const handleTranslateAll = async () => {
     if (!pageId) return;
     
-    // Call the engine
-    engine.translatePageBatch(pageId, selectedLanguage);
-    
     showToast(`Generating translations for ${selectedLanguage}...`);
+    const status = await engine.translatePageBatch(pageId, selectedLanguage);
+    
+    if (status === 'COMPLETE') {
+      showToast(`Successfully generated all translations for ${selectedLanguage}`);
+    } else if (status === 'PARTIAL_SUCCESS') {
+      showToast(`Generated translations with some items needing attention`);
+    } else {
+      showToast(`Translation batch failed. Please try again.`);
+    }
   };
 
   const handleBulkApprove = () => {
@@ -92,12 +102,19 @@ export function PageDetail() {
     });
   }, [tags, searchQuery, selectedStatus, selectedType, selectedLanguage]);
 
+  const rowVirtualizer = useVirtualizer({
+    count: filteredTags.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 53,
+    overscan: 10,
+  });
+
   return (
     <div className="flex flex-col gap-6 max-w-7xl w-full mx-auto">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#172B4D] text-white px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4 text-[#79F2C0]" />
+          <Check className="w-4 h-4 text-[#79F2C0]" weight="bold" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -145,46 +162,47 @@ export function PageDetail() {
       <div className="bg-surface p-4 rounded-xl border border-border-main flex flex-col gap-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <select
+            <Dropdown
               value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none cursor-pointer"
-            >
-              <option value="eng">Language: English (Master) ▾</option>
-              {activeLangs.map(lang => (
-                <option key={lang.code} value={lang.code}>Language: {lang.name} ▾</option>
-              ))}
-            </select>
+              onChange={setSelectedLanguage}
+              className="w-48"
+              options={[
+                { value: "eng", label: "Language: English (Master) ▾" },
+                ...activeLangs.map(lang => ({ value: lang.code, label: `Language: ${lang.name} ▾` }))
+              ]}
+            />
 
-            <select
+            <Dropdown
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none cursor-pointer"
-            >
-              <option value="All">Status ▾</option>
-              <option value="Approved">Approved</option>
-              <option value="Pending Review">Pending Review</option>
-              <option value="Stale">Stale</option>
-              <option value="Draft">Draft</option>
-              <option value="No Trans">No Trans</option>
-            </select>
+              onChange={setSelectedStatus}
+              className="w-36"
+              options={[
+                { value: "All", label: "Status ▾" },
+                { value: "Approved", label: "Approved" },
+                { value: "Pending Review", label: "Pending Review" },
+                { value: "Stale", label: "Stale" },
+                { value: "Draft", label: "Draft" },
+                { value: "No Trans", label: "No Trans" },
+              ]}
+            />
 
-            <select
+            <Dropdown
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none cursor-pointer"
-            >
-              <option value="All">Copy Type ▾</option>
-              <option value="Header">Header</option>
-              <option value="Button">Button</option>
-              <option value="Label">Label</option>
-              <option value="Placeholder">Placeholder</option>
-              <option value="Error">Error</option>
-            </select>
+              onChange={setSelectedType}
+              className="w-36"
+              options={[
+                { value: "All", label: "Copy Type ▾" },
+                { value: "Header", label: "Header" },
+                { value: "Button", label: "Button" },
+                { value: "Label", label: "Label" },
+                { value: "Placeholder", label: "Placeholder" },
+                { value: "Error", label: "Error" },
+              ]}
+            />
           </div>
 
           <div className="flex-1 max-w-sm relative min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-subtle pointer-events-none" weight="bold" />
             <input
               type="text"
               value={searchQuery}
@@ -202,7 +220,7 @@ export function PageDetail() {
                 onClick={handleTranslateAll}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-hover border border-border-main rounded text-sm font-bold text-primary transition-colors cursor-pointer shadow-sm"
               >
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Sparkles className="w-4 h-4 text-primary" weight="fill" />
                 Translate All
               </button>
             )}
@@ -230,7 +248,7 @@ export function PageDetail() {
                 onClick={() => setIsAddTagOpen(true)}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary text-white text-sm font-bold rounded hover:bg-primary-hover transition-colors cursor-pointer shadow-sm"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4" weight="bold" />
                 Add Tag
               </button>
             )}
@@ -239,51 +257,71 @@ export function PageDetail() {
       </div>
 
       {/* Table */}
-      <div className="bg-surface rounded border border-border-main overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-text-main border-collapse">
-            <thead className="bg-surface-hover/70 border-b border-border-main text-xs uppercase font-bold text-text-muted tracking-wider">
+      <div 
+        className="bg-surface rounded border border-border-main shadow-sm overflow-hidden flex flex-col"
+      >
+        <div 
+          ref={parentRef}
+          className="overflow-auto custom-scrollbar" 
+          style={{ height: '500px' }}
+        >
+          <table className="w-full text-left text-sm text-text-main border-collapse table-fixed">
+            <thead className="bg-surface-hover/70 border-b border-border-main text-xs uppercase font-bold text-text-muted tracking-wider sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4 border-r border-border-main/50 w-32">TAG ID</th>
-                <th className="px-6 py-4 border-r border-border-main/50 w-28">TYPE</th>
-                <th className="px-6 py-4 border-r border-border-main/50">ENGLISH</th>
-                <th className="px-6 py-4 border-r border-border-main/50">
+                <th className="px-6 py-4 border-r border-border-main/50 w-[150px]">TAG ID</th>
+                <th className="px-6 py-4 border-r border-border-main/50 w-[120px]">TYPE</th>
+                <th className="px-6 py-4 border-r border-border-main/50 w-[300px]">ENGLISH</th>
+                <th className="px-6 py-4 border-r border-border-main/50 w-[300px]">
                   {selectedLanguage === "eng" || selectedLanguage === "en" ? "VERSION" : (activeLangs.find(l => l.code === selectedLanguage)?.name.toUpperCase() || "TRANSLATION")}
                 </th>
-                <th className="px-6 py-4 w-32">STATUS</th>
+                <th className="px-6 py-4 w-[150px]">STATUS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-main">
+            <tbody 
+              className="divide-y divide-border-main"
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                position: 'relative',
+              }}
+            >
               {filteredTags.length > 0 ? (
-                filteredTags.map((tag) => {
+                rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const tag = filteredTags[virtualRow.index];
                   const isEng = selectedLanguage === "eng" || selectedLanguage === "en";
                   const val = !isEng ? (tag.values[selectedLanguage] || { text: "", status: tag.english ? "No Trans" : "No Eng" }) : { text: `v${tag.englishVersion || 1}`, status: "Approved" };
                   
                   return (
-                  <tr key={tag.id} className="hover:bg-surface-hover transition-colors">
-                    <td className="px-6 py-4 border-r border-border-main/50 font-mono font-bold text-primary">
-                      <Link to={`/pages/${pageId}/tags/${tag.id}`} className="hover:underline">
+                  <tr 
+                    key={tag.id} 
+                    className="hover:bg-surface-hover transition-colors absolute top-0 left-0 w-full flex items-center"
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <td className="px-6 border-r border-border-main/50 font-mono font-bold text-primary w-[150px] h-full flex items-center">
+                      <Link to={`/pages/${pageId}/tags/${tag.id}`} className="hover:underline truncate">
                         {tag.id}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 border-r border-border-main/50">
+                    <td className="px-6 border-r border-border-main/50 w-[120px] h-full flex items-center">
                       <span className="px-2 py-0.5 rounded bg-surface-active text-text-muted text-xs font-medium">
                         {tag.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 border-r border-border-main/50 font-bold">
-                      {tag.english ? `"${tag.english}"` : <span className="text-text-subtle italic">(Draft)</span>}
+                    <td className="px-6 border-r border-border-main/50 font-bold w-[300px] h-full flex items-center overflow-hidden">
+                      {tag.english ? <span className="truncate">"{tag.english}"</span> : <span className="text-text-subtle italic truncate">(Draft)</span>}
                     </td>
-                    <td className="px-6 py-4 border-r border-border-main/50 text-right font-sans" dir="auto">
+                    <td className="px-6 border-r border-border-main/50 text-right font-sans w-[300px] h-full flex items-center justify-end overflow-hidden" dir="auto">
                       {isEng ? (
                         <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs font-bold">
                           v{tag.englishVersion || 1}
                         </span>
                       ) : (
-                        val.text ? `"${val.text}"` : <span className="text-text-subtle">—</span>
+                        val.text ? <span className="truncate">"{val.text}"</span> : <span className="text-text-subtle">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 w-[150px] h-full flex items-center">
                       {isEng ? (
                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-semibold text-xs border border-emerald-500/20">
                           Master
@@ -293,13 +331,14 @@ export function PageDetail() {
                       )}
                     </td>
                   </tr>
-                )})
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                       <div className="w-12 h-12 rounded-full bg-surface-hover flex items-center justify-center text-text-subtle mb-3">
-                        <Layers className="w-6 h-6 text-text-subtle" />
+                        <Layers className="w-6 h-6 text-text-subtle" weight="fill" />
                       </div>
                       <h3 className="text-base font-bold text-text-main mb-1">
                         {tags.length === 0 ? "No tags added yet" : "No matching tags found"}
@@ -357,17 +396,18 @@ export function PageDetail() {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-text-muted uppercase">Copy Type</label>
-                <select
+                <Dropdown
                   value={newCopyType}
-                  onChange={(e) => setNewCopyType(e.target.value as CopyType)}
-                  className="w-full h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none cursor-pointer"
-                >
-                  <option>Button</option>
-                  <option>Label</option>
-                  <option>Header</option>
-                  <option>Placeholder</option>
-                  <option>Error</option>
-                </select>
+                  onChange={(val) => setNewCopyType(val as CopyType)}
+                  className="w-full"
+                  options={[
+                    { value: "Button", label: "Button" },
+                    { value: "Label", label: "Label" },
+                    { value: "Header", label: "Header" },
+                    { value: "Placeholder", label: "Placeholder" },
+                    { value: "Error", label: "Error" },
+                  ]}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-text-muted uppercase">English Copy</label>

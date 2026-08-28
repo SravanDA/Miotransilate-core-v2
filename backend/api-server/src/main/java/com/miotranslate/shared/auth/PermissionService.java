@@ -31,12 +31,6 @@ public class PermissionService {
     }
 
     public Set<String> getEffectivePermissions(UUID userId) {
-        List<String> roles = getRoles(userId);
-        if (roles.contains("DEV")) {
-            Set<String> devSet = new HashSet<>();
-            devSet.add("*"); // Universal permission for DEV
-            return devSet;
-        }
         return userPermissionsCache.get(userId, k -> fetchPermissionsFromDb(userId));
     }
 
@@ -46,7 +40,7 @@ public class PermissionService {
 
     public boolean hasPermission(UUID userId, String permissionCode) {
         Set<String> perms = getEffectivePermissions(userId);
-        return perms.contains("*") || perms.contains(permissionCode);
+        return perms.contains(permissionCode);
     }
 
     public void invalidateUser(UUID userId) {
@@ -69,11 +63,6 @@ public class PermissionService {
 
     public Set<String> getPermissionsForRoles(List<String> roleCodes) {
         if (roleCodes == null || roleCodes.isEmpty()) return new HashSet<>();
-        if (roleCodes.contains("DEV")) {
-            Set<String> devSet = new HashSet<>();
-            devSet.add("*");
-            return devSet;
-        }
 
         @SuppressWarnings("unchecked")
         List<String> permissions = entityManager.createNativeQuery(

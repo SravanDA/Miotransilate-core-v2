@@ -24,15 +24,39 @@ export interface TranslationValue {
   confidence: number;
   translatedAtEnglishVersion: number;
   lastUpdated: string; // ISO string
+  stateCause?: string; // "verified", "needs_attention_length", "blocked_placeholder"
+  backTranslation?: string;
+}
+
+export interface CommentAuthor {
+  userId: string;
+  displayName: string;
+  role: string;
 }
 
 export interface Comment {
-  id: string;
-  author: string;
-  language: string;
+  commentId: string;
+  tagId: string;
+  parentCommentId: string | null;
+  scope: { type: "ENGLISH" | "LANGUAGE"; languageCode: string | null };
+  author: CommentAuthor;
   text: string;
-  createdAt: string;
   resolved: boolean;
+  resolvedBy: CommentAuthor | null;
+  resolvedAt: string | null;
+  isEscalation: boolean;
+  escalationReason: string | null;
+  createdAt: string;
+  replies: Comment[];
+}
+
+export interface EscalatedItem {
+  comment: Comment;
+  tagId: string;
+  pageId: string;
+  pageName: string;
+  englishCopy: string;
+  copyType: string;
 }
 
 export interface Tag {

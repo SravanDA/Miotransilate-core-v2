@@ -17,7 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -28,36 +27,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PermissionService permissionService;
-    private final Environment environment;
 
     public JwtAuthFilter(JwtService jwtService, UserRepository userRepository, 
-                         PermissionService permissionService, Environment environment) {
+                         PermissionService permissionService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.permissionService = permissionService;
-        this.environment = environment;
     }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+        if (path.startsWith("/v1/auth/login") || path.startsWith("/playground")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            if (Arrays.asList(environment.getActiveProfiles()).contains("mock") 
-                    || !Boolean.parseBoolean(environment.getProperty("miotranslate.auth.enabled", "true"))) {
-                UUID defaultUserId = UUID.fromString("a0000000-0000-0000-0000-000000000001");
-                List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("PERMISSION_*"),
-                    new SimpleGrantedAuthority("ROLE_DEV"),
-                    new SimpleGrantedAuthority("ROLE_ADMIN"),
-                    new SimpleGrantedAuthority("ROLE_FN")
-                );
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        defaultUserId, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
             filterChain.doFilter(request, response);
             return;
         }
@@ -76,21 +66,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             
             boolean mustChangePassword = user.getMustChangePassword();
             
-            Set<String> permissions;
-            String simulateHeader = request.getHeader("X-Simulate-Roles");
-            
-            if (simulateHeader != null && !simulateHeader.isEmpty()) {
-                List<String> actualRoles = permissionService.getRoles(userId);
-                if (actualRoles.contains("DEV")) {
-                    // Persona simulation
-                    List<String> simulatedRoles = Arrays.asList(simulateHeader.split(","));
-                    permissions = permissionService.getPermissionsForRoles(simulatedRoles);
-                } else {
-                    permissions = permissionService.getEffectivePermissions(userId);
-                }
-            } else {
-                permissions = permissionService.getEffectivePermissions(userId);
-            }
+            Set<String> permissions = permissionService.getEffectivePermissions(userId);
             
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             for (String p : permissions) {

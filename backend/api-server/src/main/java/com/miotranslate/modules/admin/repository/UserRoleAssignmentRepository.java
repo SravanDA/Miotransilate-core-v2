@@ -18,4 +18,8 @@ public interface UserRoleAssignmentRepository extends JpaRepository<UserRoleAssi
     
     @Query("SELECT COUNT(ura) FROM UserRoleAssignment ura WHERE ura.userId = :userId AND ura.role IN ('ADMIN', 'FN') AND ura.revokedAt IS NULL")
     long countActiveAdminRolesForUser(UUID userId);
+    
+    List<UserRoleAssignment> findAllByRevokedAtIsNull();
+    
+    boolean existsByUserIdAndRoleAndRevokedAtIsNull(UUID userId, String role);
 }

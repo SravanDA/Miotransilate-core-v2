@@ -1,5 +1,11 @@
-import { useState, useEffect } from "react";
-import { X, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  useState,
+  useEffect } from "react";
+import { X,
+  CheckCircle,
+  WarningCircle as AlertCircle,
+  ArrowsClockwise as RefreshCw
+} from "@phosphor-icons/react";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -15,6 +21,8 @@ interface TranslationReviewModalProps {
   confidenceScore: number;
   languageName: string;
   languageDirection?: 'ltr' | 'rtl' | 'LTR' | 'RTL';
+  stateCause?: string;
+  backTranslation?: string;
 }
 
 export function TranslationReviewModal({
@@ -28,7 +36,9 @@ export function TranslationReviewModal({
   currentTranslation,
   confidenceScore,
   languageName,
-  languageDirection = 'ltr'
+  languageDirection,
+  stateCause,
+  backTranslation
 }: TranslationReviewModalProps) {
   const effectiveTranslation = currentTranslation !== undefined ? currentTranslation : initialTranslation;
   const [editedText, setEditedText] = useState(effectiveTranslation);
@@ -67,7 +77,7 @@ export function TranslationReviewModal({
                 onClick={onClose}
                 className="p-1.5 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text-main transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" weight="bold" />
               </button>
             </div>
 
@@ -92,14 +102,14 @@ export function TranslationReviewModal({
                         ? "bg-amber-500/10 text-warning border-amber-500/20" 
                         : "bg-emerald-500/10 text-success border-emerald-500/20"
                     )}>
-                      {isLowConfidence ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                      {isLowConfidence ? <AlertCircle className="w-3.5 h-3.5" weight="fill" /> : <CheckCircle className="w-3.5 h-3.5" weight="fill" />}
                       {confidenceScore}% Confidence
                     </div>
                     <button 
                       onClick={onRegenerate}
                       className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium active:scale-95 transition-transform cursor-pointer"
                     >
-                      <RefreshCw className="w-3.5 h-3.5" /> Regenerate
+                      <RefreshCw className="w-3.5 h-3.5" weight="bold" /> Regenerate
                     </button>
                   </div>
                 </div>
@@ -109,6 +119,26 @@ export function TranslationReviewModal({
                   onChange={(e) => setEditedText(e.target.value)}
                   className="w-full h-32 p-3.5 bg-surface border border-border-main rounded-lg text-text-main text-base focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-all"
                 />
+                
+                {stateCause && (
+                  <div className="mt-2 text-xs font-medium text-warning flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Engine Flag: {stateCause}</span>
+                  </div>
+                )}
+                
+                {backTranslation && (
+                  <details className="mt-4 group">
+                    <summary className="text-xs font-medium text-primary hover:underline cursor-pointer select-none outline-none list-none inline-flex items-center gap-1">
+                      <span className="group-open:hidden">Show</span>
+                      <span className="hidden group-open:inline">Hide</span>
+                      reading aid (back-translation)
+                    </summary>
+                    <div className="mt-2 p-3 bg-surface-hover border border-border-main rounded-md text-text-subtle text-sm italic">
+                      "{backTranslation}"
+                    </div>
+                  </details>
+                )}
               </div>
             </div>
 

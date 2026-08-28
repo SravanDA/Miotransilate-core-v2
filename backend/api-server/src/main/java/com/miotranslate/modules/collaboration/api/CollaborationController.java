@@ -1,6 +1,8 @@
 package com.miotranslate.modules.collaboration.api;
 
-import com.miotranslate.modules.collaboration.model.Comment;
+import com.miotranslate.modules.collaboration.api.dto.CommentDto;
+import com.miotranslate.modules.collaboration.api.dto.EscalatedItemDto;
+import com.miotranslate.modules.collaboration.api.dto.ScopeDto;
 import com.miotranslate.modules.collaboration.model.ExportJob;
 import com.miotranslate.modules.collaboration.service.CollaborationService;
 import com.miotranslate.shared.auth.RequiresPermission;
@@ -22,31 +24,56 @@ public class CollaborationController {
         this.collaborationService = collaborationService;
     }
 
+    public static class AddCommentRequest {
+        public String text;
+        public ScopeDto scope;
+        public boolean isEscalation;
+        public String escalationReason;
+        public String parentCommentId;
+    }
+
     @PostMapping("/tags/{tagId}/comments")
     @RequiresPermission("COMMENT_CREATE")
-    public ResponseEntity<Comment> addComment(
+    public ResponseEntity<CommentDto> addComment(
             @PathVariable String tagId,
-            @RequestBody Map<String, String> payload) {
+            @RequestBody AddCommentRequest payload) {
         UUID authorId = SecurityUtils.getCurrentUserId();
-        String body = payload.get("body");
-        String scope = payload.get("scope");
-        
-        return ResponseEntity.ok(collaborationService.addComment(tagId, body, scope, authorId));
+        UUID parentId = payload.parentCommentId != null ? UUID.fromString(payload.parentCommentId) : null;
+        return ResponseEntity.ok(collaborationService.addComment(
+            tagId, payload.text, payload.scope, payload.isEscalation, payload.escalationReason, parentId, authorId));
     }
 
     @GetMapping("/tags/{tagId}/comments")
     @RequiresPermission("CONTENT_VIEW")
-    public ResponseEntity<List<Comment>> getComments(
+    public ResponseEntity<List<CommentDto>> getComments(
             @PathVariable String tagId,
-            @RequestParam(required = false) String scope) {
-        return ResponseEntity.ok(collaborationService.getComments(tagId, scope));
+            @RequestParam(required = false) String scope,
+            @RequestParam(required = false) Boolean resolved) {
+        return ResponseEntity.ok(collaborationService.getComments(tagId, scope, resolved));
     }
 
-    @PatchMapping("/comments/{commentId}/resolve")
+    @PatchMapping("/tags/{tagId}/comments/{commentId}/resolve")
     @RequiresPermission("COMMENT_CREATE")
-    public ResponseEntity<Comment> resolveComment(@PathVariable UUID commentId) {
+    public ResponseEntity<CommentDto> resolveComment(
+            @PathVariable String tagId,
+            @PathVariable String commentId) {
         UUID resolvedBy = SecurityUtils.getCurrentUserId();
-        return ResponseEntity.ok(collaborationService.resolveComment(commentId, resolvedBy));
+        return ResponseEntity.ok(collaborationService.resolveComment(tagId, commentId, resolvedBy));
+    }
+
+    @PatchMapping("/tags/{tagId}/comments/{commentId}/unresolve")
+    @RequiresPermission("COMMENT_CREATE")
+    public ResponseEntity<CommentDto> unresolveComment(
+            @PathVariable String tagId,
+            @PathVariable String commentId) {
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(collaborationService.unresolveComment(tagId, commentId, userId));
+    }
+
+    @GetMapping("/escalations")
+    @RequiresPermission("CONTENT_VIEW")
+    public ResponseEntity<List<EscalatedItemDto>> getEscalatedItems() {
+        return ResponseEntity.ok(collaborationService.getEscalatedItems());
     }
 
     @GetMapping("/audit")

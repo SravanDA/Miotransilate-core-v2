@@ -18,29 +18,46 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.miotranslate.modules.admin.api.dto.UserWithRolesResponse;
+import com.miotranslate.modules.admin.repository.UserRoleAssignmentRepository;
+import java.util.stream.Collectors;
+
 @RestController
-@RequestMapping("/v1")
+@RequestMapping("/v1/admin")
 public class AdminController {
 
     private final AdminService adminService;
     private final UserRepository userRepository;
     private final LanguageRepository languageRepository;
     private final SystemConfigurationRepository configRepository;
+    private final UserRoleAssignmentRepository roleAssignmentRepository;
 
     public AdminController(AdminService adminService,
                            UserRepository userRepository,
                            LanguageRepository languageRepository,
-                           SystemConfigurationRepository configRepository) {
+                           SystemConfigurationRepository configRepository,
+                           UserRoleAssignmentRepository roleAssignmentRepository) {
         this.adminService = adminService;
         this.userRepository = userRepository;
         this.languageRepository = languageRepository;
         this.configRepository = configRepository;
+        this.roleAssignmentRepository = roleAssignmentRepository;
     }
 
     @GetMapping("/users")
     @RequiresPermission("ADMIN_USERS")
-    public ResponseEntity<List<User>> listUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<List<UserWithRolesResponse>> listUsers() {
+        List<User> users = userRepository.findAll();
+        List<UserRoleAssignment> assignments = roleAssignmentRepository.findAllByRevokedAtIsNull();
+        
+        List<UserWithRolesResponse> response = users.stream().map(user -> {
+            List<UserRoleAssignment> userRoles = assignments.stream()
+                    .filter(a -> a.getUserId().equals(user.getUserId()))
+                    .collect(Collectors.toList());
+            return new UserWithRolesResponse(user, userRoles);
+        }).collect(Collectors.toList());
+        
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/languages")

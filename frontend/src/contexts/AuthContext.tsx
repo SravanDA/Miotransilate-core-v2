@@ -37,9 +37,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (token) {
         try {
           const response = await apiClient.get('/v1/auth/me');
+          const userData: User = response.data.user || {
+            userId: response.data.userId,
+            displayName: response.data.displayName || response.data.email,
+            email: response.data.email,
+            roles: response.data.roles || [],
+            permissions: response.data.permissions || [],
+          };
           setState({
-            user: response.data.user,
-            mustChangePassword: response.data.mustChangePassword,
+            user: userData,
+            mustChangePassword: response.data.mustChangePassword || false,
             isLoading: false,
           });
         } catch (err) {
@@ -67,7 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const can = (permission: string) => {
     if (!state.user) return false;
-    return state.user.permissions.includes(permission);
+    return state.user.permissions?.includes(permission) || false;
   };
 
   return (

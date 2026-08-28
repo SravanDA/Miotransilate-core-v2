@@ -1,4 +1,8 @@
-import { X, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  X,
+  CheckCircle,
+  WarningCircle as AlertCircle
+} from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BulkApproveModalProps {
@@ -39,7 +43,7 @@ export function BulkApproveModal({
                 onClick={onClose}
                 className="p-1.5 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text-main transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" weight="bold" />
               </button>
             </div>
 
@@ -51,7 +55,7 @@ export function BulkApproveModal({
 
               <div className="space-y-3">
                 <div className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" weight="fill" />
                   <div>
                     <h4 className="text-sm font-semibold text-success">High Confidence Translations</h4>
                     <p className="text-xs text-text-muted mt-0.5">{totalTags - lowConfidenceCount} tags have a confidence score of 85% or higher.</p>
@@ -60,7 +64,7 @@ export function BulkApproveModal({
 
                 {lowConfidenceCount > 0 && (
                   <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                    <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
                     <div>
                       <h4 className="text-sm font-semibold text-warning">Low Confidence Warning</h4>
                       <p className="text-xs text-text-muted mt-0.5">

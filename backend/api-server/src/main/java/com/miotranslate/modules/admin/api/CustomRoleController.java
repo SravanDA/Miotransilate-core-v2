@@ -11,15 +11,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.miotranslate.modules.admin.repository.RoleRepository;
+
 @RestController
-@RequestMapping("/v1/roles")
+@RequestMapping("/v1/admin/roles")
 @RequiresPermission("ADMIN_USERS")
 public class CustomRoleController {
 
     private final CustomRoleService customRoleService;
+    private final RoleRepository roleRepository;
 
-    public CustomRoleController(CustomRoleService customRoleService) {
+    public CustomRoleController(CustomRoleService customRoleService, RoleRepository roleRepository) {
         this.customRoleService = customRoleService;
+        this.roleRepository = roleRepository;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Role>> listRoles() {
+        return ResponseEntity.ok(roleRepository.findAll());
     }
 
     @PostMapping

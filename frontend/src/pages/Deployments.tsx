@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Globe, Server, CheckCircle2, Activity, Search } from "lucide-react";
+import { Globe, Database as Server, CheckCircle, Pulse, MagnifyingGlass as Search } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { PublishModal } from "../components/publishing/PublishModal";
 import { StoreService } from "../store/StoreService";
@@ -40,7 +40,7 @@ export function Deployments() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-text-main flex items-center gap-2">
-          <Globe className="w-6 h-6 text-primary" />
+          <Globe className="w-6 h-6 text-primary" weight="fill" />
           Deployments
         </h1>
         <p className="text-sm text-text-subtle mt-0.5">Manage translation releases across Dev, QA, and Production environments</p>
@@ -49,9 +49,9 @@ export function Deployments() {
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { name: "DEV", desc: "Internal Testing", color: "border-primary", icon: <Server className="w-5 h-5 text-primary" /> },
-          { name: "QA", desc: "Release Candidate", color: "border-[#FF8B00]", icon: <Activity className="w-5 h-5 text-[#FF8B00]" /> },
-          { name: "PRODUCTION", desc: "Live to Customers", color: "border-[#36B37E]", icon: <CheckCircle2 className="w-5 h-5 text-[#36B37E]" /> }
+          { name: "DEV", desc: "Internal Testing", color: "border-primary", icon: <Server className="w-5 h-5 text-primary" weight="bold" /> },
+          { name: "QA", desc: "Release Candidate", color: "border-[#FF8B00]", icon: <Pulse className="w-5 h-5 text-[#FF8B00]" weight="bold" /> },
+          { name: "PRODUCTION", desc: "Live to Customers", color: "border-[#36B37E]", icon: <CheckCircle className="w-5 h-5 text-[#36B37E]" weight="fill" /> }
         ].map(env => {
           const latestCount = deployments.filter(d => d.environment === env.name).length;
           return (
@@ -91,7 +91,7 @@ export function Deployments() {
             </button>
           </div>
           <div className="relative min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-subtle pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-subtle pointer-events-none" weight="bold" />
             <input
               type="text"
               value={searchQuery}
@@ -169,7 +169,7 @@ export function Deployments() {
                         <td className="px-6 py-4">
                           {prod ? (
                             <span className="font-mono text-xs font-bold text-[#36B37E] flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> v{prod.version}
+                              <CheckCircle className="w-3.5 h-3.5" weight="fill" /> v{prod.version}
                             </span>
                           ) : <span className="text-text-subtle">—</span>}
                         </td>

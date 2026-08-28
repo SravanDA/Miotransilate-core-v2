@@ -36,14 +36,56 @@ function App() {
             }
           >
             <Route index element={<Navigate to="/pages" replace />} />
-            <Route path="pages" element={<PageList />} />
-            <Route path="pages/:pageId" element={<PageDetail />} />
-            <Route path="pages/:pageId/tags/:tagId" element={<TagDetail />} />
+            <Route 
+              path="pages" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <PageList />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="pages/:pageId" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <PageDetail />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="pages/:pageId/tags/:tagId" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <TagDetail />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Work and Workflows */}
-            <Route path="work" element={<MyWork />} />
-            <Route path="coverage" element={<CoverageDashboard />} />
-            <Route path="deployments" element={<Deployments />} />
+            <Route 
+              path="work" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <MyWork />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="coverage" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <CoverageDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="deployments" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <Deployments />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="settings" 
               element={
@@ -52,7 +94,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="guide" element={<Guide />} />
+            <Route 
+              path="guide" 
+              element={
+                <ProtectedRoute permission="CONTENT_VIEW">
+                  <Guide />
+                </ProtectedRoute>
+              } 
+            />
           </Route>
         </Routes>
       </BrowserRouter>

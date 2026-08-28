@@ -10,5 +10,7 @@ import java.util.UUID;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
     
-    List<Comment> findByTagIdOrderByCreatedAtDesc(String tagId);
+    List<Comment> findByTagIdOrderByCreatedAtAsc(String tagId);
+    
+    List<Comment> findByIsEscalationTrueAndIsResolvedFalseOrderByCreatedAtAsc();
 }

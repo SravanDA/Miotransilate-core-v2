@@ -1,36 +1,35 @@
 // @ts-nocheck
-import { useState } from "react";
 import {
   BookOpen,
-  Settings,
-  RefreshCw,
+  Gear as Settings,
+  ArrowsClockwise as RefreshCw,
   Rocket,
   ShieldCheck,
   Users,
   Eye,
   FileText,
-  AlertTriangle,
+  Warning as AlertTriangle,
   Clock,
-  Layers,
+  Stack as Layers,
   ArrowRight,
   Globe,
   Tag,
-  CheckCircle2,
+  CheckCircle as CheckCircle2,
   XCircle,
-  ChevronRight,
-  BarChart3,
-  MessageSquare,
+  CaretRight as ChevronRight,
+  ChartBar as BarChart3,
+  ChatCircle as MessageSquare,
   Lightbulb,
-  Search,
+  MagnifyingGlass as Search,
   Download,
   Upload,
   Lock,
-  Zap,
+  Lightning as Zap,
   Target,
   ListChecks,
-  HelpCircle,
-  Ban
-} from "lucide-react";
+  Question as HelpCircle,
+  Prohibit as Ban
+} from "@phosphor-icons/react";
 
 /* ─── Sidebar TOC ─── */
 const toc = [
@@ -61,7 +60,7 @@ export function Guide() {
       {/* ─── Left sidebar ─── */}
       <aside className="hidden lg:flex flex-col w-52 shrink-0 sticky top-28 self-start">
         <div className="flex items-center gap-2 mb-5">
-          <BookOpen className="w-4 h-4 text-[#42526E] stroke-[1.5]" />
+          <BookOpen className="w-4 h-4 text-[#42526E] stroke-[1.5]" weight="fill" />
           <span className="text-[11px] font-bold text-[#6B778C] uppercase tracking-wider">Contents</span>
         </div>
         <nav className="flex flex-col gap-0.5">
@@ -184,20 +183,20 @@ export function Guide() {
               <div className="font-bold mb-2">Example:</div>
               <div className="ml-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-[#42526E] shrink-0" />
+                  <FileText className="w-4 h-4 text-[#42526E] shrink-0" weight="fill" />
                   <span><strong>Page:</strong> Quick Sale (POS screen)</span>
                 </div>
                 <div className="ml-6 flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5 text-[#6B778C] shrink-0" />
+                    <Tag className="w-3.5 h-3.5 text-[#6B778C] shrink-0" weight="fill" />
                     <span><strong>Tag:</strong> POS_BTN_CHECKOUT → "Checkout"</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5 text-[#6B778C] shrink-0" />
+                    <Tag className="w-3.5 h-3.5 text-[#6B778C] shrink-0" weight="fill" />
                     <span><strong>Tag:</strong> POS_LBL_TAX → "Tax Amount"</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5 text-[#6B778C] shrink-0" />
+                    <Tag className="w-3.5 h-3.5 text-[#6B778C] shrink-0" weight="fill" />
                     <span><strong>Tag:</strong> POS_MSG_SUCCESS → "Payment received successfully"</span>
                   </div>
                 </div>
@@ -216,11 +215,11 @@ export function Guide() {
             </P>
             <div className="flex flex-wrap items-center gap-2 text-[12px] font-semibold mt-2 mb-3">
               <StatusPill color="#F4F5F7" text="#42526E" border="#DFE1E6">No Translation</StatusPill>
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" weight="bold" />
               <StatusPill color="#EAE6FF" text="#403294" border="#C0B6F2">Draft</StatusPill>
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" weight="bold" />
               <StatusPill color="#DEEBFF" text="#0747A6" border="#B3D4FF">Pending Review</StatusPill>
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" weight="bold" />
               <StatusPill color="#E3FCEF" text="#006644" border="#ABF5D1">Approved</StatusPill>
             </div>
             <P>
@@ -228,9 +227,9 @@ export function Guide() {
             </P>
             <div className="flex flex-wrap items-center gap-2 text-[12px] font-semibold mt-2 mb-3">
               <StatusPill color="#E3FCEF" text="#006644" border="#ABF5D1">Approved</StatusPill>
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" weight="bold" />
               <StatusPill color="#FFF0B3" text="#172B4D" border="#FFE380">⚠ Stale</StatusPill>
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#A5ADBA]" weight="bold" />
               <span className="text-[#5E6C84] font-medium">Re-review or re-translate</span>
             </div>
           </SubSection>
@@ -241,9 +240,9 @@ export function Guide() {
             </P>
             <div className="flex items-center gap-4 text-[13px] font-bold mt-3 mb-3">
               <span className="px-4 py-2 rounded bg-[#DEEBFF] text-[#0747A6] border border-[#B3D4FF]">Dev</span>
-              <ArrowRight className="w-4 h-4 text-[#A5ADBA]" />
+              <ArrowRight className="w-4 h-4 text-[#A5ADBA]" weight="bold" />
               <span className="px-4 py-2 rounded bg-[#FFF0B3] text-[#172B4D] border border-[#FFE380]">QA</span>
-              <ArrowRight className="w-4 h-4 text-[#A5ADBA]" />
+              <ArrowRight className="w-4 h-4 text-[#A5ADBA]" weight="bold" />
               <span className="px-4 py-2 rounded bg-[#E3FCEF] text-[#006644] border border-[#ABF5D1]">Production</span>
             </div>
             <BulletList items={[
@@ -678,7 +677,7 @@ export function Guide() {
                 className="w-full py-4 flex items-start justify-between text-left cursor-pointer hover:bg-[#FAFBFC] transition-colors px-1"
               >
                 <span className="text-[14px] font-semibold text-[#172B4D] pr-4 leading-snug">{item.q}</span>
-                <ChevronRight className={`w-4 h-4 text-[#6B778C] shrink-0 mt-0.5 transition-transform ${expandedFaq === idx ? "rotate-90" : ""}`} />
+                <ChevronRight className={`w-4 h-4 text-[#6B778C] shrink-0 mt-0.5 transition-transform ${expandedFaq === idx ? "rotate-90" : ""}`} weight="bold" />
               </button>
               {expandedFaq === idx && (
                 <div className="px-1 pb-4 text-[13px] text-[#42526E] leading-relaxed">
@@ -801,7 +800,7 @@ function RoleCard({ code, name, whoIsThis, canDo, cannotDo }: { code: string; na
           <ul className="flex flex-col gap-1.5">
             {canDo.map((item, i) => (
               <li key={i} className="flex items-start gap-2 text-[13px] text-[#42526E]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#36B37E] shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#36B37E] shrink-0 mt-0.5" weight="fill" />
                 <span>{item}</span>
               </li>
             ))}
@@ -812,7 +811,7 @@ function RoleCard({ code, name, whoIsThis, canDo, cannotDo }: { code: string; na
           <ul className="flex flex-col gap-1.5">
             {cannotDo.map((item, i) => (
               <li key={i} className="flex items-start gap-2 text-[13px] text-[#42526E]">
-                <XCircle className="w-3.5 h-3.5 text-[#DE350B] shrink-0 mt-0.5" />
+                <XCircle className="w-3.5 h-3.5 text-[#DE350B] shrink-0 mt-0.5" weight="fill" />
                 <span>{item}</span>
               </li>
             ))}
@@ -867,7 +866,7 @@ function BestPracticeItem({ icon: Icon, title, description }: { icon: any; title
 function DontItem({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex items-start gap-3">
-      <Ban className="w-4.5 h-4.5 text-[#DE350B] shrink-0 mt-0.5" />
+      <Ban className="w-4.5 h-4.5 text-[#DE350B] shrink-0 mt-0.5" weight="fill" />
       <div>
         <h3 className="text-[14px] font-bold text-[#172B4D] mb-0.5 leading-tight">{title}</h3>
         <p className="text-[13px] text-[#5E6C84] leading-relaxed m-0">{description}</p>

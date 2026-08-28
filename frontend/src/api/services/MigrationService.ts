@@ -1,0 +1,53 @@
+import { apiClient } from '../client';
+
+export interface MockLsSyncStatus {
+  hasMigrated: boolean;
+  lastMigrationAt: string | null;
+  pagesMigrated: number;
+  tagsMigrated: number;
+}
+
+export interface ImportValidationRow {
+  rowNumber: number;
+  pageId: string;
+  tagName: string;
+  englishText: string;
+  status: "IMPORTED" | "UPDATED" | "SKIPPED";
+  reason: string;
+}
+
+export interface ImportEvent {
+  importEventId: string;
+  // Other fields based on backend definition
+}
+
+export const MigrationService = {
+  getMockLsStatus: async (): Promise<MockLsSyncStatus> => {
+    const response = await apiClient.get('/v1/migrations/mock-ls/status');
+    return response.data;
+  },
+
+  syncFromMockLs: async (): Promise<any> => {
+    const response = await apiClient.get('/v1/migrations/sync-from-mock-ls');
+    return response.data;
+  },
+
+  resetMigratedData: async (): Promise<any> => {
+    const response = await apiClient.delete('/v1/migrations/reset');
+    return response.data;
+  },
+
+  uploadImportFile: async (formData: FormData): Promise<ImportEvent> => {
+    // Explicitly let axios handle Content-Type for FormData
+    const response = await apiClient.post('/v1/migrations', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  executeImport: async (importEventId: string): Promise<void> => {
+    await apiClient.post(`/v1/migrations/${importEventId}/execute`);
+  }
+};

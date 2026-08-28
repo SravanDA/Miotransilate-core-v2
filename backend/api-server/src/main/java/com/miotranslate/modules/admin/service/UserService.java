@@ -55,6 +55,10 @@ public class UserService {
         User user = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
                 
+        if (targetUserId.equals(updatedBy)) {
+            throw new IllegalStateException("Cannot change your own active status");
+        }
+                
         if (!isActive && user.getIsActive()) {
             long activeAdmins = roleRepository.countActiveAdminsAndFounders();
             long userAdminRoles = roleRepository.countActiveAdminRolesForUser(targetUserId);

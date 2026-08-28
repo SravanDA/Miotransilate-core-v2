@@ -1,5 +1,15 @@
-import { useState, useMemo } from "react";
-import { X, Globe, AlertTriangle, ShieldAlert, Sparkles, Languages } from "lucide-react";
+import {
+  useState,
+  useMemo } from "react";
+import { 
+  X,
+  Globe,
+  Warning as AlertTriangle,
+  Warning as ShieldAlert,
+  Sparkle as Sparkles,
+  Translate as Languages
+} from "@phosphor-icons/react";
+import { Dropdown } from "../ui/Dropdown";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Environment, Tag, LanguageConfig } from "../../types";
@@ -90,7 +100,7 @@ export function PublishModal({
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-main bg-surface">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <Globe className="w-4 h-4" />
+                  <Globe className="w-4 h-4" weight="bold" />
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-text-main">Publish Content Bundle</h2>
@@ -102,7 +112,7 @@ export function PublishModal({
                 disabled={isPublishing}
                 className="p-1.5 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text-main transition-colors disabled:opacity-50 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" weight="bold" />
               </button>
             </div>
 
@@ -111,21 +121,21 @@ export function PublishModal({
               {/* Language Selection */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-text-subtle mb-1.5 flex items-center gap-1.5">
-                  <Languages className="w-3.5 h-3.5 text-primary" />
+                  <Languages className="w-3.5 h-3.5 text-primary" weight="fill" />
                   Language To Publish
                 </label>
-                <select
+                <Dropdown
                   value={activeLangCode}
-                  onChange={(e) => setActiveLangCode(e.target.value)}
-                  className="w-full h-10 px-3 bg-surface border border-border-main rounded-lg text-sm font-semibold text-text-main focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer"
-                >
-                  <option value="eng">🇬🇧 English (Master Copies)</option>
-                  {availableLanguages.map(lang => (
-                    <option key={lang.code} value={lang.code}>
-                      🌐 {lang.name} ({lang.nativeName})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setActiveLangCode}
+                  className="w-full"
+                  options={[
+                    { value: "eng", label: "🇬🇧 English (Master Copies)" },
+                    ...availableLanguages.map(lang => ({
+                      value: lang.code,
+                      label: `🌐 ${lang.name} (${lang.nativeName})`
+                    }))
+                  ]}
+                />
               </div>
 
               {/* Environment Selector */}
@@ -191,7 +201,7 @@ export function PublishModal({
 
                 {targetEnv === 'MOCK' && (
                   <div className="mt-2 flex items-start gap-2.5 text-xs text-emerald-700 dark:text-emerald-300 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" weight="fill" />
                     <p className="leading-normal">
                       <strong>Mock Mode:</strong> Publishes directly to the Mock Language Service / Playground UI so you can test copy updates in real time without approval reviews.
                     </p>
@@ -200,7 +210,7 @@ export function PublishModal({
 
                 {!isEnglish && excludedCount > 0 && (
                   <div className="mt-2 flex items-start gap-2.5 text-xs text-text-muted p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" weight="fill" />
                     <p className="leading-normal">
                       Excluded tags will retain their currently published live values or fallback to English in the target environment.
                     </p>
@@ -209,7 +219,7 @@ export function PublishModal({
                 
                 {targetEnv === 'PRODUCTION' && (
                   <div className="mt-2 flex items-start gap-2.5 text-xs text-danger p-3 bg-danger/10 border border-danger/20 rounded-lg">
-                    <ShieldAlert className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                    <ShieldAlert className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" weight="bold" />
                     <p className="leading-normal">
                       Production releases require an Approval Request review by an authorized admin or support reviewer.
                     </p>

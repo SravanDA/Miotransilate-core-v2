@@ -244,20 +244,27 @@ export function Deployments() {
             setPublishTarget(null);
           }}
           onPublish={async (env, langCode) => {
+            const isEng = langCode === "eng" || langCode === "en";
+            const tags = StoreService.getTags(publishTarget.pageId);
+            const count = isEng
+              ? tags.filter(t => t.english && t.english.trim().length > 0).length
+              : tags.filter(t => t.values[langCode]?.status === "Approved").length;
+
             await StoreService.publish(
               publishTarget.pageId,
               publishTarget.pageName,
               langCode,
               env,
-              StoreService.getTags(publishTarget.pageId).filter(t => t.values[langCode]?.status === "Approved").length
+              count
             );
             setIsPublishModalOpen(false);
             setPublishTarget(null);
           }}
           pageName={publishTarget.pageName}
           totalTags={StoreService.getTags(publishTarget.pageId).length}
-          approvedTagsCount={StoreService.getTags(publishTarget.pageId).filter(t => t.values[publishTarget.lang]?.status === "Approved").length}
-          selectedLanguage={publishTarget.lang}
+          initialLanguage={publishTarget.lang}
+          availableLanguages={StoreService.getActiveLanguages()}
+          tags={StoreService.getTags(publishTarget.pageId)}
         />
       )}
     </div>

@@ -90,8 +90,6 @@ export function PageDetail() {
     });
   }, [tags, searchQuery, selectedStatus, selectedType, selectedLanguage]);
 
-  const approvedCount = tags.filter(t => t.values[selectedLanguage]?.status === "Approved").length;
-
   return (
     <div className="flex flex-col gap-6 max-w-7xl w-full mx-auto">
       {/* Toast */}
@@ -150,6 +148,7 @@ export function PageDetail() {
               onChange={(e) => setSelectedLanguage(e.target.value)}
               className="h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none cursor-pointer"
             >
+              <option value="eng">Language: English (Master) ▾</option>
               {activeLangs.map(lang => (
                 <option key={lang.code} value={lang.code}>Language: {lang.name} ▾</option>
               ))}
@@ -238,14 +237,17 @@ export function PageDetail() {
                 <th className="px-6 py-4 border-r border-border-main/50 w-32">TAG ID</th>
                 <th className="px-6 py-4 border-r border-border-main/50 w-28">TYPE</th>
                 <th className="px-6 py-4 border-r border-border-main/50">ENGLISH</th>
-                <th className="px-6 py-4 border-r border-border-main/50">{activeLangs.find(l => l.code === selectedLanguage)?.name.toUpperCase()}</th>
+                <th className="px-6 py-4 border-r border-border-main/50">
+                  {selectedLanguage === "eng" || selectedLanguage === "en" ? "VERSION" : (activeLangs.find(l => l.code === selectedLanguage)?.name.toUpperCase() || "TRANSLATION")}
+                </th>
                 <th className="px-6 py-4 w-32">STATUS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-main">
               {filteredTags.length > 0 ? (
                 filteredTags.map((tag) => {
-                  const val = tag.values[selectedLanguage] || { text: "", status: tag.english ? "No Trans" : "No Eng" };
+                  const isEng = selectedLanguage === "eng" || selectedLanguage === "en";
+                  const val = !isEng ? (tag.values[selectedLanguage] || { text: "", status: tag.english ? "No Trans" : "No Eng" }) : { text: `v${tag.englishVersion || 1}`, status: "Approved" };
                   
                   return (
                   <tr key={tag.id} className="hover:bg-surface-hover transition-colors">
@@ -263,10 +265,22 @@ export function PageDetail() {
                       {tag.english ? `"${tag.english}"` : <span className="text-text-subtle italic">(Draft)</span>}
                     </td>
                     <td className="px-6 py-4 border-r border-border-main/50 text-right font-sans" dir="auto">
-                      {val.text ? `"${val.text}"` : <span className="text-text-subtle">—</span>}
+                      {isEng ? (
+                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs font-bold">
+                          v{tag.englishVersion || 1}
+                        </span>
+                      ) : (
+                        val.text ? `"${val.text}"` : <span className="text-text-subtle">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
-                      <TranslationStatusBadge status={val.status as any} />
+                      {isEng ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-semibold text-xs border border-emerald-500/20">
+                          Master
+                        </span>
+                      ) : (
+                        <TranslationStatusBadge status={val.status as any} />
+                      )}
                     </td>
                   </tr>
                 )})
@@ -382,19 +396,25 @@ export function PageDetail() {
         onClose={() => setIsPublishModalOpen(false)}
         onPublish={async (env, langCode) => {
           setIsPublishModalOpen(false);
+          const isEng = langCode === "eng" || langCode === "en";
+          const count = isEng 
+            ? tags.filter(t => t.english && t.english.trim().length > 0).length 
+            : tags.filter(t => t.values[langCode]?.status === "Approved").length;
+
           await StoreService.publish(
             pageId,
             pageInfo.name,
             langCode,
             env,
-            tags.filter(t => t.values[langCode]?.status === "Approved").length
+            count
           );
-          showToast(`Published ${langCode} bundle to ${env} successfully!`);
+          showToast(`Published ${isEng ? 'English' : langCode} bundle to ${env} successfully!`);
         }}
         pageName={pageInfo.name}
         totalTags={tags.length}
-        approvedTagsCount={approvedCount}
-        selectedLanguage={selectedLanguage}
+        initialLanguage={selectedLanguage}
+        availableLanguages={activeLangs}
+        tags={tags}
       />}
     </div>
   );

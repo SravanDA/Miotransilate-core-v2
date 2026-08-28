@@ -1,17 +1,20 @@
-import { useState } from "react";
-import { X, Globe, AlertTriangle, ShieldAlert, Sparkles } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, Globe, AlertTriangle, ShieldAlert, Sparkles, Languages } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Environment } from "../../types";
+import type { Environment, Tag, LanguageConfig } from "../../types";
 
 interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPublish: (env: Environment, langCode: string) => void;
   totalTags: number;
-  approvedTagsCount: number;
+  approvedTagsCount?: number;
   pageName: string;
-  selectedLanguage: string;
+  selectedLanguage?: string;
+  initialLanguage?: string;
+  availableLanguages?: LanguageConfig[];
+  tags?: Tag[];
 }
 
 export function PublishModal({
@@ -21,17 +24,40 @@ export function PublishModal({
   totalTags,
   approvedTagsCount,
   pageName,
-  selectedLanguage
+  selectedLanguage = "eng",
+  initialLanguage,
+  availableLanguages = [],
+  tags = []
 }: PublishModalProps) {
   const [targetEnv, setTargetEnv] = useState<Environment>("MOCK");
+  const [activeLangCode, setActiveLangCode] = useState<string>(initialLanguage || selectedLanguage || "eng");
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const excludedCount = totalTags - approvedTagsCount;
+  const isEnglish = activeLangCode === "eng" || activeLangCode === "en";
+
+  const computedApprovedCount = useMemo(() => {
+    if (tags && tags.length > 0) {
+      if (isEnglish) {
+        return tags.filter(t => t.english && t.english.trim().length > 0).length;
+      }
+      return tags.filter(t => t.values && t.values[activeLangCode]?.status === "Approved").length;
+    }
+    return approvedTagsCount !== undefined ? approvedTagsCount : totalTags;
+  }, [tags, activeLangCode, isEnglish, approvedTagsCount, totalTags]);
+
+  const effectiveTotalTags = tags && tags.length > 0 ? tags.length : totalTags;
+  const excludedCount = Math.max(0, effectiveTotalTags - computedApprovedCount);
+
+  const activeLangName = useMemo(() => {
+    if (isEnglish) return "English (Master)";
+    const found = availableLanguages.find(l => l.code === activeLangCode);
+    return found ? found.name : activeLangCode.toUpperCase();
+  }, [isEnglish, activeLangCode, availableLanguages]);
 
   const handlePublish = () => {
     setIsPublishing(true);
     setTimeout(() => {
-      onPublish(targetEnv, selectedLanguage);
+      onPublish(targetEnv, isEnglish ? "eng" : activeLangCode);
       setIsPublishing(false);
       onClose();
     }, 800);
@@ -67,8 +93,8 @@ export function PublishModal({
                   <Globe className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-text-main">Publish Content</h2>
-                  <p className="text-xs text-text-muted">Target environment release bundle</p>
+                  <h2 className="text-base font-semibold text-text-main">Publish Content Bundle</h2>
+                  <p className="text-xs text-text-muted">{pageName} · Release Pipeline</p>
                 </div>
               </div>
               <button 
@@ -82,13 +108,29 @@ export function PublishModal({
 
             {/* Content */}
             <div className="p-6 bg-surface space-y-5">
-              <div className="text-sm text-text-muted leading-relaxed">
-                Select the target environment to publish approved <strong className="text-text-main uppercase font-semibold">{selectedLanguage}</strong> translations for <strong className="text-text-main">{pageName}</strong>.
+              {/* Language Selection */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-text-subtle mb-1.5 flex items-center gap-1.5">
+                  <Languages className="w-3.5 h-3.5 text-primary" />
+                  Language To Publish
+                </label>
+                <select
+                  value={activeLangCode}
+                  onChange={(e) => setActiveLangCode(e.target.value)}
+                  className="w-full h-10 px-3 bg-surface border border-border-main rounded-lg text-sm font-semibold text-text-main focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer"
+                >
+                  <option value="eng">🇬🇧 English (Master Copies)</option>
+                  {availableLanguages.map(lang => (
+                    <option key={lang.code} value={lang.code}>
+                      🌐 {lang.name} ({lang.nativeName})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Environment Selector */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-subtle mb-2">Target Environment</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-text-subtle mb-1.5">Target Environment</label>
                 <div className="grid grid-cols-4 gap-2">
                   {ENV_CONFIGS.map(({ env, label, badge, badgeColor }) => {
                     const isSelected = targetEnv === env;
@@ -122,35 +164,42 @@ export function PublishModal({
 
               {/* Summary Box */}
               <div className="bg-surface-hover border border-border-main rounded-lg p-4 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-text-subtle">Pre-Publishing Summary</h4>
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-text-subtle">Pre-Publishing Summary</h4>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-surface border border-border-main text-text-main">
+                    {activeLangName}
+                  </span>
+                </div>
                 
                 <div className="flex justify-between items-center text-sm py-1 border-b border-border-main/60">
                   <span className="text-text-main font-medium flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-success ring-4 ring-success/20" />
-                    Included (Approved)
+                    {isEnglish ? "Master English Tags" : "Included (Approved)"}
                   </span>
-                  <span className="font-bold text-text-main">{approvedTagsCount}</span>
+                  <span className="font-bold text-text-main">{computedApprovedCount}</span>
                 </div>
                 
-                <div className="flex justify-between items-center text-sm py-1">
-                  <span className="text-text-muted font-medium flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-warning ring-4 ring-warning/20" />
-                    Excluded (Draft / Stale / Untranslated)
-                  </span>
-                  <span className="font-bold text-text-muted">{excludedCount}</span>
-                </div>
+                {!isEnglish && (
+                  <div className="flex justify-between items-center text-sm py-1">
+                    <span className="text-text-muted font-medium flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-warning ring-4 ring-warning/20" />
+                      Excluded (Draft / Stale / Untranslated)
+                    </span>
+                    <span className="font-bold text-text-muted">{excludedCount}</span>
+                  </div>
+                )}
 
                 {targetEnv === 'MOCK' && (
-                  <div className="mt-3 flex items-start gap-2.5 text-xs text-emerald-700 dark:text-emerald-300 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <div className="mt-2 flex items-start gap-2.5 text-xs text-emerald-700 dark:text-emerald-300 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                     <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                     <p className="leading-normal">
-                      <strong>Mock Mode:</strong> Publishes directly to the Mock Language Service / Playground UI so you can test and view your copy updates immediately without approval review.
+                      <strong>Mock Mode:</strong> Publishes directly to the Mock Language Service / Playground UI so you can test copy updates in real time without approval reviews.
                     </p>
                   </div>
                 )}
 
-                {excludedCount > 0 && (
-                  <div className="mt-3 flex items-start gap-2.5 text-xs text-text-muted p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                {!isEnglish && excludedCount > 0 && (
+                  <div className="mt-2 flex items-start gap-2.5 text-xs text-text-muted p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                     <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                     <p className="leading-normal">
                       Excluded tags will retain their currently published live values or fallback to English in the target environment.
@@ -159,7 +208,7 @@ export function PublishModal({
                 )}
                 
                 {targetEnv === 'PRODUCTION' && (
-                  <div className="mt-3 flex items-start gap-2.5 text-xs text-danger p-3 bg-danger/10 border border-danger/20 rounded-lg">
+                  <div className="mt-2 flex items-start gap-2.5 text-xs text-danger p-3 bg-danger/10 border border-danger/20 rounded-lg">
                     <ShieldAlert className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
                     <p className="leading-normal">
                       Production releases require an Approval Request review by an authorized admin or support reviewer.
@@ -182,7 +231,7 @@ export function PublishModal({
               <button 
                 type="button"
                 onClick={handlePublish}
-                disabled={isPublishing || approvedTagsCount === 0}
+                disabled={isPublishing || computedApprovedCount === 0}
                 className={cn(
                   "px-5 py-2 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-xs cursor-pointer",
                   targetEnv === 'PRODUCTION' 
@@ -190,7 +239,7 @@ export function PublishModal({
                     : targetEnv === 'MOCK'
                     ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-primary hover:bg-primary-hover",
-                  (isPublishing || approvedTagsCount === 0) ? "opacity-50 cursor-not-allowed" : "active:scale-95"
+                  (isPublishing || computedApprovedCount === 0) ? "opacity-50 cursor-not-allowed" : "active:scale-95"
                 )}
               >
                 {isPublishing 
@@ -198,7 +247,7 @@ export function PublishModal({
                   : targetEnv === 'PRODUCTION' 
                   ? "Request Approval" 
                   : targetEnv === 'MOCK'
-                  ? "Publish to Mock UI"
+                  ? `Publish ${isEnglish ? 'English' : activeLangName} to Mock UI`
                   : `Publish to ${targetEnv}`}
               </button>
             </div>

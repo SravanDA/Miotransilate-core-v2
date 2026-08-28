@@ -131,22 +131,36 @@ public class PublishingService {
             List<String> removeTags = new ArrayList<>();
             List<Tag> allTags = tagRepository.findByPageId(release.getPageId());
 
+            boolean isEnglish = "eng".equalsIgnoreCase(release.getLanguageCode()) || "en".equalsIgnoreCase(release.getLanguageCode());
+            String targetLang = isEnglish ? "eng" : release.getLanguageCode();
+
             for (Tag tag : allTags) {
                 if ("DEPRECATED".equals(tag.getStatus())) {
                     removeTags.add(tag.getTagId());
                 } else {
-                    Translation t = translationRepository.findById(new TranslationId(tag.getTagId(), release.getLanguageCode())).orElse(null);
-                    if (t != null && "APPROVED".equals(t.getStatus()) && t.getCurrentVersionNumber() != null) {
-                        TranslationVersion tv = translationVersionRepository.findById(new TranslationVersionId(tag.getTagId(), release.getLanguageCode(), t.getCurrentVersionNumber())).orElse(null);
-                        if (tv != null) {
-                            tagsToPublish.put(tag.getTagId(), tv.getText());
+                    if (isEnglish) {
+                        EnglishCopy ec = englishCopyRepository.findById(tag.getTagId()).orElse(null);
+                        if (ec != null && ec.getCurrentVersionNumber() != null) {
+                            EnglishCopyVersion ecv = englishCopyVersionRepository.findById(
+                                new EnglishCopyVersionId(tag.getTagId(), ec.getCurrentVersionNumber())).orElse(null);
+                            if (ecv != null && ecv.getText() != null) {
+                                tagsToPublish.put(tag.getTagId(), ecv.getText());
+                            }
+                        }
+                    } else {
+                        Translation t = translationRepository.findById(new TranslationId(tag.getTagId(), release.getLanguageCode())).orElse(null);
+                        if (t != null && "APPROVED".equals(t.getStatus()) && t.getCurrentVersionNumber() != null) {
+                            TranslationVersion tv = translationVersionRepository.findById(new TranslationVersionId(tag.getTagId(), release.getLanguageCode(), t.getCurrentVersionNumber())).orElse(null);
+                            if (tv != null && tv.getText() != null) {
+                                tagsToPublish.put(tag.getTagId(), tv.getText());
+                            }
                         }
                     }
                 }
             }
 
             PushResult pushResult = languageServicesClient.pushBundle(
-                    release.getPageId(), release.getLanguageCode(), release.getEnvironment(), tagsToPublish, removeTags);
+                    release.getPageId(), targetLang, release.getEnvironment(), tagsToPublish, removeTags);
                     
             // Phase 3: Finalize
             finalizeRelease(release.getReleaseId(), pushResult);
@@ -354,12 +368,14 @@ public class PublishingService {
             }
         }
 
+        String targetLang = isEnglish ? "eng" : languageCode;
+
         PushResult pushResult = languageServicesClient.pushBundle(
-                pageId, languageCode, environment, tagsToPublish, removeTags);
+                pageId, targetLang, environment, tagsToPublish, removeTags);
 
         // If publishing to MOCK environment, also mirror to DEV in MockLsDataStore so default DEV playground view is synced
         if ("MOCK".equalsIgnoreCase(environment)) {
-            languageServicesClient.pushBundle(pageId, languageCode, "DEV", tagsToPublish, removeTags);
+            languageServicesClient.pushBundle(pageId, targetLang, "DEV", tagsToPublish, removeTags);
         }
 
         finalizeRelease(release.getReleaseId(), pushResult);

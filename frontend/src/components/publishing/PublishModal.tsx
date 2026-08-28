@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Globe, AlertTriangle, ShieldAlert } from "lucide-react";
+import { X, Globe, AlertTriangle, ShieldAlert, Sparkles } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Environment } from "../../types";
@@ -23,7 +23,7 @@ export function PublishModal({
   pageName,
   selectedLanguage
 }: PublishModalProps) {
-  const [targetEnv, setTargetEnv] = useState<Environment>("DEV");
+  const [targetEnv, setTargetEnv] = useState<Environment>("MOCK");
   const [isPublishing, setIsPublishing] = useState(false);
 
   const excludedCount = totalTags - approvedTagsCount;
@@ -34,8 +34,15 @@ export function PublishModal({
       onPublish(targetEnv, selectedLanguage);
       setIsPublishing(false);
       onClose();
-    }, 1000);
+    }, 800);
   };
+
+  const ENV_CONFIGS: { env: Environment; label: string; badge?: string; badgeColor?: string }[] = [
+    { env: "MOCK", label: "MOCK UI", badge: "Instant", badgeColor: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
+    { env: "DEV", label: "DEV" },
+    { env: "QA", label: "QA" },
+    { env: "PRODUCTION", label: "PROD", badge: "Approval", badgeColor: "bg-danger/15 text-danger" }
+  ];
 
   return (
     <AnimatePresence>
@@ -80,34 +87,37 @@ export function PublishModal({
               </div>
 
               {/* Environment Selector */}
-              <div className="grid grid-cols-3 gap-3">
-                {(['DEV', 'QA', 'PRODUCTION'] as Environment[]).map((env) => {
-                  const isSelected = targetEnv === env;
-                  return (
-                    <button
-                      key={env}
-                      type="button"
-                      onClick={() => setTargetEnv(env)}
-                      className={cn(
-                        "p-3.5 rounded-lg border text-sm font-semibold transition-all flex flex-col items-center gap-1.5 cursor-pointer relative",
-                        isSelected 
-                          ? "bg-primary/10 border-primary text-primary shadow-xs ring-2 ring-primary/20" 
-                          : "bg-surface-hover border-border-main text-text-muted hover:border-text-muted/40 hover:text-text-main",
-                        "active:scale-95"
-                      )}
-                    >
-                      <span className="font-bold">{env}</span>
-                      {env === 'PRODUCTION' && (
-                        <span className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider",
-                          isSelected ? "bg-danger/15 text-danger" : "bg-surface border border-border-main text-text-subtle"
-                        )}>
-                          Approval
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-text-subtle mb-2">Target Environment</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {ENV_CONFIGS.map(({ env, label, badge, badgeColor }) => {
+                    const isSelected = targetEnv === env;
+                    return (
+                      <button
+                        key={env}
+                        type="button"
+                        onClick={() => setTargetEnv(env)}
+                        className={cn(
+                          "p-2.5 rounded-lg border text-sm font-semibold transition-all flex flex-col items-center gap-1 cursor-pointer relative",
+                          isSelected 
+                            ? "bg-primary/10 border-primary text-primary shadow-xs ring-2 ring-primary/20" 
+                            : "bg-surface-hover border-border-main text-text-muted hover:border-text-muted/40 hover:text-text-main",
+                          "active:scale-95"
+                        )}
+                      >
+                        <span className="font-bold text-xs">{label}</span>
+                        {badge && (
+                          <span className={cn(
+                            "text-[9px] px-1 py-0.2 rounded font-semibold uppercase tracking-wider",
+                            isSelected && badgeColor ? badgeColor : "bg-surface border border-border-main text-text-subtle"
+                          )}>
+                            {badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Summary Box */}
@@ -129,6 +139,15 @@ export function PublishModal({
                   </span>
                   <span className="font-bold text-text-muted">{excludedCount}</span>
                 </div>
+
+                {targetEnv === 'MOCK' && (
+                  <div className="mt-3 flex items-start gap-2.5 text-xs text-emerald-700 dark:text-emerald-300 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <p className="leading-normal">
+                      <strong>Mock Mode:</strong> Publishes directly to the Mock Language Service / Playground UI so you can test and view your copy updates immediately without approval review.
+                    </p>
+                  </div>
+                )}
 
                 {excludedCount > 0 && (
                   <div className="mt-3 flex items-start gap-2.5 text-xs text-text-muted p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -168,11 +187,19 @@ export function PublishModal({
                   "px-5 py-2 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2 shadow-xs cursor-pointer",
                   targetEnv === 'PRODUCTION' 
                     ? "bg-danger hover:bg-danger/90" 
+                    : targetEnv === 'MOCK'
+                    ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-primary hover:bg-primary-hover",
                   (isPublishing || approvedTagsCount === 0) ? "opacity-50 cursor-not-allowed" : "active:scale-95"
                 )}
               >
-                {isPublishing ? "Processing..." : targetEnv === 'PRODUCTION' ? "Request Approval" : `Publish to ${targetEnv}`}
+                {isPublishing 
+                  ? "Publishing..." 
+                  : targetEnv === 'PRODUCTION' 
+                  ? "Request Approval" 
+                  : targetEnv === 'MOCK'
+                  ? "Publish to Mock UI"
+                  : `Publish to ${targetEnv}`}
               </button>
             </div>
           </motion.div>

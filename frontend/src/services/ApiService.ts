@@ -1,4 +1,4 @@
-import type { Page, Tag, TranslationValue } from "../types";
+import type { Page, Tag, TranslationValue, Environment } from "../types";
 
 const API_BASE = '/v1';
 
@@ -93,5 +93,16 @@ export class ApiService {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "APPROVE" })
     });
+  }
+
+  static async publish(pageId: string, languageCode: string, environment: Environment) {
+    const res = await fetch(`${API_BASE}/pages/${pageId}/languages/${languageCode}/environments/${environment}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to publish to ${environment}`);
+    }
+    return await res.json();
   }
 }

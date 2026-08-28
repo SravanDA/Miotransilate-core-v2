@@ -243,19 +243,14 @@ export function Deployments() {
             setIsPublishModalOpen(false);
             setPublishTarget(null);
           }}
-          onPublish={(env, langCode) => {
-            StoreService.recordDeployment({
-              id: `dep-${Date.now()}`,
-              pageId: publishTarget.pageId,
-              pageName: publishTarget.pageName,
-              language: langCode,
-              environment: env,
-              tagCount: StoreService.getTags(publishTarget.pageId).filter(t => t.values[langCode]?.status === "Approved").length,
-              version: (getLatestVersion(publishTarget.pageId, langCode, env)?.version || 0) + 1,
-              publishedAt: new Date().toISOString(),
-              publishedBy: "System User",
-              status: "SUCCESSFUL"
-            });
+          onPublish={async (env, langCode) => {
+            await StoreService.publish(
+              publishTarget.pageId,
+              publishTarget.pageName,
+              langCode,
+              env,
+              StoreService.getTags(publishTarget.pageId).filter(t => t.values[langCode]?.status === "Approved").length
+            );
             setIsPublishModalOpen(false);
             setPublishTarget(null);
           }}

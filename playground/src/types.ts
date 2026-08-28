@@ -1,4 +1,4 @@
-export type Environment = "DEV" | "QA" | "PRODUCTION";
+export type Environment = "MOCK" | "DEV" | "QA" | "PRODUCTION";
 export type Language = "eng" | "arabic" | "spanish" | "italian" | "french" | "german" | "turkish" | "bulgarian";
 
 export const LANGUAGES = [

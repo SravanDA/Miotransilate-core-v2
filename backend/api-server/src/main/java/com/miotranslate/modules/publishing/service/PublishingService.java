@@ -1,5 +1,10 @@
 package com.miotranslate.modules.publishing.service;
 
+import com.miotranslate.modules.content.model.EnglishCopy;
+import com.miotranslate.modules.content.model.EnglishCopyVersion;
+import com.miotranslate.modules.content.model.EnglishCopyVersionId;
+import com.miotranslate.modules.content.repository.EnglishCopyRepository;
+import com.miotranslate.modules.content.repository.EnglishCopyVersionRepository;
 import com.miotranslate.modules.publishing.model.PublishingApprovalRequest;
 import com.miotranslate.modules.publishing.model.Release;
 import com.miotranslate.modules.publishing.repository.PublishingApprovalRequestRepository;
@@ -42,6 +47,8 @@ public class PublishingService {
     private final TagRepository tagRepository;
     private final TranslationRepository translationRepository;
     private final TranslationVersionRepository translationVersionRepository;
+    private final EnglishCopyRepository englishCopyRepository;
+    private final EnglishCopyVersionRepository englishCopyVersionRepository;
 
     public PublishingService(PublishingApprovalRequestRepository parRepository,
                              ReleaseRepository releaseRepository,
@@ -51,7 +58,9 @@ public class PublishingService {
                              JobDispatcher jobDispatcher,
                              TagRepository tagRepository,
                              TranslationRepository translationRepository,
-                             TranslationVersionRepository translationVersionRepository) {
+                             TranslationVersionRepository translationVersionRepository,
+                             EnglishCopyRepository englishCopyRepository,
+                             EnglishCopyVersionRepository englishCopyVersionRepository) {
         this.parRepository = parRepository;
         this.releaseRepository = releaseRepository;
         this.snapshotRepository = snapshotRepository;
@@ -61,12 +70,15 @@ public class PublishingService {
         this.tagRepository = tagRepository;
         this.translationRepository = translationRepository;
         this.translationVersionRepository = translationVersionRepository;
+        this.englishCopyRepository = englishCopyRepository;
+        this.englishCopyVersionRepository = englishCopyVersionRepository;
     }
 
     @Transactional(readOnly = true)
     public Map<String, Object> getEnvironmentStatus(String pageId, String languageCode) {
         // Find latest release per environment
         Map<String, Object> status = new HashMap<>();
+        status.put("MOCK", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "MOCK"));
         status.put("DEV", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "DEV"));
         status.put("QA", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "QA"));
         status.put("PRODUCTION", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "PRODUCTION"));
@@ -293,6 +305,64 @@ public class PublishingService {
         oldRelease.setStatus("ROLLED_BACK");
         releaseRepository.save(oldRelease);
         
+        return release;
+    }
+
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public Release publishDirect(String pageId, String languageCode, String environment, UUID publishedBy) {
+        Release release = new Release();
+        release.setPageId(pageId);
+        release.setLanguageCode(languageCode);
+        release.setEnvironment(environment);
+        release.setPublishedBy(publishedBy);
+        release.setStatus("IN_PROGRESS");
+        release.setTriggerSource("DIRECT_PUBLISH");
+
+        Integer maxVersion = releaseRepository.findMaxDeploymentVersion(pageId, languageCode, environment);
+        release.setDeploymentVersion((maxVersion == null ? 0 : maxVersion) + 1);
+        release = releaseRepository.save(release);
+
+        Map<String, String> tagsToPublish = new HashMap<>();
+        List<String> removeTags = new ArrayList<>();
+        List<Tag> allTags = tagRepository.findByPageId(pageId);
+
+        boolean isEnglish = "eng".equalsIgnoreCase(languageCode) || "en".equalsIgnoreCase(languageCode);
+
+        for (Tag tag : allTags) {
+            if ("DEPRECATED".equals(tag.getStatus())) {
+                removeTags.add(tag.getTagId());
+            } else {
+                if (isEnglish) {
+                    EnglishCopy ec = englishCopyRepository.findById(tag.getTagId()).orElse(null);
+                    if (ec != null && ec.getCurrentVersionNumber() != null) {
+                        EnglishCopyVersion ecv = englishCopyVersionRepository.findById(
+                            new EnglishCopyVersionId(tag.getTagId(), ec.getCurrentVersionNumber())).orElse(null);
+                        if (ecv != null && ecv.getText() != null) {
+                            tagsToPublish.put(tag.getTagId(), ecv.getText());
+                        }
+                    }
+                } else {
+                    Translation t = translationRepository.findById(new TranslationId(tag.getTagId(), languageCode)).orElse(null);
+                    if (t != null && "APPROVED".equals(t.getStatus()) && t.getCurrentVersionNumber() != null) {
+                        TranslationVersion tv = translationVersionRepository.findById(
+                            new TranslationVersionId(tag.getTagId(), languageCode, t.getCurrentVersionNumber())).orElse(null);
+                        if (tv != null && tv.getText() != null) {
+                            tagsToPublish.put(tag.getTagId(), tv.getText());
+                        }
+                    }
+                }
+            }
+        }
+
+        PushResult pushResult = languageServicesClient.pushBundle(
+                pageId, languageCode, environment, tagsToPublish, removeTags);
+
+        // If publishing to MOCK environment, also mirror to DEV in MockLsDataStore so default DEV playground view is synced
+        if ("MOCK".equalsIgnoreCase(environment)) {
+            languageServicesClient.pushBundle(pageId, languageCode, "DEV", tagsToPublish, removeTags);
+        }
+
+        finalizeRelease(release.getReleaseId(), pushResult);
         return release;
     }
 }

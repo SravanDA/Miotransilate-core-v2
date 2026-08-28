@@ -20,7 +20,7 @@ interface ToolbarProps {
   onViewChange: (view: 'playground' | 'settings') => void;
 }
 
-const ENVIRONMENTS: Environment[] = ["DEV", "QA", "PRODUCTION"];
+const ENVIRONMENTS: Environment[] = ["MOCK", "DEV", "QA", "PRODUCTION"];
 
 export function Toolbar(props: ToolbarProps) {
   return (

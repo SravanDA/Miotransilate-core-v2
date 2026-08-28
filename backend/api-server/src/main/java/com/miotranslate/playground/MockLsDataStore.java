@@ -35,7 +35,7 @@ public class MockLsDataStore {
         this.baseline = baseline;
         saveBaseline();
         // Initialize environments if they don't exist yet
-        for (String env : new String[]{"DEV", "QA", "PRODUCTION"}) {
+        for (String env : new String[]{"DEV", "QA", "PRODUCTION", "MOCK"}) {
             environments.put(env, loadEnvironment(env, baseline));
         }
     }

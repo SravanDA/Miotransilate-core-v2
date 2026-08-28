@@ -37,6 +37,17 @@ public class PublishingController {
         return ResponseEntity.ok(publishingService.getPrePublishingSummary(pageId, languageCode, environment));
     }
 
+    @PostMapping("/pages/{pageId}/languages/{languageCode}/environments/{environment}/publish")
+    public ResponseEntity<Release> publishDirect(
+            @PathVariable String pageId,
+            @PathVariable String languageCode,
+            @PathVariable String environment) {
+            
+        UUID userId = SecurityUtils.getCurrentUserId();
+        Release release = publishingService.publishDirect(pageId, languageCode, environment, userId);
+        return ResponseEntity.ok().body(release);
+    }
+
     @PostMapping("/pages/{pageId}/languages/{languageCode}/environments/{environment}/approval-requests")
     public ResponseEntity<PublishingApprovalRequest> requestPublishingApproval(
             @PathVariable String pageId,

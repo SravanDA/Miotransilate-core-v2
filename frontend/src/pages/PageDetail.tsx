@@ -380,21 +380,16 @@ export function PageDetail() {
       {pageId && <PublishModal 
         isOpen={isPublishModalOpen}
         onClose={() => setIsPublishModalOpen(false)}
-        onPublish={(env, langCode) => {
+        onPublish={async (env, langCode) => {
           setIsPublishModalOpen(false);
-          StoreService.recordDeployment({
-            id: `dep-${Date.now()}`,
+          await StoreService.publish(
             pageId,
-            pageName: pageInfo.name,
-            language: langCode,
-            environment: env,
-            tagCount: tags.filter(t => t.values[langCode]?.status === "Approved").length,
-            version: 1, // Simplified versioning
-            publishedAt: new Date().toISOString(),
-            publishedBy: "System User",
-            status: "SUCCESSFUL"
-          });
-          showToast(`Published ${langCode} bundle to ${env} successfully`);
+            pageInfo.name,
+            langCode,
+            env,
+            tags.filter(t => t.values[langCode]?.status === "Approved").length
+          );
+          showToast(`Published ${langCode} bundle to ${env} successfully!`);
         }}
         pageName={pageInfo.name}
         totalTags={tags.length}

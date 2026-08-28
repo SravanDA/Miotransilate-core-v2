@@ -16,7 +16,7 @@ export type CopyType =
   | "Tooltip" 
   | "General";
 
-export type Environment = "DEV" | "QA" | "PRODUCTION";
+export type Environment = "MOCK" | "DEV" | "QA" | "PRODUCTION";
 
 export interface TranslationValue {
   text: string;

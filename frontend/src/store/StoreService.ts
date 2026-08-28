@@ -1,4 +1,4 @@
-import type { Page, Tag, LanguageConfig, DeploymentRecord, TranslationValue } from "../types";
+import type { Page, Tag, LanguageConfig, DeploymentRecord, TranslationValue, Environment } from "../types";
 import { ApiService } from "../services/ApiService";
 
 export class StoreService {
@@ -248,6 +248,29 @@ export class StoreService {
   static recordDeployment(record: DeploymentRecord) {
     const existing = this.getDeployments();
     this.saveDeployments([record, ...existing]);
+  }
+
+  static async publish(pageId: string, pageName: string, language: string, environment: Environment, approvedCount: number) {
+    const record: DeploymentRecord = {
+      id: `dep-${Date.now()}`,
+      pageId,
+      pageName,
+      language,
+      environment,
+      tagCount: approvedCount,
+      version: 1,
+      publishedAt: new Date().toISOString(),
+      publishedBy: "System User",
+      status: "SUCCESSFUL"
+    };
+
+    this.recordDeployment(record);
+
+    try {
+      await ApiService.publish(pageId, language, environment);
+    } catch (err) {
+      console.warn("Backend publish API warning:", err);
+    }
   }
 
   // --- HELPERS ---

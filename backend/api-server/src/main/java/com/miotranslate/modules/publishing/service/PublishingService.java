@@ -49,6 +49,7 @@ public class PublishingService {
     private final TranslationVersionRepository translationVersionRepository;
     private final EnglishCopyRepository englishCopyRepository;
     private final EnglishCopyVersionRepository englishCopyVersionRepository;
+    private final com.miotranslate.shared.auth.PermissionService permissionService;
 
     public PublishingService(PublishingApprovalRequestRepository parRepository,
                              ReleaseRepository releaseRepository,
@@ -60,7 +61,8 @@ public class PublishingService {
                              TranslationRepository translationRepository,
                              TranslationVersionRepository translationVersionRepository,
                              EnglishCopyRepository englishCopyRepository,
-                             EnglishCopyVersionRepository englishCopyVersionRepository) {
+                             EnglishCopyVersionRepository englishCopyVersionRepository,
+                             com.miotranslate.shared.auth.PermissionService permissionService) {
         this.parRepository = parRepository;
         this.releaseRepository = releaseRepository;
         this.snapshotRepository = snapshotRepository;
@@ -72,6 +74,7 @@ public class PublishingService {
         this.translationVersionRepository = translationVersionRepository;
         this.englishCopyRepository = englishCopyRepository;
         this.englishCopyVersionRepository = englishCopyVersionRepository;
+        this.permissionService = permissionService;
     }
 
     @Transactional(readOnly = true)
@@ -93,8 +96,17 @@ public class PublishingService {
         return summary;
     }
 
+    private void requirePublishPermission(UUID userId, String environment) {
+        String reqPerm = "PUBLISH_" + environment.toUpperCase();
+        if (!permissionService.hasPermission(userId, reqPerm)) {
+            throw new org.springframework.security.access.AccessDeniedException("Missing permission: " + reqPerm);
+        }
+    }
+
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public PublishingApprovalRequest requestPublishingApproval(String pageId, String languageCode, String environment, UUID requestedBy) {
+        requirePublishPermission(requestedBy, environment);
+        
         if (parRepository.existsByPageIdAndLanguageCodeAndEnvironmentAndStatus(pageId, languageCode, environment, "PENDING")) {
             throw new IllegalStateException("An active publishing request already exists");
         }
@@ -176,6 +188,8 @@ public class PublishingService {
         PublishingApprovalRequest par = parRepository.findByIdForUpdate(parId)
                 .orElseThrow(() -> new IllegalArgumentException("PAR not found"));
 
+        requirePublishPermission(approvedBy, par.getEnvironment());
+
         ConcurrencyUtils.validateETag(ifMatchETag, par.getEtagVersion(), "PUBLISHING_APPROVAL_REQUEST", parId.toString());
 
         if (!"PENDING".equals(par.getStatus())) {
@@ -227,6 +241,9 @@ public class PublishingService {
     protected PublishingApprovalRequest rejectPublishingApproval(UUID parId, String ifMatchETag, UUID rejectedBy) {
         PublishingApprovalRequest par = parRepository.findByIdForUpdate(parId)
                 .orElseThrow(() -> new IllegalArgumentException("PAR not found"));
+        
+        requirePublishPermission(rejectedBy, par.getEnvironment());
+        
         ConcurrencyUtils.validateETag(ifMatchETag, par.getEtagVersion(), "PUBLISHING_APPROVAL_REQUEST", parId.toString());
         par.setStatus("REJECTED");
         par.setDecidedBy(rejectedBy);
@@ -324,6 +341,8 @@ public class PublishingService {
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public Release publishDirect(String pageId, String languageCode, String environment, UUID publishedBy) {
+        requirePublishPermission(publishedBy, environment);
+        
         Release release = new Release();
         release.setPageId(pageId);
         release.setLanguageCode(languageCode);

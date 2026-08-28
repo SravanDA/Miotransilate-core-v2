@@ -16,10 +16,12 @@ public class AuditService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final com.miotranslate.shared.auth.PermissionService permissionService;
 
-    public AuditService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+    public AuditService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper, com.miotranslate.shared.auth.PermissionService permissionService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.permissionService = permissionService;
     }
 
     /**
@@ -37,7 +39,24 @@ public class AuditService {
 
     private void recordFull(String action, String entityType, String entityId, Object beforeState, Object afterState, String apiId, String detail) {
         UUID auditRecordId = UUID.randomUUID();
-        UUID userId = SecurityUtils.getCurrentUserId();
+        UUID userId = null;
+        try {
+            userId = SecurityUtils.getCurrentUserId();
+        } catch (Exception e) {
+            // System operations might not have an authenticated user
+        }
+        
+        String enhancedDetail = detail;
+        if (userId != null) {
+            try {
+                java.util.List<String> roles = permissionService.getRoles(userId);
+                if (!roles.isEmpty()) {
+                    enhancedDetail = (detail != null ? detail + " " : "") + "[Roles: " + String.join(", ", roles) + "]";
+                }
+            } catch (Exception e) {
+                // Ignore error fetching roles
+            }
+        }
         
         String beforeJson = null;
         String afterJson = null;
@@ -54,7 +73,7 @@ public class AuditService {
             String sql = """
                 INSERT INTO system_ops.audit_records 
                 (audit_record_id, action, subject_entity_type, subject_entity_id, performed_by_user_id, before_state, after_state, detail) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?)
                 """;
 
             jdbcTemplate.update(sql, 
@@ -65,7 +84,7 @@ public class AuditService {
                 userId, 
                 beforeJson, 
                 afterJson, 
-                detail
+                enhancedDetail
             );
         } catch (Exception e) {
             log.debug("Audit insert fallback: {}", e.getMessage());

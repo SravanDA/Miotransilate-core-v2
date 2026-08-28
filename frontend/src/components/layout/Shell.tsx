@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../ThemeProvider";
+import { useAuth } from "../../contexts/AuthContext";
 
 const navTabs = [
   { name: "Content", path: "/pages" },
@@ -25,7 +26,12 @@ const navTabs = [
 export function Shell() {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
-  const [activeRole, setActiveRole] = useState<"PM" | "LR" | "SR" | "FN" | "DEV">("PM");
+  const { user } = useAuth();
+  
+  const simulatedRole = localStorage.getItem('miotranslate_simulate_role');
+  const activeRole = simulatedRole || (user?.roles?.[0] || "USER");
+  const showSimulator = user?.roles?.includes("DEV") || simulatedRole;
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -93,21 +99,22 @@ export function Shell() {
             <div className="h-4 w-px bg-border-main mx-1" />
 
             {/* Role & User Selector Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 hover:bg-surface-hover px-2.5 py-1.5 rounded border border-border-main text-xs transition-colors cursor-pointer"
-              >
-                <div className="w-6 h-6 bg-[#DEEBFF] text-primary font-bold rounded flex items-center justify-center text-[11px]">
-                  {activeRole}
-                </div>
-                <span className="font-semibold text-text-main hidden md:inline">Sravan</span>
-                <span className="text-[10px] text-text-subtle font-medium">({activeRole})</span>
-                <ChevronDown className="w-3.5 h-3.5 text-text-subtle" />
-              </button>
+            {showSimulator ? (
+              <div className="relative">
+                <button 
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 hover:bg-surface-hover px-2.5 py-1.5 rounded border border-border-main text-xs transition-colors cursor-pointer"
+                >
+                  <div className="w-6 h-6 bg-[#DEEBFF] text-primary font-bold rounded flex items-center justify-center text-[11px]">
+                    {activeRole}
+                  </div>
+                  <span className="font-semibold text-text-main hidden md:inline">{user?.displayName || "User"}</span>
+                  <span className="text-[10px] text-text-subtle font-medium">({activeRole})</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-text-subtle" />
+                </button>
 
-              <AnimatePresence>
-                {isUserMenuOpen && (
+                <AnimatePresence>
+                  {isUserMenuOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -118,15 +125,34 @@ export function Shell() {
                     <div className="px-2 py-1.5 border-b border-border-main mb-1.5 text-text-subtle font-bold">
                       Simulate Persona Role
                     </div>
+                    <button
+                        onClick={() => {
+                          localStorage.removeItem('miotranslate_simulate_role');
+                          window.location.reload();
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-left transition-colors cursor-pointer ${
+                          !localStorage.getItem('miotranslate_simulate_role')
+                            ? "bg-primary-light text-primary font-bold"
+                            : "text-text-main hover:bg-surface-hover font-medium"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded bg-surface-active flex items-center justify-center text-[10px] font-mono">
+                            OFF
+                          </span>
+                          <span>No Simulation</span>
+                        </div>
+                        {!localStorage.getItem('miotranslate_simulate_role') && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                    </button>
                     {(["PM", "LR", "SR", "FN", "DEV"] as const).map((role) => (
                       <button
                         key={role}
                         onClick={() => {
-                          setActiveRole(role);
-                          setIsUserMenuOpen(false);
+                          localStorage.setItem('miotranslate_simulate_role', role);
+                          window.location.reload();
                         }}
                         className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-left transition-colors cursor-pointer ${
-                          activeRole === role
+                          localStorage.getItem('miotranslate_simulate_role') === role
                             ? "bg-primary-light text-primary font-bold"
                             : "text-text-main hover:bg-surface-hover font-medium"
                         }`}
@@ -148,8 +174,9 @@ export function Shell() {
                     ))}
                   </motion.div>
                 )}
-              </AnimatePresence>
-            </div>
+                </AnimatePresence>
+              </div>
+            ) : null}
           </div>
         </div>
 

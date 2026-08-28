@@ -3,6 +3,7 @@ package com.miotranslate.modules.collaboration.api;
 import com.miotranslate.modules.collaboration.model.Comment;
 import com.miotranslate.modules.collaboration.model.ExportJob;
 import com.miotranslate.modules.collaboration.service.CollaborationService;
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ public class CollaborationController {
     }
 
     @PostMapping("/tags/{tagId}/comments")
+    @RequiresPermission("COMMENT_CREATE")
     public ResponseEntity<Comment> addComment(
             @PathVariable String tagId,
             @RequestBody Map<String, String> payload) {
@@ -33,6 +35,7 @@ public class CollaborationController {
     }
 
     @GetMapping("/tags/{tagId}/comments")
+    @RequiresPermission("CONTENT_VIEW")
     public ResponseEntity<List<Comment>> getComments(
             @PathVariable String tagId,
             @RequestParam(required = false) String scope) {
@@ -40,17 +43,20 @@ public class CollaborationController {
     }
 
     @PatchMapping("/comments/{commentId}/resolve")
+    @RequiresPermission("COMMENT_CREATE")
     public ResponseEntity<Comment> resolveComment(@PathVariable UUID commentId) {
         UUID resolvedBy = SecurityUtils.getCurrentUserId();
         return ResponseEntity.ok(collaborationService.resolveComment(commentId, resolvedBy));
     }
 
     @GetMapping("/audit")
+    @RequiresPermission("AUDIT_VIEW")
     public ResponseEntity<List<Map<String, Object>>> getAuditTrail() {
         return ResponseEntity.ok(collaborationService.getAuditTrail());
     }
 
     @PostMapping("/exports")
+    @RequiresPermission("EXPORT")
     public ResponseEntity<ExportJob> requestExport(@RequestBody Map<String, String> payload) {
         UUID requestedBy = SecurityUtils.getCurrentUserId();
         String pageId = payload.get("pageId");
@@ -60,23 +66,27 @@ public class CollaborationController {
     }
 
     @GetMapping("/exports/{id}")
+    @RequiresPermission("EXPORT")
     public ResponseEntity<ExportJob> getExportStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(collaborationService.getExportStatus(id));
     }
 
     @GetMapping("/exports/{id}/download")
+    @RequiresPermission("EXPORT")
     public ResponseEntity<Map<String, String>> getExportDownloadUrl(@PathVariable UUID id) {
         String url = collaborationService.getExportDownloadUrl(id);
         return ResponseEntity.ok(Map.of("downloadUrl", url));
     }
 
     @GetMapping("/notifications")
+    @RequiresPermission("CONTENT_VIEW")
     public ResponseEntity<List<Map<String, Object>>> getNotifications() {
         UUID userId = SecurityUtils.getCurrentUserId();
         return ResponseEntity.ok(collaborationService.getNotifications(userId));
     }
 
     @PatchMapping("/notifications/read")
+    @RequiresPermission("CONTENT_VIEW")
     public ResponseEntity<Void> markNotificationsAsRead(@RequestBody Map<String, List<UUID>> payload) {
         UUID userId = SecurityUtils.getCurrentUserId();
         List<UUID> notificationIds = payload.get("notificationIds");

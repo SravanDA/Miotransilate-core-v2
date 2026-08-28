@@ -4,6 +4,7 @@ import com.miotranslate.modules.translation.model.Translation;
 import com.miotranslate.modules.translation.model.TranslationVersion;
 import com.miotranslate.modules.translation.service.TranslationService;
 import com.miotranslate.shared.auth.SecurityUtils;
+import com.miotranslate.shared.auth.RequiresPermission;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,7 @@ public class TranslationController {
     }
 
     @PostMapping("/generate")
+    @RequiresPermission("TRANSLATION_CREATE")
     public ResponseEntity<TranslationVersion> generateAiTranslation(
             @PathVariable String tagId,
             @PathVariable String languageCode,
@@ -34,6 +36,7 @@ public class TranslationController {
     }
 
     @PutMapping("/draft")
+    @RequiresPermission("TRANSLATION_EDIT")
     public ResponseEntity<TranslationVersion> editTranslationManually(
             @PathVariable String tagId,
             @PathVariable String languageCode,
@@ -47,6 +50,7 @@ public class TranslationController {
     }
 
     @PostMapping("/submit")
+    @RequiresPermission("SUBMIT_FOR_REVIEW")
     public ResponseEntity<Translation> submitForReview(
             @PathVariable String tagId,
             @PathVariable String languageCode,
@@ -58,6 +62,7 @@ public class TranslationController {
     }
 
     @PostMapping("/review")
+    @RequiresPermission("TRANSLATION_APPROVE")
     public ResponseEntity<Translation> reviewTranslation(
             @PathVariable String tagId,
             @PathVariable String languageCode,
@@ -72,6 +77,7 @@ public class TranslationController {
     }
 
     @PostMapping("/confirm-stale")
+    @RequiresPermission("SUBMIT_FOR_REVIEW")
     public ResponseEntity<Translation> confirmStale(
             @PathVariable String tagId,
             @PathVariable String languageCode,
@@ -83,6 +89,7 @@ public class TranslationController {
     }
 
     @PostMapping("/retranslate")
+    @RequiresPermission("TRANSLATION_CREATE")
     public ResponseEntity<TranslationVersion> retranslate(
             @PathVariable String tagId,
             @PathVariable String languageCode,
@@ -94,6 +101,7 @@ public class TranslationController {
     }
 
     @GetMapping("/versions")
+    @RequiresPermission("HISTORY_VIEW")
     public ResponseEntity<List<TranslationVersion>> getVersions(
             @PathVariable String tagId,
             @PathVariable String languageCode) {

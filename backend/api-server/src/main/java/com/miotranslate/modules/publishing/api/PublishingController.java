@@ -4,6 +4,7 @@ import com.miotranslate.modules.publishing.model.PublishingApprovalRequest;
 import com.miotranslate.modules.publishing.model.Release;
 import com.miotranslate.modules.publishing.service.PublishingService;
 import com.miotranslate.shared.auth.SecurityUtils;
+import com.miotranslate.shared.auth.RequiresPermission;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1")
+@RequiresPermission("CONTENT_VIEW")
 public class PublishingController {
 
     private final PublishingService publishingService;
@@ -80,6 +82,7 @@ public class PublishingController {
     }
 
     @PostMapping("/pages/{pageId}/languages/{languageCode}/environments/{environment}/rollback")
+    @RequiresPermission("ROLLBACK")
     public ResponseEntity<Release> executeRollback(
             @PathVariable String pageId,
             @PathVariable String languageCode,

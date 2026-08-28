@@ -90,3 +90,94 @@
 .tw-root .bg-primary { background-color: #0052cc; } /* MioSalon primary color */
 .tw-root .text-primary { color: #0052cc; }
 .tw-root .border-primary { border-color: #0052cc; }
+
+/* MioSalon Design System Tokens */
+:root {
+  /* Primary */
+  --color-primary: #0052CC;
+  --color-primary-hover: #0065FF;
+  --color-primary-active: #0747A6;
+
+  /* Secondary */
+  --color-secondary: #F4F5F7;
+  --color-secondary-hover: #EBEDF0;
+  --color-secondary-active: #DFE1E6;
+
+  /* Delete / Alert */
+  --color-danger: #BF2600;
+  --color-danger-hover: #DE350B;
+  --color-danger-active: #AE2E24;
+
+  /* Warning */
+  --color-warning: #FFAB00;
+  --color-warning-hover: #FFC400;
+  --color-warning-active: #FF991F;
+
+  /* Links */
+  --color-link: #0052CC;
+  --color-link-hover: #0065FF;
+  --color-link-active: #0747A6;
+
+  /* Neutrals & Structurals */
+  --color-disable-bg: #F5F6F7;
+  --color-disable-text: #A5ADBA;
+  --color-border-main: #DFE1E6;
+  --color-heading: #172B4D;
+  --color-page-body: #F6F8FA;
+  --color-icons-outside: #42526E;
+  --color-table-head-bg: #F1F3F5;
+  --color-table-row-even: #F9FBFD;
+  --color-table-head-text: #344563;
+  --color-help-text: #6B778C;
+  --color-input-box: #B3BAC5;
+}
+
+/* Base utility classes for new tokens */
+.tw-root .bg-primary { background-color: var(--color-primary); }
+.tw-root .hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
+.tw-root .active\:bg-primary-active:active { background-color: var(--color-primary-active); }
+.tw-root .text-primary { color: var(--color-primary); }
+
+.tw-root .bg-secondary { background-color: var(--color-secondary); }
+.tw-root .hover\:bg-secondary-hover:hover { background-color: var(--color-secondary-hover); }
+.tw-root .active\:bg-secondary-active:active { background-color: var(--color-secondary-active); }
+.tw-root .text-secondary { color: var(--color-heading); }
+
+.tw-root .bg-danger { background-color: var(--color-danger); }
+.tw-root .hover\:bg-danger-hover:hover { background-color: var(--color-danger-hover); }
+.tw-root .active\:bg-danger-active:active { background-color: var(--color-danger-active); }
+.tw-root .text-danger { color: var(--color-danger); }
+
+.tw-root .bg-warning { background-color: var(--color-warning); }
+.tw-root .hover\:bg-warning-hover:hover { background-color: var(--color-warning-hover); }
+.tw-root .active\:bg-warning-active:active { background-color: var(--color-warning-active); }
+.tw-root .text-warning { color: var(--color-heading); }
+
+.tw-root .text-link { color: var(--color-link); }
+.tw-root .hover\:text-link-hover:hover { color: var(--color-link-hover); }
+
+.tw-root .bg-disable { background-color: var(--color-disable-bg); }
+.tw-root .text-disable { color: var(--color-disable-text); }
+.tw-root .border-disable { border-color: var(--color-disable-text); }
+
+.tw-root .border-main { border-color: var(--color-border-main); }
+.tw-root .text-heading { color: var(--color-heading); }
+.tw-root .bg-page-body { background-color: var(--color-page-body); }
+.tw-root .text-icons-outside { color: var(--color-icons-outside); }
+.tw-root .bg-table-head { background-color: var(--color-table-head-bg); }
+.tw-root .bg-table-row-even { background-color: var(--color-table-row-even); }
+.tw-root .text-table-head { color: var(--color-table-head-text); }
+.tw-root .text-help { color: var(--color-help-text); }
+.tw-root .bg-input-box { background-color: var(--color-input-box); }
+
+
+/* MioSalon Typography */
+.tw-root .text-title-1 { font-family: 'Segoe UI', sans-serif; font-size: 32px; line-height: 44px; font-weight: 700; }
+.tw-root .text-title-2 { font-family: 'Segoe UI', sans-serif; font-size: 24px; line-height: 32px; font-weight: 700; }
+.tw-root .text-title-3 { font-family: 'Segoe UI', sans-serif; font-size: 20px; line-height: 28px; font-weight: 600; }
+.tw-root .text-title-4 { font-family: 'Segoe UI', sans-serif; font-size: 18px; line-height: 26px; font-weight: 600; }
+.tw-root .text-title-5 { font-family: 'Segoe UI', sans-serif; font-size: 16px; line-height: 22px; font-weight: 400; }
+.tw-root .text-caption-1 { font-family: 'Segoe UI', sans-serif; font-size: 16px; line-height: 22px; font-weight: 400; }
+.tw-root .text-caption-2 { font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 20px; font-weight: 400; }
+.tw-root .text-caption-3 { font-family: 'Segoe UI', sans-serif; font-size: 12px; line-height: 17px; font-weight: 400; }
+.tw-root .text-micro { font-family: 'Segoe UI', sans-serif; font-size: 10px; line-height: 14px; font-weight: 400; }

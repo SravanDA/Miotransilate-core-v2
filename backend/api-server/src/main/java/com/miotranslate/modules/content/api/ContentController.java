@@ -7,7 +7,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -24,6 +28,7 @@ public class ContentController {
     }
 
     @PutMapping("/draft")
+    @RequiresPermission("ENGLISH_AUTHOR")
     public ResponseEntity<EnglishCopyVersion> saveDraft(
             @PathVariable String tagId,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
@@ -38,6 +43,7 @@ public class ContentController {
     }
 
     @PostMapping("/review")
+    @RequiresPermission("ENGLISH_APPROVE")
     public ResponseEntity<EnglishCopy> approve(
             @PathVariable String tagId,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
@@ -49,6 +55,7 @@ public class ContentController {
     }
 
     @PostMapping("/submit")
+    @RequiresPermission("SUBMIT_FOR_REVIEW")
     public ResponseEntity<EnglishCopy> submitForReview(
             @PathVariable String tagId,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
@@ -60,6 +67,7 @@ public class ContentController {
     }
 
     @GetMapping("/versions")
+    @RequiresPermission("HISTORY_VIEW")
     public ResponseEntity<List<EnglishCopyVersion>> getVersions(@PathVariable String tagId) {
         return ResponseEntity.ok(contentService.getVersions(tagId));
     }

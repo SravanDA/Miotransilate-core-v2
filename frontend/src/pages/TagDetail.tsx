@@ -9,9 +9,11 @@ import { TranslationReviewModal } from "../components/translation/TranslationRev
 import { StoreService } from "../store/StoreService";
 import { engine } from "../engine/TranslationEngine";
 import type { Tag } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 export function TagDetail() {
   const { pageId, tagId } = useParams();
+  const { can } = useAuth();
   
   const [tag, setTag] = useState<Tag | null>(null);
   const [activeLangs, setActiveLangs] = useState(StoreService.getActiveLanguages());
@@ -143,32 +145,34 @@ export function TagDetail() {
                 <span className="w-2 h-2 rounded-full bg-primary" />
                 Master English
               </h2>
-              {!isEditingEnglish ? (
-                <button 
-                  onClick={() => setIsEditingEnglish(true)}
-                  className="p-1.5 text-text-subtle hover:text-primary hover:bg-surface-hover rounded cursor-pointer transition-colors"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
+              {can('ENGLISH_AUTHOR') && (
+                !isEditingEnglish ? (
                   <button 
-                    onClick={() => {
-                      setIsEditingEnglish(false);
-                      setEnglishCopy(tag.english);
-                    }}
-                    className="text-xs font-semibold text-text-muted hover:text-text-main cursor-pointer"
+                    onClick={() => setIsEditingEnglish(true)}
+                    className="p-1.5 text-text-subtle hover:text-primary hover:bg-surface-hover rounded cursor-pointer transition-colors"
                   >
-                    Cancel
+                    <Edit3 className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={handleSaveEnglish}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover transition-colors cursor-pointer"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Save Master
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        setIsEditingEnglish(false);
+                        setEnglishCopy(tag.english);
+                      }}
+                      className="text-xs font-semibold text-text-muted hover:text-text-main cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSaveEnglish}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover transition-colors cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Save Master
+                    </button>
+                  </div>
+                )
               )}
             </div>
             
@@ -224,7 +228,7 @@ export function TagDetail() {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  {!isEditingTrans && currentVal.status === "Pending Review" && (
+                  {!isEditingTrans && currentVal.status === "Pending Review" && can('TRANSLATION_APPROVE') && (
                     <button 
                       onClick={() => setIsReviewModalOpen(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FF8B00] text-white text-xs font-bold rounded hover:bg-[#E57D00] transition-colors cursor-pointer shadow-sm"
@@ -236,18 +240,22 @@ export function TagDetail() {
                   
                   {!isEditingTrans ? (
                     <>
-                      <button 
-                        onClick={handleRunAI}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border-main text-primary text-xs font-bold rounded transition-colors cursor-pointer shadow-sm"
-                      >
-                        Auto-Translate
-                      </button>
-                      <button 
-                        onClick={() => setIsEditingTrans(true)}
-                        className="p-1.5 text-text-subtle hover:text-primary hover:bg-surface-hover border border-border-main rounded cursor-pointer transition-colors shadow-sm"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
+                      {can('TRANSLATION_CREATE') && (
+                        <button 
+                          onClick={handleRunAI}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border-main text-primary text-xs font-bold rounded transition-colors cursor-pointer shadow-sm"
+                        >
+                          Auto-Translate
+                        </button>
+                      )}
+                      {can('TRANSLATION_EDIT') && (
+                        <button 
+                          onClick={() => setIsEditingTrans(true)}
+                          className="p-1.5 text-text-subtle hover:text-primary hover:bg-surface-hover border border-border-main rounded cursor-pointer transition-colors shadow-sm"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -342,7 +350,7 @@ export function TagDetail() {
                     <span className="text-[10px] text-text-subtle">{comment.time}</span>
                   </div>
                   <p className="text-sm text-text-main ml-6.5">{comment.text}</p>
-                  {!comment.isResolved && (
+                  {!comment.isResolved && can('COMMENT_CREATE') && (
                     <button 
                       onClick={() => handleResolveComment(idx)}
                       className="ml-6.5 mt-2 text-xs font-semibold text-primary hover:underline cursor-pointer"
@@ -354,22 +362,24 @@ export function TagDetail() {
               ))}
             </div>
 
-            <div className="flex flex-col gap-2 pt-3 border-t border-border-main mt-auto">
-              <input
-                type="text"
-                placeholder="Add context or mention someone..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="w-full h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none"
-              />
-              <button 
-                onClick={handleAddComment}
-                disabled={!newComment.trim()}
-                className="w-full h-9 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-sm font-bold rounded transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
-              >
-                Post Comment
-              </button>
-            </div>
+            {can('COMMENT_CREATE') && (
+              <div className="flex flex-col gap-2 pt-3 border-t border-border-main mt-auto">
+                <input
+                  type="text"
+                  placeholder="Add context or mention someone..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="w-full h-9 px-3 bg-surface border border-border-main rounded text-sm text-text-main focus:border-primary outline-none"
+                />
+                <button 
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  className="w-full h-9 bg-surface hover:bg-surface-hover border border-border-main text-text-main text-sm font-bold rounded transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                >
+                  Post Comment
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -401,3 +411,4 @@ export function TagDetail() {
     </div>
   );
 }
+

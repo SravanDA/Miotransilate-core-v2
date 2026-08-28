@@ -9,6 +9,7 @@ import com.miotranslate.modules.admin.repository.SystemConfigurationRepository;
 import com.miotranslate.modules.admin.repository.UserRepository;
 import com.miotranslate.modules.admin.service.AdminService;
 import com.miotranslate.shared.auth.SecurityUtils;
+import com.miotranslate.shared.auth.RequiresPermission;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,11 +38,13 @@ public class AdminController {
     }
 
     @GetMapping("/users")
+    @RequiresPermission("ADMIN_USERS")
     public ResponseEntity<List<User>> listUsers() {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
     @PostMapping("/languages")
+    @RequiresPermission("ADMIN_LANGUAGES")
     public ResponseEntity<Language> addLanguage(@RequestBody Map<String, String> payload) {
         UUID userId = SecurityUtils.getCurrentUserId();
         String code = payload.get("languageCode");
@@ -53,17 +56,20 @@ public class AdminController {
     }
     
     @GetMapping("/languages")
+    @RequiresPermission("CONTENT_VIEW")
     public ResponseEntity<List<Language>> listLanguages() {
         return ResponseEntity.ok(languageRepository.findAll());
     }
 
     @PatchMapping("/languages/{code}/deactivate")
+    @RequiresPermission("ADMIN_LANGUAGES")
     public ResponseEntity<Language> deactivateLanguage(@PathVariable String code) {
         Language lang = adminService.deactivateLanguage(code);
         return ResponseEntity.ok(lang);
     }
 
     @PostMapping("/users/{userId}/roles")
+    @RequiresPermission("ADMIN_USERS")
     public ResponseEntity<UserRoleAssignment> assignRole(@PathVariable UUID userId, @RequestBody Map<String, String> payload) {
         UUID assignedBy = SecurityUtils.getCurrentUserId();
         String role = payload.get("role");
@@ -72,6 +78,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/roles/{assignmentId}")
+    @RequiresPermission("ADMIN_USERS")
     public ResponseEntity<Void> revokeRole(@PathVariable UUID assignmentId) {
         UUID revokedBy = SecurityUtils.getCurrentUserId();
         adminService.revokeRole(assignmentId, revokedBy);
@@ -79,11 +86,13 @@ public class AdminController {
     }
 
     @GetMapping("/config")
+    @RequiresPermission("ADMIN_CONFIG")
     public ResponseEntity<List<SystemConfiguration>> listConfig() {
         return ResponseEntity.ok(configRepository.findAll());
     }
 
     @PatchMapping("/config/{key}")
+    @RequiresPermission("ADMIN_CONFIG")
     public ResponseEntity<SystemConfiguration> updateConfig(
             @PathVariable String key,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,

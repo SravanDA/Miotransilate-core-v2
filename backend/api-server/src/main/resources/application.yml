@@ -33,6 +33,8 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 miotranslate:
+  jwt:
+    secret: "miotranslate-super-secure-jwt-signing-key-minimum-256-bits-long"
   language-services:
     domain: "miosalon"
     endpoints:

@@ -16,5 +16,7 @@ spring:
 
 # For local development without auth
 miotranslate:
+  jwt:
+    secret: "miotranslate-super-secure-jwt-signing-key-minimum-256-bits-long"
   auth:
     enabled: false

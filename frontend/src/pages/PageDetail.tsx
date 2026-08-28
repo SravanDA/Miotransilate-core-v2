@@ -6,9 +6,11 @@ import { TranslationStatusBadge } from "../components/translation/TranslationSta
 import { StoreService } from "../store/StoreService";
 import { engine } from "../engine/TranslationEngine";
 import type { Tag, CopyType } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 export function PageDetail() {
   const { pageId } = useParams();
+  const { can } = useAuth();
   
   const [tags, setTags] = useState<Tag[]>([]);
   const [pageInfo, setPageInfo] = useState<{ name: string; module: string; status: string }>({ name: "Unknown", module: "Unknown", status: "Unknown" });
@@ -195,35 +197,43 @@ export function PageDetail() {
 
         <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-border-main/60">
           <div className="flex items-center gap-2.5">
-            <button
-              onClick={handleTranslateAll}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-hover border border-border-main rounded text-sm font-bold text-primary transition-colors cursor-pointer shadow-sm"
-            >
-              <Sparkles className="w-4 h-4 text-primary" />
-              Translate All
-            </button>
-            <button
-              onClick={handleBulkApprove}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-hover border border-border-main rounded text-sm font-bold text-text-main transition-colors cursor-pointer shadow-sm"
-            >
-              Bulk Approve
-            </button>
+            {can('TRANSLATION_CREATE') && (
+              <button
+                onClick={handleTranslateAll}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-hover border border-border-main rounded text-sm font-bold text-primary transition-colors cursor-pointer shadow-sm"
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+                Translate All
+              </button>
+            )}
+            {can('TRANSLATION_APPROVE') && (
+              <button
+                onClick={handleBulkApprove}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-hover border border-border-main rounded text-sm font-bold text-text-main transition-colors cursor-pointer shadow-sm"
+              >
+                Bulk Approve
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setIsPublishModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-surface hover:bg-surface-hover border border-[#0052CC] text-primary text-sm font-bold rounded transition-colors cursor-pointer shadow-sm"
-            >
-              Publish ▸
-            </button>
-            <button
-              onClick={() => setIsAddTagOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary text-white text-sm font-bold rounded hover:bg-primary-hover transition-colors cursor-pointer shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Add Tag
-            </button>
+            {(can('PUBLISH_QA') || can('PUBLISH_PRODUCTION')) && (
+              <button
+                onClick={() => setIsPublishModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-surface hover:bg-surface-hover border border-[#0052CC] text-primary text-sm font-bold rounded transition-colors cursor-pointer shadow-sm"
+              >
+                Publish ▸
+              </button>
+            )}
+            {can('ENGLISH_AUTHOR') && (
+              <button
+                onClick={() => setIsAddTagOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary text-white text-sm font-bold rounded hover:bg-primary-hover transition-colors cursor-pointer shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Tag
+              </button>
+            )}
           </div>
         </div>
       </div>

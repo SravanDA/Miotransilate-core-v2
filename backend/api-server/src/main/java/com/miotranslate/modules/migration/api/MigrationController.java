@@ -5,6 +5,7 @@ import com.miotranslate.modules.migration.model.MigrationRowEvent;
 import com.miotranslate.modules.migration.repository.ImportEventRepository;
 import com.miotranslate.modules.migration.repository.MigrationRowEventRepository;
 import com.miotranslate.modules.migration.service.MigrationService;
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/migrations")
+@RequiresPermission("ADMIN_MIGRATION")
 public class MigrationController {
 
     private final MigrationService migrationService;

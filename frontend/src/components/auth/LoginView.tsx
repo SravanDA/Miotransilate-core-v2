@@ -37,12 +37,20 @@ export const LoginView: React.FC = () => {
         setError('Your account has been suspended');
       } else if (err.response?.status === 429) {
         setError('Too many attempts. Please try again later.');
+      } else if (!err.response || err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        setError('Cannot connect to backend server (localhost:8080). Please ensure the backend is running.');
       } else {
-        setError('An error occurred during login');
+        setError(err.response?.data?.message || err.response?.data?.error || 'An error occurred during login');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickFill = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword('ChangeMe123!');
+    setError('');
   };
 
   return (
@@ -95,6 +103,44 @@ export const LoginView: React.FC = () => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-6 pt-4 border-t border-border-subtle">
+          <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider mb-2 text-center">Quick Demo Logins</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleQuickFill('founder@miosalonsoftware.com')}
+              className="px-2 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary bg-bg-hover/50 hover:bg-bg-hover rounded border border-border-subtle transition-all text-left truncate cursor-pointer outline-none"
+              title="Founder (All access)"
+            >
+              👑 Founder
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('dev@miosalonsoftware.com')}
+              className="px-2 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary bg-bg-hover/50 hover:bg-bg-hover rounded border border-border-subtle transition-all text-left truncate cursor-pointer outline-none"
+              title="Developer"
+            >
+              💻 Developer
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('pm@miosalonsoftware.com')}
+              className="px-2 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary bg-bg-hover/50 hover:bg-bg-hover rounded border border-border-subtle transition-all text-left truncate cursor-pointer outline-none"
+              title="Product Manager"
+            >
+              📋 Product Mgr
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFill('lr@miosalonsoftware.com')}
+              className="px-2 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary bg-bg-hover/50 hover:bg-bg-hover rounded border border-border-subtle transition-all text-left truncate cursor-pointer outline-none"
+              title="Localization Reviewer"
+            >
+              🌐 Reviewer (LR)
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

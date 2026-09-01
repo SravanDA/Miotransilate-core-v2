@@ -22,7 +22,7 @@ public class MockAiTranslationClient implements AiTranslationClient {
     }
 
     @Override
-    public String auditScreen(String prompt) {
-        return "{}";
+    public java.util.List<com.miotranslate.shared.integration.ai.model.AuditResultItem> auditScreen(String prompt) {
+        return new java.util.ArrayList<>();
     }
 }

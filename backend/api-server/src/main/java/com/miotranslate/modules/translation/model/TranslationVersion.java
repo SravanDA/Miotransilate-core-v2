@@ -49,6 +49,19 @@ public class TranslationVersion {
     @Column(name = "change_reason")
     private String changeReason;
 
+    // P1-2 fix: AI engine signals — previously computed and discarded
+    @Column(name = "sense")
+    private String sense;
+
+    @Column(name = "resolved_by", length = 30)
+    private String resolvedBy;
+
+    @Column(name = "risk", length = 10)
+    private String risk;
+
+    @Column(name = "model_used", length = 100)
+    private String modelUsed;
+
     @Column(name = "authored_by")
     private UUID authoredBy;
 

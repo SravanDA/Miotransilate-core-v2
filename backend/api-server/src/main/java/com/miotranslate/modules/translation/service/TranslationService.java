@@ -18,6 +18,7 @@ import com.miotranslate.modules.translation.engine.TranslationEngine;
 import com.miotranslate.modules.translation.engine.model.EngineConfig;
 import com.miotranslate.modules.translation.engine.model.PageTranslationResult;
 import com.miotranslate.modules.translation.engine.model.EngineResult;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class TranslationService {
 
@@ -41,6 +42,7 @@ public class TranslationService {
     private final AuditService auditService;
     private final JobDispatcher jobDispatcher;
     private final TranslationEngine translationEngine;
+    private final TranslationPersistenceService persistenceService;
 
     public TranslationService(TranslationRepository translationRepository,
                               TranslationVersionRepository versionRepository,
@@ -49,7 +51,8 @@ public class TranslationService {
                               AiTranslationClient aiClient,
                               AuditService auditService,
                               JobDispatcher jobDispatcher,
-                              TranslationEngine translationEngine) {
+                              TranslationEngine translationEngine,
+                              TranslationPersistenceService persistenceService) {
         this.translationRepository = translationRepository;
         this.versionRepository = versionRepository;
         this.tagRepository = tagRepository;
@@ -58,6 +61,7 @@ public class TranslationService {
         this.auditService = auditService;
         this.jobDispatcher = jobDispatcher;
         this.translationEngine = translationEngine;
+        this.persistenceService = persistenceService;
     }
 
     public TranslationVersion generateAiTranslation(String tagId, String languageCode, String ifMatchETag, UUID userId) {
@@ -70,11 +74,12 @@ public class TranslationService {
         Integer validatedETag = validateBeforeAiCall(tagId, languageCode, ifMatchETag);
         TranslationResult aiResult = new TranslationResult();
         aiResult.setTranslatedText("Mock AI Result");
-        return saveAiResult(tagId, languageCode, validatedETag, ec.getCurrentVersionNumber(), aiResult, userId);
+        // P0-2 fix: call crosses proxy boundary via injected persistenceService
+        return persistenceService.saveAiResult(tagId, languageCode, validatedETag, ec.getCurrentVersionNumber(), aiResult, userId);
     }
 
     @Transactional(readOnly = true)
-    protected Integer validateBeforeAiCall(String tagId, String languageCode, String ifMatchETag) {
+    public Integer validateBeforeAiCall(String tagId, String languageCode, String ifMatchETag) {
         Translation translation = translationRepository.findById(new TranslationId(tagId, languageCode))
                 .orElse(null);
         if (translation == null) {
@@ -82,49 +87,6 @@ public class TranslationService {
         }
         ConcurrencyUtils.validateETag(ifMatchETag, translation.getEtagVersion(), "TRANSLATION", tagId + "/" + languageCode);
         return translation.getEtagVersion();
-    }
-
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    protected TranslationVersion saveAiResult(String tagId, String languageCode, Integer originalETag, Integer sourceEnglishVersion, TranslationResult aiResult, UUID userId) {
-        Translation translation = translationRepository.findByIdForUpdate(tagId, languageCode)
-                .orElseGet(() -> {
-                    Translation newTrans = new Translation();
-                    newTrans.setTagId(tagId);
-                    newTrans.setLanguageCode(languageCode);
-                    newTrans.setStatus("NO_TRANSLATION");
-                    newTrans.setEtagVersion(1);
-                    return translationRepository.save(newTrans);
-                });
-                
-        if (originalETag != null && !translation.getEtagVersion().equals(originalETag)) {
-            throw new IllegalStateException("Translation was modified during AI generation");
-        }
-
-        TranslationVersion latest = versionRepository.findTopByTagIdAndLanguageCodeOrderByVersionNumberDesc(tagId, languageCode).orElse(null);
-        int nextVersion = (latest == null) ? 1 : latest.getVersionNumber() + 1;
-
-        TranslationVersion draft = new TranslationVersion();
-        draft.setTagId(tagId);
-        draft.setLanguageCode(languageCode);
-        draft.setVersionNumber(nextVersion);
-        draft.setText(aiResult.getTranslatedText());
-        draft.setCreationMethod("AI");
-        draft.setSourceEnglishVersion(sourceEnglishVersion);
-        draft.setConfidenceScore(aiResult.getConfidenceScore());
-        draft.setBackTranslation(aiResult.getBackTranslation());
-        draft.setVariableIntegrityStatus(aiResult.getVariableIntegrityStatus());
-        draft.setAuthoredBySource("AI_SERVICE");
-        draft.setStatus("DRAFT");
-
-        translation.setStatus("DRAFT");
-        translation.setEtagVersion(translation.getEtagVersion() + 1);
-
-        versionRepository.save(draft);
-        translationRepository.save(translation);
-
-        auditService.record("AI_TRANSLATION_GENERATED", "TRANSLATION", tagId + "/" + languageCode, "AI Draft created");
-
-        return draft;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -159,6 +121,8 @@ public class TranslationService {
         
         translation.setStatus("DRAFT");
         translation.setEtagVersion(translation.getEtagVersion() + 1);
+        // P0-8: Set currentVersionNumber
+        translation.setCurrentVersionNumber(nextVersion);
         
         versionRepository.save(draft);
         translationRepository.save(translation);
@@ -253,79 +217,47 @@ public class TranslationService {
         // Setup config from SystemConfig if needed
         PageTranslationResult engineResult = translationEngine.translatePage(pageId, languageCode, null, config);
         
-        // Step 3: Persist results (Phase 3 - transaction per tag or bulk)
+        // Step 3: Persist results (Phase 3 - transaction per tag via proxy call)
+        // P0-6 fix: persist ALL results including blocked tags.
+        // Blocked tags are saved with status=BLOCKED so reviewers can see them.
         int successCount = 0;
+        int blockedCount = 0;
+        int needsAttentionCount = 0;
         if (engineResult.getResults() != null) {
             for (EngineResult result : engineResult.getResults()) {
-                if (result.isBlocked()) continue;
-                
                 try {
-                    // Start transaction for this tag
-                    saveEngineResult(result, languageCode, userId);
-                    successCount++;
+                    // P0-2 fix: call crosses proxy boundary via injected persistenceService
+                    persistenceService.saveEngineResult(result, languageCode, userId);
+                    if (result.isBlocked()) {
+                        blockedCount++;
+                    } else {
+                        successCount++;
+                        if (result.isFlagged()) {
+                            needsAttentionCount++;
+                        }
+                    }
                 } catch (Exception e) {
-                    // Log and continue
+                    log.error("Failed to persist result for tag {}: {}", result.getTagId(), e.getMessage());
                 }
             }
         }
         
+        // P0-5 fix: propagate real engine status, remaining tags, and flagged counts.
+        // Don't hardcode COMPLETE — the frontend needs the truth.
         Map<String, Object> response = new HashMap<>();
         response.put("status", engineResult.getStatus());
         response.put("processed", successCount);
         response.put("total", engineResult.getRequested());
+        response.put("blocked", blockedCount);
+        response.put("needsAttention", needsAttentionCount);
         response.put("remainingTagIds", engineResult.getRemainingTagIds());
+        response.put("blockedTagIds", engineResult.getBlockedTagIds());
         return response;
-    }
-    
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    protected void saveEngineResult(EngineResult result, String languageCode, UUID userId) {
-        String tagId = result.getTagId();
-        EnglishCopy ec = englishCopyRepository.findById(tagId).orElseThrow();
-        
-        Translation translation = translationRepository.findByIdForUpdate(tagId, languageCode)
-                .orElseGet(() -> {
-                    Translation newTrans = new Translation();
-                    newTrans.setTagId(tagId);
-                    newTrans.setLanguageCode(languageCode);
-                    newTrans.setStatus("NO_TRANSLATION");
-                    newTrans.setEtagVersion(1);
-                    return translationRepository.save(newTrans);
-                });
-                
-        // Validation of source version (simplified: if EC version changed, abort)
-        // In real app, we check if ec.getCurrentVersionNumber() matches the one engine used.
-        
-        TranslationVersion latest = versionRepository.findTopByTagIdAndLanguageCodeOrderByVersionNumberDesc(tagId, languageCode).orElse(null);
-        int nextVersion = (latest == null) ? 1 : latest.getVersionNumber() + 1;
-
-        TranslationVersion draft = new TranslationVersion();
-        draft.setTagId(tagId);
-        draft.setLanguageCode(languageCode);
-        draft.setVersionNumber(nextVersion);
-        draft.setText(result.getRawResult().getTranslation());
-        draft.setCreationMethod("AI");
-        draft.setSourceEnglishVersion(ec.getCurrentVersionNumber());
-        // For confidence, maybe set to 1.0 or parse from risk?
-        draft.setConfidenceScore(new BigDecimal("0.90"));
-        draft.setBackTranslation(result.getRawResult().getBackTranslation());
-        draft.setVariableIntegrityStatus(result.isBlocked() ? "FAILED" : "PASSED");
-        draft.setAuthoredBySource("AI_SERVICE");
-        // State cause
-        draft.setStatus(result.getStateCause() != null ? "NEEDS_ATTENTION" : "DRAFT");
-        
-        translation.setStatus(draft.getStatus());
-        translation.setEtagVersion(translation.getEtagVersion() + 1);
-
-        versionRepository.save(draft);
-        translationRepository.save(translation);
-
-        auditService.record("AI_TRANSLATION_GENERATED", "TRANSLATION", tagId + "/" + languageCode, "AI Engine Draft created");
     }
 
     @Transactional
     public Map<String, Object> bulkApproveTranslations(String pageId, String languageCode, UUID userId) {
-        // Find tags for page
-        List<Tag> tags = tagRepository.findAll().stream().filter(t -> t.getPageId().equals(pageId)).toList();
+        List<Tag> tags = tagRepository.findByPageIdAndStatusNot(pageId, "DEPRECATED");
         int approvedCount = 0;
         
         BigDecimal threshold = new BigDecimal("0.90"); // Mock threshold

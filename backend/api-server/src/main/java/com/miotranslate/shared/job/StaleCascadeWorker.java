@@ -37,6 +37,7 @@ public class StaleCascadeWorker {
 
         for (Translation t : translations) {
             t.setStatus("STALE");
+            t.setStaleTriggeredAt(java.time.OffsetDateTime.now());
             t.setEtagVersion(t.getEtagVersion() + 1);
             translationRepository.save(t);
             auditService.record("TRANSLATION_MARKED_STALE", "TRANSLATION", t.getTagId() + "/" + t.getLanguageCode(), "Cascade from EC approval");

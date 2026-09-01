@@ -15,8 +15,6 @@ export class TranslationEngine {
     const tag = StoreService.getTag(pageId, tagId);
     if (!tag || !tag.english) return;
 
-    // TODO: A real backend would have a single-tag endpoint. 
-    // For now, we use the fallback provider for single tags locally.
     const request: TranslationRequest = {
       english: tag.english,
       targetLanguage,
@@ -43,104 +41,119 @@ export class TranslationEngine {
     total: number;
     translated: number;
     needsAttention: number;
+    blocked: number;
+    remainingTagIds: string[];
+    blockedTagIds: string[];
     error?: string;
   }> {
     try {
-      // 🚀 PRODUCTION PATH: Try backend API first if configured
+      // 🚀 PRODUCTION PATH: Try backend API first if configured and running
       console.log("Attempting production backend translation API...");
       const backendResult = await ApiService.generateAiTranslationsBulk(pageId, targetLanguage);
       if (backendResult && backendResult.processed > 0) {
         await StoreService.refreshPageDetail(pageId);
-        const backendStatus = backendResult?.status || "COMPLETE";
+        const backendStatus = backendResult.status || "COMPLETE";
         return {
           status: backendStatus === "PARTIAL_SUCCESS" ? "PARTIAL_SUCCESS" : "COMPLETE",
-          total: backendResult?.total || 0,
-          translated: backendResult?.processed || 0,
-          needsAttention: 0
+          total: backendResult.total || backendResult.processed,
+          translated: backendResult.processed,
+          needsAttention: backendResult.needsAttention || 0,
+          blocked: backendResult.blocked || 0,
+          remainingTagIds: backendResult.remainingTagIds || [],
+          blockedTagIds: backendResult.blockedTagIds || []
         };
       }
-      console.log("Backend returned 0 processed tags. Executing with browser GeminiProvider engine...");
+      console.log("Backend returned 0 processed tags or unavailable. Executing with GeminiProvider engine...");
     } catch (apiError: any) {
       console.warn("Backend API unavailable. Using browser GeminiProvider...", apiError?.message || "");
     }
       
-    // 🚧 FRONTEND ENGINE: Run direct GeminiProvider calls with telemetry
+    // 🚧 FRONTEND / DEVKIT ENGINE: Run GeminiProvider with full telemetry
     const tags = StoreService.getTags(pageId);
     const requests: { tagId: string; req: TranslationRequest }[] = [];
 
-      tags.forEach((tag) => {
-        const val = tag.values?.[targetLanguage];
-        // Only translate tags with non-empty English that are not already Approved
-        if (tag.english && tag.english.trim().length > 0 && (!val || val.status !== "Approved")) {
-          requests.push({
-            tagId: tag.id,
-            req: {
-              english: tag.english,
-              targetLanguage,
-              copyType: tag.type,
-              context: `Page: ${StoreService.getPage(pageId)?.name || pageId}`,
-            },
-          });
+    tags.forEach((tag) => {
+      const val = tag.values?.[targetLanguage];
+      // Only translate tags with non-empty English that are not already Approved
+      if (tag.english && tag.english.trim().length > 0 && (!val || val.status !== "Approved")) {
+        requests.push({
+          tagId: tag.id,
+          req: {
+            english: tag.english,
+            targetLanguage,
+            copyType: tag.type,
+            context: `Page: ${StoreService.getPage(pageId)?.name || pageId}`,
+          },
+        });
+      }
+    });
+
+    if (requests.length === 0) {
+      return {
+        status: "NO_ELIGIBLE_TAGS",
+        total: tags.length,
+        translated: 0,
+        needsAttention: 0,
+        blocked: 0,
+        remainingTagIds: [],
+        blockedTagIds: []
+      };
+    }
+
+    try {
+      const results = await this.provider.translateBatch(
+        requests.map((r) => r.req)
+      );
+
+      let needsAttentionCount = 0;
+      const updates: { tagId: string; value: Partial<TranslationValue> }[] = [];
+
+      results.forEach((result, idx) => {
+        if (!requests[idx]) return;
+        const tagId = requests[idx].tagId;
+        const isLowConfidence = result.confidence !== undefined && result.confidence < 70;
+        if (isLowConfidence) {
+          needsAttentionCount++;
         }
+
+        updates.push({
+          tagId,
+          value: {
+            text: result.translatedText,
+            status: (result.status as any) || (isLowConfidence ? "Needs Attention" : "Pending Review"),
+            confidence: result.confidence,
+            stateCause: result.stateCause,
+            backTranslation: result.backTranslation,
+          }
+        });
       });
 
-      if (requests.length === 0) {
-        return {
-          status: "NO_ELIGIBLE_TAGS",
-          total: tags.length,
-          translated: 0,
-          needsAttention: 0
-        };
-      }
+      // Batch persistence to store & localStorage in 1 atomic pass
+      await StoreService.batchUpdateTranslations(pageId, targetLanguage, updates);
 
-      try {
-        const results = await this.provider.translateBatch(
-          requests.map((r) => r.req)
-        );
-
-        let needsAttentionCount = 0;
-        const updates: { tagId: string; value: Partial<TranslationValue> }[] = [];
-
-        results.forEach((result, idx) => {
-          if (!requests[idx]) return;
-          const tagId = requests[idx].tagId;
-          const isLowConfidence = result.confidence !== undefined && result.confidence < 70;
-          if (isLowConfidence) {
-            needsAttentionCount++;
-          }
-
-          updates.push({
-            tagId,
-            value: {
-              text: result.translatedText,
-              status: (result.status as any) || "Pending Review",
-              confidence: result.confidence,
-              stateCause: result.stateCause,
-              backTranslation: result.backTranslation,
-            }
-          });
-        });
-
-        // Fast batch persistence to store & localStorage in 1 pass
-        await StoreService.batchUpdateTranslations(pageId, targetLanguage, updates);
-
-        return {
-          status: needsAttentionCount > 0 ? "PARTIAL_SUCCESS" : "COMPLETE",
-          total: requests.length,
-          translated: updates.length,
-          needsAttention: needsAttentionCount
-        };
-      } catch (e: any) {
-        console.error("Batch translation engine error:", e);
-        return {
-          status: "FAILED",
-          total: requests.length,
-          translated: 0,
-          needsAttention: 0,
-          error: e?.message || "Translation provider error"
-        };
-      }
+      return {
+        status: needsAttentionCount > 0 ? "PARTIAL_SUCCESS" : "COMPLETE",
+        total: requests.length,
+        translated: updates.length,
+        needsAttention: needsAttentionCount,
+        blocked: 0,
+        remainingTagIds: [],
+        blockedTagIds: []
+      };
+    } catch (e: any) {
+      console.error("Batch translation engine error:", e);
+      return {
+        status: "FAILED",
+        total: requests.length,
+        translated: 0,
+        needsAttention: 0,
+        blocked: 0,
+        remainingTagIds: [],
+        blockedTagIds: [],
+        error: e?.message || "Translation provider error. Please check API key in LLM DevKit."
+      };
     }
+  }
 }
 
 // Global singleton

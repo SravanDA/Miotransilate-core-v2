@@ -87,8 +87,12 @@ export function MyWork() {
     if (actionLoadingId === actionKey) return;
     setActionLoadingId(actionKey);
     try {
-      StoreService.updateTranslation(pageId, tagId, langCode, { status: "Approved" });
+      await StoreService.approveTranslation(pageId, tagId, langCode);
+      setPendingList(prev => prev.filter(item => !(item.pageId === pageId && item.tag === tagId && item.langCode === langCode)));
       toast("Translation approved successfully");
+    } catch (err: any) {
+      console.error("Failed to approve translation", err);
+      toast("Failed to approve translation");
     } finally {
       setActionLoadingId(null);
     }
@@ -104,7 +108,31 @@ export function MyWork() {
     setActionLoadingId(actionKey);
     try {
       await StoreService.approveEnglish(pageId, tagId);
+      setEnglishList(prev => prev.filter(item => !(item.pageId === pageId && item.tagId === tagId)));
       toast("Master English approved! Translations marked as Stale.");
+    } catch (err: any) {
+      console.error("Failed to approve English draft", err);
+      toast("Failed to approve English draft");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleConfirmStaleTranslation = async (pageId: string, tagId: string, langCode: string) => {
+    if (!canApprove) {
+      toast("You don't have permission to confirm translations.");
+      return;
+    }
+    const actionKey = `stale-${pageId}-${tagId}-${langCode}`;
+    if (actionLoadingId === actionKey) return;
+    setActionLoadingId(actionKey);
+    try {
+      await StoreService.confirmStaleTranslation(pageId, tagId, langCode);
+      setStaleList(prev => prev.filter(item => !(item.pageId === pageId && item.tag === tagId && item.langCode === langCode)));
+      toast("Translation confirmed as valid");
+    } catch (err: any) {
+      console.error("Failed to confirm stale translation", err);
+      toast("Failed to confirm translation");
     } finally {
       setActionLoadingId(null);
     }
@@ -578,13 +606,25 @@ export function MyWork() {
                             <span>{item.staleDays} days</span>
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 align-middle text-right w-28 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0">
-                          <Link 
-                            to={`/pages/${item.pageId}/tags/${item.tag}`}
-                            className="h-7 px-3 bg-bg-main border border-border-subtle hover:border-border-strong text-text-primary text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center outline-none"
-                          >
-                            Review
-                          </Link>
+                        <td className="px-4 py-2.5 align-middle text-right w-36 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {canApprove && (
+                              <button 
+                                onClick={() => handleConfirmStaleTranslation(item.pageId, item.tag, item.langCode)}
+                                className="h-7 px-2.5 bg-accent-blue text-white hover:brightness-110 text-[11px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center gap-1 cursor-pointer outline-none shadow-xs"
+                                title="Confirm existing translation is still valid"
+                              >
+                                <Check className="w-3 h-3" weight="bold" />
+                                <span>Confirm</span>
+                              </button>
+                            )}
+                            <Link 
+                              to={`/pages/${item.pageId}/tags/${item.tag}`}
+                              className="h-7 px-2.5 bg-bg-main border border-border-subtle hover:border-border-strong text-text-primary text-[11px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center outline-none"
+                            >
+                              Review
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     )) : (

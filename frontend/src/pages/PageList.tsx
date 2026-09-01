@@ -266,7 +266,7 @@ export function PageList() {
       </button>
       {/* Rename Modal */}
       {renameTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-bg-card rounded-xl w-full max-w-md flex flex-col border border-border-subtle shadow-2xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-border-subtle flex items-center justify-between shrink-0 bg-bg-sidebar">
               <h2 className="text-[14px] font-bold text-text-primary">Rename Page</h2>
@@ -583,7 +583,7 @@ export function PageList() {
   {isCreateModalOpen && (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) setIsCreateModalOpen(false); }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
     >
       <div className="bg-bg-card rounded-xl w-full max-w-md flex flex-col border border-border-subtle max-h-[calc(100vh-2rem)] overflow-hidden shadow-2xl">
         <div className="px-4 py-2 border-b border-border-subtle flex items-center justify-between shrink-0 bg-bg-sidebar rounded-t-xl">
@@ -659,7 +659,7 @@ export function PageList() {
           setUploadError(""); 
         } 
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-150"
     >
       <div className="bg-bg-card rounded-2xl w-full max-w-lg flex flex-col border border-border-subtle max-h-[calc(100vh-2rem)] overflow-hidden shadow-[0_24px_50px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.06)]">
         {/* Modal Header */}

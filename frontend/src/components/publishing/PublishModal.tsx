@@ -118,7 +118,7 @@ export function PublishModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={(e) => { if (e.target === e.currentTarget && !isPublishing) onClose(); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
         >
           <motion.div 
             initial={{ scale: 0.97, opacity: 0, y: 4 }}

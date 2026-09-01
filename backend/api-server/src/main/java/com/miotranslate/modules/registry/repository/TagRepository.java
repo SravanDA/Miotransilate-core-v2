@@ -16,6 +16,8 @@ public interface TagRepository extends JpaRepository<Tag, String> {
 
     List<Tag> findByPageId(String pageId);
 
+    List<Tag> findByPageIdAndStatusNot(String pageId, String status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM Tag t WHERE t.tagId = :tagId")
     Optional<Tag> findByIdForUpdate(@Param("tagId") String tagId);

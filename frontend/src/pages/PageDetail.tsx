@@ -129,9 +129,13 @@ export function PageDetail() {
     try {
       const res = await engine.translatePageBatch(pageId, selectedLanguage);
       if (res.status === 'COMPLETE') {
-        showToast(`Successfully translated all ${res.translated} tags for ${selectedLanguage}`);
+        if (res.translated > 0) {
+          showToast(`Successfully translated all ${res.translated} tags for ${selectedLanguage}`);
+        } else {
+          showToast(`All tags for ${selectedLanguage} are already translated and up-to-date.`);
+        }
       } else if (res.status === 'PARTIAL_SUCCESS') {
-        showToast(`Generated ${res.translated} translations (${res.needsAttention} items need review)`);
+        showToast(`Generated ${res.translated} translations (${res.needsAttention} items need review${res.blocked > 0 ? `, ${res.blocked} blocked` : ''})`);
       } else if (res.status === 'NO_ELIGIBLE_TAGS') {
         if (missingEnglishCount > 0) {
           showToast(`Cannot translate: ${missingEnglishCount} tags on this page are missing Master English copy. Click 'Seed English' to add English strings.`);
@@ -693,7 +697,7 @@ export function PageDetail() {
 
  {/* Add Tag Modal */}
  {isAddTagOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+ <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
  <div className="bg-bg-card rounded-xl w-full max-w-md flex flex-col border border-border-subtle overflow-hidden">
  <div className="px-4 py-2 border-b border-border-subtle flex items-center justify-between bg-bg-sidebar rounded-t-xl">
  <h2 className="text-[14px] font-bold text-text-primary">Create New Tag</h2>
@@ -819,7 +823,7 @@ export function PageDetail() {
   {showDeprecateModal && (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) setShowDeprecateModal(false); }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
     >
       <div className="bg-bg-card border border-border-subtle rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 text-text-primary">
         <h3 className="text-base font-bold text-danger flex items-center gap-2">

@@ -176,13 +176,14 @@ class LLMTelemetryServiceImpl {
     this.listeners.forEach(fn => fn());
   }
 
-  // API Key Access
+  // API Key Access — only from user-entered key in LLM Inspector (BYO key).
+  // Never embed an API key in the client bundle via VITE_ env vars.
   getApiKey(): string {
     try {
       const customKey = localStorage.getItem(LOCAL_STORAGE_KEY_API_KEY);
       if (customKey && customKey.trim()) return customKey.trim();
     } catch {}
-    return (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+    return "";
   }
 
   setApiKey(key: string) {
@@ -250,9 +251,9 @@ class LLMTelemetryServiceImpl {
 
   // Test API Key Live
   async testApiKey(keyToTest?: string): Promise<{ ok: boolean; message: string; latencyMs: number }> {
-    const key = keyToTest || this.getApiKey();
+    const key = keyToTest !== undefined ? keyToTest.trim() : this.getApiKey();
     if (!key) {
-      return { ok: false, message: "No API key configured.", latencyMs: 0 };
+      return { ok: false, message: "No API key configured. Please enter a key.", latencyMs: 0 };
     }
 
     const start = performance.now();
@@ -273,16 +274,24 @@ class LLMTelemetryServiceImpl {
 
       if (!resp.ok) {
         const errBody = await resp.text();
+        let errorMsg = `API error (${resp.status})`;
+        try {
+          const parsed = JSON.parse(errBody);
+          if (parsed.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        } catch {}
+
         if (resp.status === 429) {
           return { ok: false, message: `Rate limit hit (429): Quota exceeded on key.`, latencyMs };
         }
         if (resp.status === 400 || resp.status === 403) {
           return { ok: false, message: `Authentication error (${resp.status}): Invalid API key.`, latencyMs };
         }
-        return { ok: false, message: `API error (${resp.status}): ${errBody.slice(0, 100)}`, latencyMs };
+        return { ok: false, message: `${errorMsg.slice(0, 120)}`, latencyMs };
       }
 
-      return { ok: true, message: `Connected to ${model} successfully in ${latencyMs}ms!`, latencyMs };
+      return { ok: true, message: `Connected to ${model} successfully!`, latencyMs };
     } catch (err: any) {
       return { ok: false, message: `Network error: ${err.message || "Failed to reach Gemini"}`, latencyMs: Math.round(performance.now() - start) };
     }

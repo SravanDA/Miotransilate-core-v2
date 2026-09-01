@@ -93,7 +93,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.94, transition: { duration: 0.15 } }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="pointer-events-auto flex items-center justify-between gap-3 px-3.5 py-2.5 bg-[#17181c] border border-white/10 text-white rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.48)] backdrop-blur-md select-none"
+              className="pointer-events-auto flex items-center justify-between gap-3 px-3.5 py-2.5 bg-[#17181c] border border-white/10 text-white rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.48)] select-none"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 {/* Linear Status Icons */}

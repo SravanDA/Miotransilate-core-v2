@@ -338,28 +338,40 @@ export function TagDetail() {
 
  const handleToggleBookmark = () => {
    if (!tagId || !pageId) return;
-   const isNow = BookmarkService.toggleBookmark({
-     id: tagId,
-     type: "tag",
-     pageId,
-     tagId,
-     name: tagId
-   });
+    const isNow = BookmarkService.toggleBookmark({
+      id: tagId,
+      type: "tag",
+      pageId,
+      tagId,
+      name: tagId
+    });
    setIsBookmarked(isNow);
    showToast(isNow ? "Tag bookmarked" : "Bookmark removed");
  };
 
- const handleSaveEnglish = async () => {
- if (!pageId || !tagId) return;
- setIsSavingEnglish(true);
- const textToSave = englishCopy;
- const reasonToSave = englishChangeReason;
- setIsEditingEnglish(false);
- await StoreService.updateEnglish(pageId, tagId, textToSave, reasonToSave);
- RecentlyEditedService.recordEdit({ id: tagId, pageId, tagId, title: tagId });
- setIsSavingEnglish(false);
- showToast("Master English draft submitted for review.");
- };
+  const handleSaveEnglish = async () => {
+    if (!pageId || !tagId) return;
+    setIsSavingEnglish(true);
+    const textToSave = englishCopy;
+    const reasonToSave = englishChangeReason;
+    setIsEditingEnglish(false);
+    await StoreService.updateEnglish(pageId, tagId, textToSave, reasonToSave);
+    RecentlyEditedService.recordEdit({ id: tagId, pageId, tagId, title: tagId });
+    setIsSavingEnglish(false);
+    showToast("Master English draft submitted. Click 'Approve English' to mark translations as Stale.");
+  };
+
+  const handleSaveAndApproveEnglish = async () => {
+    if (!pageId || !tagId) return;
+    setIsSavingEnglish(true);
+    const textToSave = englishCopy;
+    const reasonToSave = englishChangeReason;
+    setIsEditingEnglish(false);
+    await StoreService.saveEnglishAndApprove(pageId, tagId, textToSave, reasonToSave);
+    RecentlyEditedService.recordEdit({ id: tagId, pageId, tagId, title: tagId });
+    setIsSavingEnglish(false);
+    showToast("Master English approved! Translations marked as Stale.");
+  };
 
  const handleApproveEnglish = async () => {
  if (!pageId || !tagId) return;
@@ -400,15 +412,7 @@ export function TagDetail() {
     showToast("Translation saved manually");
   };
 
-  const handleQuickApprove = async () => {
-    if (!pageId || !tagId || !currentVal.text) return;
-    await StoreService.updateTranslation(pageId, tagId, selectedLanguage, {
-      status: "Approved",
-      confidence: currentVal.confidence || 95
-    });
-    RecentlyEditedService.recordEdit({ id: tagId, pageId, tagId, title: tagId, language: selectedLanguage });
-    showToast(`Approved ${langConfig?.name || selectedLanguage} translation`);
-  };
+
 
   const handleRunAI = async () => {
     if (!pageId || !tagId || !tag) return;
@@ -564,26 +568,38 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
            <Edit3 className="w-4 h-4" weight="bold" />
          </button>
        ) : (
-         <div className="flex items-center gap-2.5">
-           <button 
-             onClick={() => {
-               setIsEditingEnglish(false);
-               setEnglishCopy(tag.english);
-               setEnglishChangeReason(tag.englishChangeReason || "");
-             }}
-             className="text-[12px] font-medium text-text-secondary hover:text-text-primary cursor-pointer outline-none"
-           >
-             Cancel
-           </button>
-           <button 
-             onClick={handleSaveEnglish}
-             disabled={isSavingEnglish}
-             className="h-7 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs"
-           >
-             <Save className="w-3.5 h-3.5" weight="fill" />
-             <span>{isSavingEnglish ? "Saving..." : "Save Draft"}</span>
-           </button>
-         </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setIsEditingEnglish(false);
+                setEnglishCopy(tag.english);
+                setEnglishChangeReason(tag.englishChangeReason || "");
+              }}
+              className="text-[12px] font-medium text-text-secondary hover:text-text-primary cursor-pointer outline-none"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSaveEnglish}
+              disabled={isSavingEnglish}
+              className="h-7 px-2.5 bg-bg-card hover:bg-bg-hover border border-border-strong text-text-primary text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs disabled:opacity-50"
+              title="Save as draft for review"
+            >
+              <Save className="w-3.5 h-3.5" weight="fill" />
+              <span>Save Draft</span>
+            </button>
+            {(can('ENGLISH_APPROVE') || user?.roles?.includes('FN')) && (
+              <button 
+                onClick={handleSaveAndApproveEnglish}
+                disabled={isSavingEnglish}
+                className="h-7 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs disabled:opacity-50"
+                title="Save and approve immediately (marks translations as Stale)"
+              >
+                <Check className="w-3.5 h-3.5" weight="bold" />
+                <span>Save & Approve</span>
+              </button>
+            )}
+          </div>
        )
      )}
    </div>
@@ -695,81 +711,77 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
  </div>
 
  <div className="p-5 flex flex-col gap-4">
-  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-  <div className="flex items-center gap-2.5 flex-wrap">
-  <h2 className="text-[13px] font-bold text-text-primary">
-  {langConfig?.name} Translation
-  </h2>
-  <TranslationStatusBadge status={currentVal.status as any} />
-  {currentVal.text && (
-    <ConfidenceBadge confidence={currentVal.confidence} status={currentVal.status} size="md" />
-  )}
-  </div>
-  
-  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-  {!isEditingTrans && currentVal.status === "Pending Review" && can('TRANSLATION_APPROVE') && (
-  <>
-  <button 
-    onClick={handleQuickApprove}
-    className="h-7 px-3 bg-accent-blue hover:brightness-110 text-white text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer outline-none shadow-xs"
-    title={`Approve translation (${currentVal.confidence || 95}% confidence)`}
-  >
-    <Check className="w-3.5 h-3.5" weight="bold" />
-    <span>Approve</span>
-  </button>
-  <button 
-    onClick={() => setIsReviewModalOpen(true)}
-    className="h-7 px-2.5 bg-bg-card hover:bg-bg-hover text-text-primary border border-border-strong text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer outline-none shadow-xs"
-  >
-    <CheckCircle className="w-3.5 h-3.5 text-accent-blue" weight="bold" />
-    <span>Review AI Draft</span>
-  </button>
-  </>
-  )}
- 
- {!isEditingTrans ? (
- <>
- {(can('TRANSLATION_CREATE') || user?.roles?.includes('FN')) && (
- <button 
-   onClick={handleRunAI}
-   disabled={isTranslatingTag}
-   className="h-7 px-3 bg-bg-card hover:bg-bg-hover border border-border-strong text-text-primary text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer outline-none disabled:opacity-50 shadow-xs"
- >
-   {isTranslatingTag && <CircleNotch className="w-3.5 h-3.5 animate-spin" />}
-   <span>{isTranslatingTag ? "Translating..." : "Auto-Translate"}</span>
- </button>
- )}
- {can('TRANSLATION_EDIT') && (
- <button 
- onClick={() => setIsEditingTrans(true)}
- className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-hover rounded transition-colors cursor-pointer outline-none"
- >
- <Edit3 className="w-4 h-4" weight="bold" />
- </button>
- )}
- </>
- ) : (
- <>
- <button 
- onClick={() => {
- setIsEditingTrans(false);
- setTransCopy(currentVal.text);
- }}
- className="text-[12px] font-medium text-text-secondary hover:text-text-primary cursor-pointer outline-none"
- >
- Cancel
- </button>
- <button 
- onClick={handleSaveTranslation}
- className="h-7 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs"
- >
- <Save className="w-3.5 h-3.5" weight="fill" />
- Save Translation
- </button>
- </>
- )}
- </div>
- </div>
+      <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2.5 flex-nowrap shrink-0">
+          <h2 className="text-[13px] font-bold text-text-primary whitespace-nowrap">
+            {langConfig?.name} Translation
+          </h2>
+          <TranslationStatusBadge status={currentVal.status as any} />
+          {currentVal.text && (
+            <ConfidenceBadge confidence={currentVal.confidence} status={currentVal.status} size="md" />
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2 shrink-0">
+          {!isEditingTrans ? (
+            <>
+              {currentVal.status === "Pending Review" && can('TRANSLATION_APPROVE') && (
+                <button 
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="h-8 px-3 bg-bg-card hover:bg-bg-hover text-text-primary border border-border-strong text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer outline-none shadow-xs"
+                >
+                  <CheckCircle className="w-4 h-4 text-accent-blue" weight="bold" />
+                  <span>Review AI Draft</span>
+                </button>
+              )}
+
+              {(can('TRANSLATION_CREATE') || user?.roles?.includes('FN')) && (
+                <button 
+                  onClick={handleRunAI}
+                  disabled={isTranslatingTag}
+                  className="h-8 px-3 bg-bg-card hover:bg-bg-hover border border-border-strong text-text-primary text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer outline-none disabled:opacity-50 shadow-xs"
+                >
+                  {isTranslatingTag ? (
+                    <CircleNotch className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-accent-blue" weight="bold" />
+                  )}
+                  <span>{isTranslatingTag ? "Translating..." : "Auto-Translate"}</span>
+                </button>
+              )}
+
+              {can('TRANSLATION_EDIT') && (
+                <button 
+                  onClick={() => setIsEditingTrans(true)}
+                  className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-border-strong rounded-md transition-colors cursor-pointer outline-none shadow-xs"
+                  title="Edit Translation"
+                >
+                  <Edit3 className="w-4 h-4" weight="bold" />
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => {
+                  setIsEditingTrans(false);
+                  setTransCopy(currentVal.text);
+                }}
+                className="h-8 px-3 text-[12px] font-medium text-text-secondary hover:text-text-primary cursor-pointer outline-none"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveTranslation}
+                className="h-8 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs"
+              >
+                <Save className="w-4 h-4" weight="fill" />
+                <span>Save Translation</span>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
  {currentVal.status === "Stale" && !isEditingTrans && (
  <div className="p-3 bg-bg-main border border-border-subtle rounded-lg text-[12px] text-text-secondary flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1201,7 +1213,7 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
 
   {/* Deprecate Tag Modal */}
   {showDeprecateModal && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-bg-card border border-border-subtle rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 text-text-primary">
         <h3 className="text-base font-bold text-danger flex items-center gap-2">
           <Trash className="w-5 h-5" />

@@ -299,7 +299,7 @@ export function Shell() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setIsMobileNavOpen(false)}
-              className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs"
+              className="lg:hidden fixed inset-0 z-40 bg-black/60"
             />
             {/* Drawer */}
             <motion.aside
@@ -364,14 +364,6 @@ export function Shell() {
                 <span className="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/80 hidden sm:inline">conflicts</span>
               </button>
             )}
-
-            <button 
-              onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors cursor-pointer outline-none"
-              title="Toggle theme"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
           </div>
         </header>
 

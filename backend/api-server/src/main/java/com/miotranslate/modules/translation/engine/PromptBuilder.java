@@ -43,4 +43,41 @@ public class PromptBuilder {
             throw new RuntimeException("Failed to build prompt", e);
         }
     }
+
+    /**
+     * Builds the prompt for Layer-3 semantic audit verification of flagged strings.
+     */
+    public String buildAuditPrompt(TranslationChunk chunk, List<com.miotranslate.shared.integration.ai.model.ScreenTranslationResult> flaggedResults) {
+        Map<String, String> tagToEnglish = new HashMap<>();
+        if (chunk.getTagsToTranslate() != null) {
+            for (com.miotranslate.modules.translation.engine.model.TagContext ctx : chunk.getTagsToTranslate()) {
+                tagToEnglish.put(ctx.getTagId(), ctx.getEnglishText());
+            }
+        }
+
+        Map<String, Object> promptData = new HashMap<>();
+        promptData.put("instructions", "You are an expert bilingual localization reviewer for MioSalon salon & spa management software. "
+                + "Verify whether each translated string, in the context of this screen, accurately expresses the stated intended meaning. "
+                + "Return a verdict (correct, wrong_sense, wrong_register, awkward, or unsure), an English reading of how a native user understands the target text, and an improved translation if needed.");
+        promptData.put("pageName", chunk.getPageName());
+        promptData.put("domain", chunk.getDomain());
+        promptData.put("targetLanguage", chunk.getTargetLanguage());
+
+        List<Map<String, String>> items = flaggedResults.stream().map(res -> {
+            Map<String, String> item = new HashMap<>();
+            item.put("tag", res.getTag());
+            item.put("english", tagToEnglish.getOrDefault(res.getTag(), ""));
+            item.put("intendedMeaning", res.getSense() != null ? res.getSense() : "");
+            item.put("translation", res.getTranslation());
+            return item;
+        }).toList();
+
+        promptData.put("itemsToAudit", items);
+
+        try {
+            return objectMapper.writeValueAsString(promptData);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to build audit prompt", e);
+        }
+    }
 }

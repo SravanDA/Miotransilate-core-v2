@@ -154,6 +154,13 @@ export class ApiService {
     }
   }
 
+  static async approveTranslation(tagId: string, langCode: string) {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, { 
+      action: "APPROVE" 
+    });
+    return res.data;
+  }
+
   static async rejectTranslation(tagId: string, langCode: string, reason: string) {
     const res = await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, { 
       action: "REJECT", 

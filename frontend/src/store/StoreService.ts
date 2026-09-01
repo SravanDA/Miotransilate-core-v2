@@ -113,9 +113,11 @@ function mergePersistedTranslationsIntoTags(pageId: string, apiTags: Tag[]): Tag
         !existing.text ||
         existing.status === "No Trans" ||
         existing.status === "No Eng" ||
-        (persistedVal.lastUpdated && existing.lastUpdated && persistedVal.lastUpdated > existing.lastUpdated)
+        !existing.lastUpdated ||
+        !persistedVal.lastUpdated ||
+        persistedVal.lastUpdated >= existing.lastUpdated
       ) {
-        mergedValues[langCode] = persistedVal;
+        mergedValues[langCode] = { ...(existing || {}), ...persistedVal };
       }
     }
     return { ...tag, values: mergedValues };
@@ -414,15 +416,17 @@ export class StoreService {
     tag.englishVersion = (tag.englishVersion || 1) + 1;
     tag.updatedAt = new Date().toISOString();
 
-    // Mark existing approved translations as stale
+    // Mark existing approved & pending translations as stale
     if (tag.values) {
       Object.keys(tag.values).forEach(lang => {
-        if (tag.values[lang].status === "Approved") {
+        if (tag.values[lang].status === "Approved" || tag.values[lang].status === "Pending Review") {
           tag.values[lang].status = "Stale";
+          tag.values[lang].lastUpdated = new Date().toISOString();
           persistTranslation(pageId, tagId, lang, tag.values[lang]);
         }
       });
     }
+    savePersistedTags(pageId, tags);
     this.emit();
 
     try {
@@ -431,6 +435,11 @@ export class StoreService {
     } catch (e) {
       console.warn("Backend approve english error (kept local update):", e);
     }
+  }
+
+  static async saveEnglishAndApprove(pageId: string, tagId: string, newEnglish: string, changeReason?: string) {
+    await this.updateEnglish(pageId, tagId, newEnglish, changeReason);
+    await this.approveEnglish(pageId, tagId);
   }
 
   static async updateTranslation(pageId: string, tagId: string, langCode: string, newValue: Partial<TranslationValue>) {
@@ -448,6 +457,7 @@ export class StoreService {
 
       // Persist to localStorage so translations survive page refresh
       persistTranslation(pageId, tagId, langCode, merged);
+      savePersistedTags(pageId, tags);
 
       this.emit();
     }
@@ -460,6 +470,32 @@ export class StoreService {
       } catch (e) {
         console.warn("Backend translation update error (kept local update):", e);
       }
+    }
+  }
+
+  static async approveTranslation(pageId: string, tagId: string, langCode: string) {
+    const tags = this.getTags(pageId);
+    const tag = tags.find(t => t.id === tagId);
+    if (tag) {
+      if (!tag.values) tag.values = {};
+      const current = tag.values[langCode] || { text: "", status: "Pending Review", confidence: 95, translatedAtEnglishVersion: 1 };
+      const merged: TranslationValue = {
+        ...current,
+        status: "Approved",
+        lastUpdated: new Date().toISOString()
+      };
+      tag.values[langCode] = merged;
+      tag.updatedAt = new Date().toISOString();
+
+      persistTranslation(pageId, tagId, langCode, merged);
+      savePersistedTags(pageId, tags);
+      this.emit();
+    }
+
+    try {
+      await ApiService.approveTranslation(tagId, langCode);
+    } catch (e) {
+      console.warn("Backend approve translation error (kept local update):", e);
     }
   }
 

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,4 +18,6 @@ public interface TranslationRepository extends JpaRepository<Translation, Transl
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM Translation t WHERE t.tagId = :tagId AND t.languageCode = :languageCode")
     Optional<Translation> findByIdForUpdate(@Param("tagId") String tagId, @Param("languageCode") String languageCode);
+
+    List<Translation> findByTagIdInAndLanguageCode(java.util.Collection<String> tagIds, String languageCode);
 }

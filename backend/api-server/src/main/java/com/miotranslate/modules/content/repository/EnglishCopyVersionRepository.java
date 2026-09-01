@@ -13,5 +13,7 @@ public interface EnglishCopyVersionRepository extends JpaRepository<EnglishCopyV
     
     List<EnglishCopyVersion> findByTagIdOrderByVersionNumberDesc(String tagId);
     
+    List<EnglishCopyVersion> findByTagIdIn(java.util.Collection<String> tagIds);
+    
     Optional<EnglishCopyVersion> findTopByTagIdOrderByVersionNumberDesc(String tagId);
 }

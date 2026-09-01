@@ -15,6 +15,7 @@ public class PageTranslationResult {
     private int blocked;
     private int remaining;
     private List<String> remainingTagIds;
+    private List<String> blockedTagIds;
     private ChunkStats chunks;
     private List<EngineResult> results;
     

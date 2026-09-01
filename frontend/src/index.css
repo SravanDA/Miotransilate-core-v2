@@ -90,6 +90,22 @@
 }
 
 @layer base {
+  /* Universal Scrollbar Removal - Smooth scrolling preserved everywhere */
+  *,
+  *::before,
+  *::after {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+
+  html,
   body {
     background-color: var(--bg-main);
     color: var(--text-primary);
@@ -100,6 +116,16 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     overscroll-behavior-y: none;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
   }
 
   code, kbd, samp, pre {
@@ -107,6 +133,21 @@
     font-feature-settings: "tnum", "zero";
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* Explicit no-scrollbar utility classes */
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 /* Hairline border utilities */

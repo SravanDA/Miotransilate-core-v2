@@ -13,10 +13,10 @@ public interface AiTranslationClient {
     List<com.miotranslate.shared.integration.ai.model.ScreenTranslationResult> translateScreen(String prompt);
 
     /**
-     * Audits a batch of flagged strings.
+     * Audits a batch of flagged strings using Layer-3 semantic sense verification.
      * 
-     * @param prompt The structured JSON prompt for Gemini Audit
-     * @return Audit outcome (To be defined)
+     * @param prompt The structured prompt for Gemini Audit
+     * @return List of AuditResultItem
      */
-    String auditScreen(String prompt);
+    List<com.miotranslate.shared.integration.ai.model.AuditResultItem> auditScreen(String prompt);
 }

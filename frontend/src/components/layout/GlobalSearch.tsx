@@ -145,7 +145,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     <AnimatePresence>
       <div 
         onClick={onClose}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-xs"
+        className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: -10 }}

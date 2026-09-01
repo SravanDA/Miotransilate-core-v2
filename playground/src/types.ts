@@ -1,4 +1,4 @@
-export type Environment = "DEV" | "QA" | "PRODUCTION";
+export type Environment = "MOCK" | "DEV" | "QA" | "PRODUCTION";
 export type Language = "eng" | "arabic" | "spanish" | "italian" | "french" | "german" | "turkish" | "bulgarian";
 
 export const LANGUAGES = [
@@ -6,7 +6,7 @@ export const LANGUAGES = [
   { code: "arabic", name: "Arabic" },
   { code: "spanish", name: "Spanish" },
   { code: "italian", name: "Italian" },
-  { code: "french", name: "French" },
+  { code: "french", name: "French (Canada)" },
   { code: "german", name: "German" },
   { code: "turkish", name: "Turkish" },
   { code: "bulgarian", name: "Bulgarian" },

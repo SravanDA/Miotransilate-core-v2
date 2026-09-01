@@ -1,42 +1,55 @@
 import { cn } from "../../lib/utils";
 import type { TranslationStatus } from "../../types";
+import { 
+  StatusCompleted, 
+  StatusBacklog, 
+  StatusInProgress, 
+  StatusCanceled, 
+  StatusPlanned 
+} from "../ui/LinearIcons";
 
 interface Props {
   status: TranslationStatus;
   className?: string;
+  showIconOnly?: boolean;
 }
 
-export function TranslationStatusBadge({ status, className }: Props) {
-  const getStatusStyle = (s: TranslationStatus) => {
+export function TranslationStatusBadge({ status, className, showIconOnly }: Props) {
+  const getBadgeConfig = (s: TranslationStatus) => {
     switch (s) {
       case 'Approved':
-        return 'bg-[#E3FCEF] text-[#006644] border border-[#ABF5D1]'; // Miosalon Success
-      case 'Stale':
-        return 'bg-[#FFFAE6] text-[#FF8B00] border border-[#FFE380]'; // Miosalon Warning
-      case 'No Trans':
-      case 'No Eng':
-        return 'bg-surface-active text-text-subtle border border-border-main'; // Miosalon Neutral
-      case 'Draft':
-        return 'bg-[#E6FCFF] text-[#0065FF] border border-[#B3D4FF]'; // Miosalon Info
+        return { icon: StatusCompleted, label: 'Approved' };
       case 'Pending Review':
-        return 'bg-[#EAE6FF] text-[#403294] border border-[#403294]/20'; // Miosalon Discovery
+        return { icon: StatusInProgress, label: 'Pending Review' };
+      case 'Stale':
+        return { icon: StatusInProgress, label: 'Stale' };
+      case 'Draft':
+        return { icon: StatusPlanned, label: 'Draft' };
+      case 'No Trans':
+        return { icon: StatusBacklog, label: 'No Trans' };
+      case 'No Eng':
+        return { icon: StatusBacklog, label: 'No Eng' };
       case 'Deprecated':
-        return 'bg-[#F4F5F7] text-[#5E6C84] border border-[#DFE1E6] line-through opacity-70';
+        return { icon: StatusCanceled, label: 'Deprecated' };
       default:
-        return 'bg-surface-active text-text-muted';
+        return { icon: StatusPlanned, label: status || 'Unknown' };
     }
   };
 
+  const config = getBadgeConfig(status);
+  const Icon = config.icon;
+
   return (
-    <span
+    <div
       className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold shadow-sm",
-        getStatusStyle(status),
+        "inline-flex items-center gap-1.5 text-[13px] font-normal text-text-primary shrink-0 select-none",
         className
       )}
+      title={config.label}
     >
-      {status === 'Stale' ? '⚠ ' : ''}
-      {status}
-    </span>
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      {!showIconOnly && <span className="truncate">{config.label}</span>}
+    </div>
   );
 }
+

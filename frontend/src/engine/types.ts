@@ -9,6 +9,8 @@ export interface TranslationResult {
   translatedText: string;
   confidence: number;
   backTranslation?: string;
+  stateCause?: string;
+  status?: string;
   modelUsed: string;
 }
 

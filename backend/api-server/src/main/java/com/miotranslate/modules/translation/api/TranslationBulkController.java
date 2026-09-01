@@ -1,6 +1,7 @@
 package com.miotranslate.modules.translation.api;
 
 import com.miotranslate.modules.translation.service.TranslationService;
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ public class TranslationBulkController {
     }
 
     @PostMapping("/generate-all")
+    @RequiresPermission("TRANSLATION_CREATE")
     public ResponseEntity<Map<String, Object>> generateAiTranslationsBulk(
             @PathVariable String pageId,
             @PathVariable String languageCode) {
@@ -29,6 +31,7 @@ public class TranslationBulkController {
     }
 
     @PostMapping("/bulk-approve")
+    @RequiresPermission("TRANSLATION_BULK_APPROVE")
     public ResponseEntity<Map<String, Object>> bulkApproveTranslations(
             @PathVariable String pageId,
             @PathVariable String languageCode) {

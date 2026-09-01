@@ -1,12 +1,12 @@
-import type { Page, Tag, TranslationValue } from "../types";
+import type { Page, Tag, TranslationValue, Environment } from "../types";
+import { apiClient } from "../api/client";
 
 const API_BASE = '/v1';
 
 export class ApiService {
   static async getPages(): Promise<Page[]> {
-    const res = await fetch(`${API_BASE}/pages`);
-    if (!res.ok) throw new Error("Failed to fetch pages");
-    const pages = await res.json();
+    const res = await apiClient.get(`${API_BASE}/pages`);
+    const pages = res.data;
     return pages.map((p: any) => ({
       pageId: p.pageId,
       name: p.pageName,
@@ -16,10 +16,19 @@ export class ApiService {
     }));
   }
 
+  static async createPage(page: { pageId: string; pageName: string; module: string }) {
+    const res = await apiClient.post(`${API_BASE}/pages`, {
+      pageId: page.pageId,
+      pageName: page.pageName,
+      module: page.module,
+      status: "ACTIVE"
+    });
+    return res.data;
+  }
+
   static async getPageDetail(pageId: string): Promise<{ page: Page, tags: Tag[] }> {
-    const res = await fetch(`${API_BASE}/pages/${pageId}/detail`);
-    if (!res.ok) throw new Error("Failed to fetch page detail");
-    const data = await res.json();
+    const res = await apiClient.get(`${API_BASE}/pages/${pageId}/detail`);
+    const data = res.data;
     
     const page: Page = {
       pageId: data.page.pageId,
@@ -65,33 +74,180 @@ export class ApiService {
     return { page, tags };
   }
 
-  static async updateEnglishCopy(tagId: string, text: string, changeReason: string) {
-    const res = await fetch(`${API_BASE}/tags/${tagId}/english-copy/draft`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, changeReason })
+  static async createTag(pageId: string, tag: { id: string; type?: string; english?: string }) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/tags`, {
+      tagId: tag.id,
+      copyType: tag.type || "General",
+      status: "ACTIVE"
     });
-    if (!res.ok) throw new Error("Failed to update English copy");
-    
-    // Also approve it right away for simplification in this UI flow
-    await fetch(`${API_BASE}/tags/${tagId}/english-copy/review`, {
-      method: "POST"
-    });
+
+    if (tag.english && tag.english.trim()) {
+      await this.updateEnglishCopy(tag.id, tag.english, "Initial copy");
+    }
+    return res.data;
   }
 
-  static async updateTranslation(tagId: string, langCode: string, text: string) {
-    const res = await fetch(`${API_BASE}/tags/${tagId}/translations/${langCode}/draft`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ translatedText: text })
+  static async updateTagType(tagId: string, copyType: string) {
+    const res = await apiClient.patch(`${API_BASE}/tags/${tagId}`, {
+      copyType: copyType || "General"
     });
-    if (!res.ok) throw new Error("Failed to update translation");
+    return res.data;
+  }
+
+  static async deprecateTag(tagId: string) {
+    const res = await apiClient.patch(`${API_BASE}/tags/${tagId}/deprecate`);
+    return res.data;
+  }
+
+  static async updatePage(pageId: string, pageName: string, module?: string) {
+    const res = await apiClient.patch(`${API_BASE}/pages/${pageId}`, {
+      pageName,
+      module
+    });
+    return res.data;
+  }
+
+  static async deprecatePage(pageId: string) {
+    const res = await apiClient.patch(`${API_BASE}/pages/${pageId}/deprecate`);
+    return res.data;
+  }
+
+  static async saveEnglishCopyDraft(tagId: string, text: string, changeReason?: string) {
+    const res = await apiClient.put(`${API_BASE}/tags/${tagId}/english-copy/draft`, { 
+      text, 
+      changeReason: changeReason || "Updated copy" 
+    });
+    return res.data;
+  }
+
+  static async submitEnglishCopyForReview(tagId: string) {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/english-copy/submit`);
+    return res.data;
+  }
+
+  static async approveEnglishCopy(tagId: string) {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/english-copy/review`);
+    return res.data;
+  }
+
+  static async getEnglishCopyVersions(tagId: string) {
+    const res = await apiClient.get(`${API_BASE}/tags/${tagId}/english-copy/versions`);
+    return res.data;
+  }
+
+  static async updateEnglishCopy(tagId: string, text: string, changeReason?: string) {
+    return this.saveEnglishCopyDraft(tagId, text, changeReason);
+  }
+
+  static async updateTranslation(
+    tagId: string, 
+    langCode: string, 
+    text: string, 
+    targetStatus: "Approved" | "Pending Review" | "Draft" = "Approved"
+  ) {
+    await apiClient.put(`${API_BASE}/tags/${tagId}/translations/${langCode}/draft`, { translatedText: text });
     
-    // And auto-approve
-    await fetch(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "APPROVE" })
+    if (targetStatus === "Approved") {
+      await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, { action: "APPROVE" });
+    } else if (targetStatus === "Pending Review") {
+      await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/submit`);
+    }
+  }
+
+  static async rejectTranslation(tagId: string, langCode: string, reason: string) {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, { 
+      action: "REJECT", 
+      reason 
     });
+    return res.data;
+  }
+
+  static async returnTranslationForRevision(tagId: string, langCode: string, comment: string) {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, { 
+      action: "RETURN_FOR_REVISION", 
+      comment 
+    });
+    return res.data;
+  }
+
+  static async confirmStaleTranslation(tagId: string, langCode: string) {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/confirm-stale`);
+    return res.data;
+  }
+
+  static async getTranslationVersions(tagId: string, langCode: string) {
+    const res = await apiClient.get(`${API_BASE}/tags/${tagId}/translations/${langCode}/versions`);
+    return res.data;
+  }
+
+  static async generateAiTranslationsBulk(pageId: string, langCode: string) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/translations/${langCode}/generate-all`);
+    return res.data;
+  }
+
+  static async bulkApproveTranslations(pageId: string, langCode: string) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/translations/${langCode}/bulk-approve`);
+    return res.data;
+  }
+
+  static async getPrePublishingSummary(pageId: string, languageCode: string, environment: Environment) {
+    const res = await apiClient.get(`${API_BASE}/pages/${pageId}/languages/${languageCode}/environments/${environment}/preview`);
+    return res.data;
+  }
+
+  static async publish(pageId: string, languageCode: string, environment: Environment) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/languages/${languageCode}/environments/${environment}/publish`);
+    return res.data;
+  }
+
+  static async requestPublishingApproval(pageId: string, languageCode: string, environment: Environment) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/languages/${languageCode}/environments/${environment}/approval-requests`);
+    return res.data;
+  }
+
+  static async reviewPublishingApproval(parId: string, action: "APPROVE" | "REJECT") {
+    const res = await apiClient.post(`${API_BASE}/approval-requests/${parId}/review`, { action });
+    return res.data;
+  }
+
+  static async getDeploymentHistory(pageId: string, languageCode: string) {
+    const res = await apiClient.get(`${API_BASE}/pages/${pageId}/languages/${languageCode}/deployments`);
+    return res.data;
+  }
+
+  static async rollback(pageId: string, languageCode: string, environment: Environment, targetReleaseId: string) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/languages/${languageCode}/environments/${environment}/rollback`, { targetReleaseId });
+    return res.data;
+  }
+
+  static async getComments(tagId: string): Promise<import("../types").Comment[]> {
+    const res = await apiClient.get(`${API_BASE}/tags/${tagId}/comments`);
+    return res.data;
+  }
+
+  static async addComment(tagId: string, payload: {
+    text: string;
+    scope: { type: string; languageCode?: string | null };
+    isEscalation?: boolean;
+    escalationReason?: string | null;
+    parentCommentId?: string | null;
+  }): Promise<import("../types").Comment> {
+    const res = await apiClient.post(`${API_BASE}/tags/${tagId}/comments`, payload);
+    return res.data;
+  }
+
+  static async resolveComment(tagId: string, commentId: string): Promise<import("../types").Comment> {
+    const res = await apiClient.patch(`${API_BASE}/tags/${tagId}/comments/${commentId}/resolve`);
+    return res.data;
+  }
+
+  static async unresolveComment(tagId: string, commentId: string): Promise<import("../types").Comment> {
+    const res = await apiClient.patch(`${API_BASE}/tags/${tagId}/comments/${commentId}/unresolve`);
+    return res.data;
+  }
+
+  static async getEscalatedItems(): Promise<import("../types").EscalatedItem[]> {
+    const res = await apiClient.get(`${API_BASE}/escalations`);
+    return res.data;
   }
 }

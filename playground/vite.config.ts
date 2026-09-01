@@ -10,6 +10,10 @@ export default defineConfig({
       '/playground': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+      },
+      '/v1/migrations': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
       }
     }
   }

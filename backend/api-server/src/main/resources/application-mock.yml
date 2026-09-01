@@ -1,17 +1,31 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:mockdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:mockdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;INIT=CREATE SCHEMA IF NOT EXISTS admin\;CREATE SCHEMA IF NOT EXISTS translation\;CREATE SCHEMA IF NOT EXISTS content\;CREATE SCHEMA IF NOT EXISTS registry\;CREATE SCHEMA IF NOT EXISTS publishing\;CREATE SCHEMA IF NOT EXISTS system\;CREATE SCHEMA IF NOT EXISTS migration\;CREATE SCHEMA IF NOT EXISTS system_ops\;CREATE SCHEMA IF NOT EXISTS search\;CREATE SCHEMA IF NOT EXISTS collaboration\;CREATE DOMAIN IF NOT EXISTS jsonb AS json\;CREATE TABLE IF NOT EXISTS system_ops.audit_records (audit_record_id uuid not null primary key, action varchar(100) not null, subject_entity_type varchar(100), subject_entity_id varchar(100), subject_entity_id_aux text, performed_by_user_id uuid, performed_by_source varchar(100) default 'USER', performed_at timestamp default current_timestamp, api_id varchar(20), request_id uuid, before_state json, after_state json, detail text, created_at timestamp default current_timestamp)\;
     driverClassName: org.h2.Driver
     username: sa
     password:
+    replica:
+      url: jdbc:h2:mem:mockdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      driverClassName: org.h2.Driver
+      username: sa
+      password:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
 
 # For local development without auth
 miotranslate:
+  jwt:
+    secret: "miotranslate-super-secure-jwt-signing-key-minimum-256-bits-long"
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: gemini-2.5-flash
+    timeout-ms: 30000
   auth:
     enabled: false

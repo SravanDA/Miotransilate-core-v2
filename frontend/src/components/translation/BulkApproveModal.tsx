@@ -1,21 +1,39 @@
-import { X, CheckCircle, AlertCircle } from "lucide-react";
+import { useEffect } from "react";
+import {
+  X,
+  CheckCircle,
+  WarningCircle as AlertCircle
+} from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BulkApproveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  totalTags: number;
+  totalPending: number;
+  eligibleCount: number;
   lowConfidenceCount: number;
+  threshold?: number;
 }
 
 export function BulkApproveModal({
   isOpen,
   onClose,
   onConfirm,
-  totalTags,
-  lowConfidenceCount
+  totalPending,
+  eligibleCount,
+  lowConfidenceCount,
+  threshold = 95
 }: BulkApproveModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -23,76 +41,85 @@ export function BulkApproveModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#091E42]/50"
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
         >
           <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: "spring", duration: 0.3 }}
-            className="bg-background-card rounded-lg shadow-lg w-full max-w-md flex flex-col"
+            initial={{ scale: 0.96, opacity: 0, y: 8 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            transition={{ type: "spring", duration: 0.25 }}
+            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-md flex flex-col overflow-hidden text-text-primary shadow-2xl"
           >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-main">
-          <h2 className="text-xl font-semibold text-main">Bulk Approve Translations</h2>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded hover:bg-background-selected text-muted transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-sidebar rounded-t-xl">
+              <h2 className="text-base font-semibold text-text-primary">Bulk Approve Translations</h2>
+              <button 
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors cursor-pointer outline-none"
+              >
+                <X className="w-4 h-4" weight="bold" />
+              </button>
+            </div>
 
-        {/* Content */}
-        <div className="p-6">
-          <p className="text-main mb-6">
-            You are about to approve <strong>{totalTags}</strong> translations for this page. They will be marked as "Approved" and will be included in the next deployment cycle.
-          </p>
+            {/* Content */}
+            <div className="p-6 bg-bg-card space-y-4">
+              <p className="text-[13px] text-text-secondary leading-relaxed">
+                Reviewing <strong className="text-text-primary">{totalPending}</strong> pending translations against the configured confidence gate (≥{threshold}%).
+              </p>
 
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 bg-[#E3FCEF] border border-[#36B37E] rounded-lg">
-              <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-semibold text-success">High Confidence Translations</h4>
-                <p className="text-xs text-success mt-1">{totalTags - lowConfidenceCount} tags have a confidence score of 85% or higher.</p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-bg-main border border-border-subtle rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5" weight="bold" />
+                  <div>
+                    <h4 className="text-[13px] font-medium text-text-primary">
+                      {eligibleCount} High-Confidence Translations Ready
+                    </h4>
+                    <p className="text-[12px] text-text-secondary mt-0.5">
+                      These meet or exceed the {threshold}% confidence gate and will be marked as "Approved".
+                    </p>
+                  </div>
+                </div>
+
+                {lowConfidenceCount > 0 && (
+                  <div className="flex items-start gap-3 p-3 bg-bg-main border border-border-subtle rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" weight="bold" />
+                    <div>
+                      <h4 className="text-[13px] font-medium text-text-primary">
+                        {lowConfidenceCount} Low-Confidence Item{lowConfidenceCount === 1 ? '' : 's'} Protected
+                      </h4>
+                      <p className="text-[12px] text-text-secondary mt-0.5">
+                        Translations below {threshold}% confidence will be kept in "Pending Review" for individual verification.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {lowConfidenceCount > 0 && (
-              <div className="flex items-start gap-3 p-3 bg-[#FFFAE6] border border-[#FFE380] rounded-lg">
-                <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-semibold text-warning">Low Confidence Warning</h4>
-                  <p className="text-xs text-warning mt-1">
-                    {lowConfidenceCount} tags have a confidence score below 85%. It is recommended to review these manually.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-main flex items-center justify-end gap-3 bg-background-hover rounded-b-[4px]">
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-muted hover:bg-background-selected rounded-lg transition-colors active:scale-95"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className="px-4 py-2 bg-primary text-white text-sm font-bold rounded hover:bg-primary-hover transition-colors active:scale-95"
-          >
-            Approve All
-          </button>
-        </div>
+            {/* Footer */}
+            <div className="px-6 py-3.5 border-t border-border-subtle flex items-center justify-end gap-2.5 bg-bg-sidebar rounded-b-xl">
+              <button 
+                onClick={onClose}
+                className="h-8 px-3.5 text-[13px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-md transition-colors cursor-pointer outline-none"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  onConfirm();
+                  onClose();
+                }}
+                disabled={eligibleCount === 0}
+                className="h-8 px-4 bg-accent-blue text-white text-[13px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] cursor-pointer outline-none shadow-xs disabled:opacity-50 disabled:pointer-events-none"
+              >
+                Approve {eligibleCount} Strings
+              </button>
+            </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 }
+

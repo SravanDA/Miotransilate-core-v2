@@ -1,14 +1,22 @@
 package com.miotranslate.shared.integration.ai;
 
+import java.util.List;
+
 public interface AiTranslationClient {
     
     /**
-     * Translates the given English text to the target language contextually.
+     * Translates a batch of strings for a given screen context.
      * 
-     * @param englishText The source English text
-     * @param targetLanguageCode The target language code (e.g., 'es', 'fr')
-     * @param context Additional business context if any
-     * @return TranslationResult containing translated text, back translation, and confidence
+     * @param prompt The structured JSON prompt for Gemini
+     * @return List of ScreenTranslationResult
      */
-    TranslationResult translate(String englishText, String targetLanguageCode, String context);
+    List<com.miotranslate.shared.integration.ai.model.ScreenTranslationResult> translateScreen(String prompt);
+
+    /**
+     * Audits a batch of flagged strings.
+     * 
+     * @param prompt The structured JSON prompt for Gemini Audit
+     * @return Audit outcome (To be defined)
+     */
+    String auditScreen(String prompt);
 }

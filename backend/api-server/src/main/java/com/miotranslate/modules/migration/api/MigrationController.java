@@ -5,6 +5,7 @@ import com.miotranslate.modules.migration.model.MigrationRowEvent;
 import com.miotranslate.modules.migration.repository.ImportEventRepository;
 import com.miotranslate.modules.migration.repository.MigrationRowEventRepository;
 import com.miotranslate.modules.migration.service.MigrationService;
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,10 +13,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1/migrations")
+@RequiresPermission("ADMIN_MIGRATION")
 public class MigrationController {
 
     private final MigrationService migrationService;
@@ -57,5 +60,37 @@ public class MigrationController {
     @GetMapping("/{id}/report")
     public ResponseEntity<List<MigrationRowEvent>> getMigrationValidationReport(@PathVariable UUID id) {
         return ResponseEntity.ok(migrationRowEventRepository.findByImportEventIdOrderBySourceRowNumberAsc(id));
+    }
+
+    @GetMapping("/sync-from-mock-ls")
+    public ResponseEntity<Map<String, Object>> syncFromMockLsGet() {
+        Map<String, Object> result = migrationService.syncFromMockLs();
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/sync-from-mock-ls")
+    public ResponseEntity<Map<String, Object>> syncFromMockLsPost() {
+        Map<String, Object> result = migrationService.syncFromMockLs();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/mock-ls/status")
+    public ResponseEntity<Map<String, Object>> getMockLsStatus() {
+        return ResponseEntity.ok(migrationService.getMockLsSyncStatus());
+    }
+
+    @DeleteMapping("/reset")
+    public ResponseEntity<Map<String, Object>> resetDataDelete() {
+        return ResponseEntity.ok(migrationService.deleteAllMigratedData());
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<Map<String, Object>> resetDataPost() {
+        return ResponseEntity.ok(migrationService.deleteAllMigratedData());
+    }
+
+    @DeleteMapping("/all-data")
+    public ResponseEntity<Map<String, Object>> deleteAllData() {
+        return ResponseEntity.ok(migrationService.deleteAllMigratedData());
     }
 }

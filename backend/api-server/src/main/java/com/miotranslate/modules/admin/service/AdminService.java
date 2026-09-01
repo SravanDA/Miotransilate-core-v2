@@ -61,6 +61,17 @@ public class AdminService {
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public UserRoleAssignment assignRole(UUID targetUserId, String role, UUID assignedBy) {
+        if (targetUserId.equals(assignedBy)) {
+            throw new IllegalStateException("Cannot assign roles to yourself");
+        }
+
+        if ("FN".equals(role)) {
+            boolean isAssignerFounder = roleRepository.existsByUserIdAndRoleAndRevokedAtIsNull(assignedBy, "FN");
+            if (!isAssignerFounder) {
+                throw new IllegalStateException("Only a Founder can assign the Founder role");
+            }
+        }
+
         UserRoleAssignment assignment = new UserRoleAssignment();
         assignment.setUserId(targetUserId);
         assignment.setRole(role);
@@ -75,6 +86,10 @@ public class AdminService {
         
         if (assignment.getRevokedAt() != null) {
             return; // Already revoked
+        }
+        
+        if (assignment.getUserId().equals(revokedBy)) {
+            throw new IllegalStateException("Cannot revoke your own roles");
         }
 
         // Lockout guard logic

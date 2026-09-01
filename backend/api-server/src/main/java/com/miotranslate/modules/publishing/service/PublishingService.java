@@ -1,5 +1,10 @@
 package com.miotranslate.modules.publishing.service;
 
+import com.miotranslate.modules.content.model.EnglishCopy;
+import com.miotranslate.modules.content.model.EnglishCopyVersion;
+import com.miotranslate.modules.content.model.EnglishCopyVersionId;
+import com.miotranslate.modules.content.repository.EnglishCopyRepository;
+import com.miotranslate.modules.content.repository.EnglishCopyVersionRepository;
 import com.miotranslate.modules.publishing.model.PublishingApprovalRequest;
 import com.miotranslate.modules.publishing.model.Release;
 import com.miotranslate.modules.publishing.repository.PublishingApprovalRequestRepository;
@@ -42,6 +47,9 @@ public class PublishingService {
     private final TagRepository tagRepository;
     private final TranslationRepository translationRepository;
     private final TranslationVersionRepository translationVersionRepository;
+    private final EnglishCopyRepository englishCopyRepository;
+    private final EnglishCopyVersionRepository englishCopyVersionRepository;
+    private final com.miotranslate.shared.auth.PermissionService permissionService;
 
     public PublishingService(PublishingApprovalRequestRepository parRepository,
                              ReleaseRepository releaseRepository,
@@ -51,7 +59,10 @@ public class PublishingService {
                              JobDispatcher jobDispatcher,
                              TagRepository tagRepository,
                              TranslationRepository translationRepository,
-                             TranslationVersionRepository translationVersionRepository) {
+                             TranslationVersionRepository translationVersionRepository,
+                             EnglishCopyRepository englishCopyRepository,
+                             EnglishCopyVersionRepository englishCopyVersionRepository,
+                             com.miotranslate.shared.auth.PermissionService permissionService) {
         this.parRepository = parRepository;
         this.releaseRepository = releaseRepository;
         this.snapshotRepository = snapshotRepository;
@@ -61,12 +72,16 @@ public class PublishingService {
         this.tagRepository = tagRepository;
         this.translationRepository = translationRepository;
         this.translationVersionRepository = translationVersionRepository;
+        this.englishCopyRepository = englishCopyRepository;
+        this.englishCopyVersionRepository = englishCopyVersionRepository;
+        this.permissionService = permissionService;
     }
 
     @Transactional(readOnly = true)
     public Map<String, Object> getEnvironmentStatus(String pageId, String languageCode) {
         // Find latest release per environment
         Map<String, Object> status = new HashMap<>();
+        status.put("MOCK", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "MOCK"));
         status.put("DEV", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "DEV"));
         status.put("QA", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "QA"));
         status.put("PRODUCTION", releaseRepository.findMaxDeploymentVersion(pageId, languageCode, "PRODUCTION"));
@@ -81,8 +96,17 @@ public class PublishingService {
         return summary;
     }
 
+    private void requirePublishPermission(UUID userId, String environment) {
+        String reqPerm = "PUBLISH_" + environment.toUpperCase();
+        if (!permissionService.hasPermission(userId, reqPerm)) {
+            throw new org.springframework.security.access.AccessDeniedException("Missing permission: " + reqPerm);
+        }
+    }
+
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public PublishingApprovalRequest requestPublishingApproval(String pageId, String languageCode, String environment, UUID requestedBy) {
+        requirePublishPermission(requestedBy, environment);
+        
         if (parRepository.existsByPageIdAndLanguageCodeAndEnvironmentAndStatus(pageId, languageCode, environment, "PENDING")) {
             throw new IllegalStateException("An active publishing request already exists");
         }
@@ -119,22 +143,36 @@ public class PublishingService {
             List<String> removeTags = new ArrayList<>();
             List<Tag> allTags = tagRepository.findByPageId(release.getPageId());
 
+            boolean isEnglish = "eng".equalsIgnoreCase(release.getLanguageCode()) || "en".equalsIgnoreCase(release.getLanguageCode());
+            String targetLang = isEnglish ? "eng" : release.getLanguageCode();
+
             for (Tag tag : allTags) {
                 if ("DEPRECATED".equals(tag.getStatus())) {
                     removeTags.add(tag.getTagId());
                 } else {
-                    Translation t = translationRepository.findById(new TranslationId(tag.getTagId(), release.getLanguageCode())).orElse(null);
-                    if (t != null && "APPROVED".equals(t.getStatus()) && t.getCurrentVersionNumber() != null) {
-                        TranslationVersion tv = translationVersionRepository.findById(new TranslationVersionId(tag.getTagId(), release.getLanguageCode(), t.getCurrentVersionNumber())).orElse(null);
-                        if (tv != null) {
-                            tagsToPublish.put(tag.getTagId(), tv.getText());
+                    if (isEnglish) {
+                        EnglishCopy ec = englishCopyRepository.findById(tag.getTagId()).orElse(null);
+                        if (ec != null && ec.getCurrentVersionNumber() != null) {
+                            EnglishCopyVersion ecv = englishCopyVersionRepository.findById(
+                                new EnglishCopyVersionId(tag.getTagId(), ec.getCurrentVersionNumber())).orElse(null);
+                            if (ecv != null && ecv.getText() != null) {
+                                tagsToPublish.put(tag.getTagId(), ecv.getText());
+                            }
+                        }
+                    } else {
+                        Translation t = translationRepository.findById(new TranslationId(tag.getTagId(), release.getLanguageCode())).orElse(null);
+                        if (t != null && "APPROVED".equals(t.getStatus()) && t.getCurrentVersionNumber() != null) {
+                            TranslationVersion tv = translationVersionRepository.findById(new TranslationVersionId(tag.getTagId(), release.getLanguageCode(), t.getCurrentVersionNumber())).orElse(null);
+                            if (tv != null && tv.getText() != null) {
+                                tagsToPublish.put(tag.getTagId(), tv.getText());
+                            }
                         }
                     }
                 }
             }
 
             PushResult pushResult = languageServicesClient.pushBundle(
-                    release.getPageId(), release.getLanguageCode(), release.getEnvironment(), tagsToPublish, removeTags);
+                    release.getPageId(), targetLang, release.getEnvironment(), tagsToPublish, removeTags);
                     
             // Phase 3: Finalize
             finalizeRelease(release.getReleaseId(), pushResult);
@@ -149,6 +187,8 @@ public class PublishingService {
     protected Object[] initializeRelease(UUID parId, String ifMatchETag, UUID approvedBy) {
         PublishingApprovalRequest par = parRepository.findByIdForUpdate(parId)
                 .orElseThrow(() -> new IllegalArgumentException("PAR not found"));
+
+        requirePublishPermission(approvedBy, par.getEnvironment());
 
         ConcurrencyUtils.validateETag(ifMatchETag, par.getEtagVersion(), "PUBLISHING_APPROVAL_REQUEST", parId.toString());
 
@@ -201,6 +241,9 @@ public class PublishingService {
     protected PublishingApprovalRequest rejectPublishingApproval(UUID parId, String ifMatchETag, UUID rejectedBy) {
         PublishingApprovalRequest par = parRepository.findByIdForUpdate(parId)
                 .orElseThrow(() -> new IllegalArgumentException("PAR not found"));
+        
+        requirePublishPermission(rejectedBy, par.getEnvironment());
+        
         ConcurrencyUtils.validateETag(ifMatchETag, par.getEtagVersion(), "PUBLISHING_APPROVAL_REQUEST", parId.toString());
         par.setStatus("REJECTED");
         par.setDecidedBy(rejectedBy);
@@ -293,6 +336,68 @@ public class PublishingService {
         oldRelease.setStatus("ROLLED_BACK");
         releaseRepository.save(oldRelease);
         
+        return release;
+    }
+
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public Release publishDirect(String pageId, String languageCode, String environment, UUID publishedBy) {
+        requirePublishPermission(publishedBy, environment);
+        
+        Release release = new Release();
+        release.setPageId(pageId);
+        release.setLanguageCode(languageCode);
+        release.setEnvironment(environment);
+        release.setPublishedBy(publishedBy);
+        release.setStatus("IN_PROGRESS");
+        release.setTriggerSource("DIRECT_PUBLISH");
+
+        Integer maxVersion = releaseRepository.findMaxDeploymentVersion(pageId, languageCode, environment);
+        release.setDeploymentVersion((maxVersion == null ? 0 : maxVersion) + 1);
+        release = releaseRepository.save(release);
+
+        Map<String, String> tagsToPublish = new HashMap<>();
+        List<String> removeTags = new ArrayList<>();
+        List<Tag> allTags = tagRepository.findByPageId(pageId);
+
+        boolean isEnglish = "eng".equalsIgnoreCase(languageCode) || "en".equalsIgnoreCase(languageCode);
+
+        for (Tag tag : allTags) {
+            if ("DEPRECATED".equals(tag.getStatus())) {
+                removeTags.add(tag.getTagId());
+            } else {
+                if (isEnglish) {
+                    EnglishCopy ec = englishCopyRepository.findById(tag.getTagId()).orElse(null);
+                    if (ec != null && ec.getCurrentVersionNumber() != null) {
+                        EnglishCopyVersion ecv = englishCopyVersionRepository.findById(
+                            new EnglishCopyVersionId(tag.getTagId(), ec.getCurrentVersionNumber())).orElse(null);
+                        if (ecv != null && ecv.getText() != null) {
+                            tagsToPublish.put(tag.getTagId(), ecv.getText());
+                        }
+                    }
+                } else {
+                    Translation t = translationRepository.findById(new TranslationId(tag.getTagId(), languageCode)).orElse(null);
+                    if (t != null && "APPROVED".equals(t.getStatus()) && t.getCurrentVersionNumber() != null) {
+                        TranslationVersion tv = translationVersionRepository.findById(
+                            new TranslationVersionId(tag.getTagId(), languageCode, t.getCurrentVersionNumber())).orElse(null);
+                        if (tv != null && tv.getText() != null) {
+                            tagsToPublish.put(tag.getTagId(), tv.getText());
+                        }
+                    }
+                }
+            }
+        }
+
+        String targetLang = isEnglish ? "eng" : languageCode;
+
+        PushResult pushResult = languageServicesClient.pushBundle(
+                pageId, targetLang, environment, tagsToPublish, removeTags);
+
+        // If publishing to MOCK environment, also mirror to DEV in MockLsDataStore so default DEV playground view is synced
+        if ("MOCK".equalsIgnoreCase(environment)) {
+            languageServicesClient.pushBundle(pageId, targetLang, "DEV", tagsToPublish, removeTags);
+        }
+
+        finalizeRelease(release.getReleaseId(), pushResult);
         return release;
     }
 }

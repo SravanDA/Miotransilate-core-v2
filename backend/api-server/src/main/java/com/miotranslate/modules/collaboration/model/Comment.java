@@ -22,8 +22,11 @@ public class Comment {
     @Column(name = "tag_id", nullable = false, length = 150)
     private String tagId;
 
+    @Column(name = "parent_comment_id")
+    private UUID parentCommentId;
+
     @Column(name = "comment_scope", nullable = false, length = 20)
-    private String commentScope = "TAG"; // TAG or TRANSLATION
+    private String commentScope = "ENGLISH"; // ENGLISH or LANGUAGE
 
     @Column(name = "language_code", length = 10)
     private String languageCode;
@@ -42,6 +45,12 @@ public class Comment {
 
     @Column(name = "resolved_by")
     private UUID resolvedBy;
+
+    @Column(name = "is_escalation", nullable = false)
+    private Boolean isEscalation = false;
+
+    @Column(name = "escalation_reason")
+    private String escalationReason;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

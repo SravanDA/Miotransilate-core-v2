@@ -19,6 +19,6 @@ VALUES
     ('tr', 'Turkish', 'LTR', 'ACTIVE', '11111111-1111-1111-1111-111111111111', now(), now()),
     ('bg', 'Bulgarian', 'LTR', 'ACTIVE', '11111111-1111-1111-1111-111111111111', now(), now()),
     ('it', 'Italian', 'LTR', 'ACTIVE', '11111111-1111-1111-1111-111111111111', now(), now()),
-    ('fr', 'French', 'LTR', 'ACTIVE', '11111111-1111-1111-1111-111111111111', now(), now()),
+    ('fr', 'French (Canada)', 'LTR', 'ACTIVE', '11111111-1111-1111-1111-111111111111', now(), now()),
     ('de', 'German', 'LTR', 'ACTIVE', '11111111-1111-1111-1111-111111111111', now(), now())
 ON CONFLICT (language_code) DO NOTHING;

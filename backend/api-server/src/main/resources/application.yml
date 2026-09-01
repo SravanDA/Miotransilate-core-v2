@@ -8,6 +8,13 @@ spring:
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
+    replica:
+      url: jdbc:postgresql://localhost:5432/miotranslate_replica
+      username: miotranslate
+      password: password
+      hikari:
+        maximum-pool-size: 50
+        minimum-idle: 10
   jpa:
     open-in-view: false
     hibernate:
@@ -33,6 +40,12 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 miotranslate:
+  jwt:
+    secret: "miotranslate-super-secure-jwt-signing-key-minimum-256-bits-long"
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: gemini-2.5-flash
+    timeout-ms: 30000
   language-services:
     domain: "miosalon"
     endpoints:

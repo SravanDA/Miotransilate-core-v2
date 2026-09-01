@@ -7,12 +7,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/v1")
+@RequiresPermission("CONTENT_VIEW")
 public class RegistryController {
 
     private final RegistryService registryService;
@@ -22,6 +27,7 @@ public class RegistryController {
     }
 
     @PostMapping("/pages")
+    @RequiresPermission("PAGE_TAG_CREATE")
     public ResponseEntity<Page> createPage(@RequestBody Page page) {
         page.setCreatedBy(SecurityUtils.getCurrentUserId());
         Page created = registryService.createPage(page);
@@ -44,6 +50,7 @@ public class RegistryController {
     }
 
     @PatchMapping("/pages/{pageId}")
+    @RequiresPermission("PAGE_TAG_CREATE")
     public ResponseEntity<Page> updatePage(
             @PathVariable String pageId,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
@@ -53,6 +60,7 @@ public class RegistryController {
     }
 
     @PostMapping("/pages/{pageId}/tags")
+    @RequiresPermission("PAGE_TAG_CREATE")
     public ResponseEntity<Tag> createTag(@PathVariable String pageId, @RequestBody Tag tag) {
         tag.setPageId(pageId);
         tag.setCreatedBy(SecurityUtils.getCurrentUserId());
@@ -71,12 +79,14 @@ public class RegistryController {
     }
 
     @PostMapping("/tags/{tagId}/deprecate")
+    @RequiresPermission("PAGE_TAG_CREATE")
     public ResponseEntity<Tag> deprecateTag(@PathVariable String tagId) {
         Tag deprecated = registryService.deprecateTag(tagId);
         return ResponseEntity.ok().eTag(String.valueOf(deprecated.getEtagVersion())).body(deprecated);
     }
 
     @PatchMapping("/tags/{tagId}")
+    @RequiresPermission("PAGE_TAG_CREATE")
     public ResponseEntity<Tag> updateTag(
             @PathVariable String tagId,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,

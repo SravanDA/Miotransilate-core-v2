@@ -16,13 +16,34 @@ const mockAPI = async (page: any) => {
   });
 
   await page.route(/\/v1\/pages/, async (route) => {
+    if (route.request().method() === 'GET' && !route.request().url().includes('/tags')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { pageId: "page-001", pageName: "Quick Sale", module: "POS", status: "ACTIVE" },
+          { pageId: "page-002", pageName: "Settings", module: "POS", status: "ACTIVE" }
+        ])
+      });
+    } else {
+      route.continue();
+    }
+  });
+
+  await page.route(/\/v1\/auth\/me/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        { pageId: "Quick Sale", pageName: "Quick Sale", module: "POS", status: "ACTIVE" },
-        { pageId: "Settings", pageName: "Settings", module: "POS", status: "ACTIVE" }
-      ])
+      body: JSON.stringify({
+        user: {
+          userId: "a0000000-0000-0000-0000-000000000001",
+          displayName: "Founder",
+          email: "founder@miosalonsoftware.com",
+          roles: ["FN", "ADMIN"],
+          permissions: ["ADMIN_CONFIG", "PUBLISH_DEV", "AUDIT_VIEW", "SUBMIT_FOR_REVIEW", "EXPORT", "TRANSLATION_EDIT", "ADMIN_USERS", "ROLLBACK", "TRANSLATION_APPROVE", "ADMIN_MIGRATION", "PUBLISH_PRODUCTION", "PUBLISH_QA", "TRANSLATION_CREATE", "ENGLISH_APPROVE", "ENGLISH_AUTHOR", "TRANSLATION_BULK_APPROVE", "ADMIN_LANGUAGES", "CONTENT_VIEW", "PAGE_TAG_CREATE", "COMMENT_CREATE", "HISTORY_VIEW"]
+        },
+        mustChangePassword: false
+      })
     });
   });
 
@@ -40,7 +61,10 @@ const mockAPI = async (page: any) => {
 };
 
 test.describe('Pixel-Level Visual Regression Audits', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
+    await context.addInitScript(() => {
+      window.localStorage.setItem('miotranslate_token', 'mock_token');
+    });
     await mockAPI(page);
   });
 
@@ -62,8 +86,8 @@ test.describe('Pixel-Level Visual Regression Audits', () => {
       localStorage.setItem("miotranslate_deployments_v2", JSON.stringify([
         { 
           id: "1", 
-          pageId: "Quick Sale", 
-          pageName: "Quick Sale", 
+          pageId: "SERSET", 
+          pageName: "Service Settings", 
           language: "ar", 
           environment: "PRODUCTION", 
           version: 4, 

@@ -11,12 +11,19 @@ export type CopyType =
   | "Button" 
   | "Label" 
   | "Header" 
-  | "Placeholder"
+  | "Placeholder" 
   | "Error" 
   | "Tooltip" 
-  | "General";
+  | "General"
+  | "Modal Title"
+  | "Badge"
+  | "Tab"
+  | "Toast"
+  | "Form Help"
+  | "Table Column"
+  | (string & {});
 
-export type Environment = "DEV" | "QA" | "PRODUCTION";
+export type Environment = "MOCK" | "DEV" | "QA" | "PRODUCTION";
 
 export interface TranslationValue {
   text: string;
@@ -24,15 +31,39 @@ export interface TranslationValue {
   confidence: number;
   translatedAtEnglishVersion: number;
   lastUpdated: string; // ISO string
+  stateCause?: string; // "verified", "needs_attention_length", "blocked_placeholder"
+  backTranslation?: string;
+}
+
+export interface CommentAuthor {
+  userId: string;
+  displayName: string;
+  role: string;
 }
 
 export interface Comment {
-  id: string;
-  author: string;
-  language: string;
+  commentId: string;
+  tagId: string;
+  parentCommentId: string | null;
+  scope: { type: "ENGLISH" | "LANGUAGE"; languageCode: string | null };
+  author: CommentAuthor;
   text: string;
-  createdAt: string;
   resolved: boolean;
+  resolvedBy: CommentAuthor | null;
+  resolvedAt: string | null;
+  isEscalation: boolean;
+  escalationReason: string | null;
+  createdAt: string;
+  replies: Comment[];
+}
+
+export interface EscalatedItem {
+  comment: Comment;
+  tagId: string;
+  pageId: string;
+  pageName: string;
+  englishCopy: string;
+  copyType: string;
 }
 
 export interface Tag {
@@ -41,6 +72,8 @@ export interface Tag {
   type: CopyType;
   english: string;
   englishVersion: number;
+  englishStatus?: EnglishCopyStatus;
+  englishChangeReason?: string;
   description?: string;
   values: Record<string, TranslationValue>; // e.g. { "ar": { text: "...", ... } }
   comments: Comment[];
@@ -77,3 +110,43 @@ export interface DeploymentRecord {
   publishedBy: string;
   status: "SUCCESSFUL" | "FAILED" | "IN_PROGRESS";
 }
+
+export interface AuditRecord {
+  auditRecordId: string;
+  action: string;
+  subjectEntityType: string;
+  subjectEntityId: string;
+  subjectEntityIdAux: string | null;
+  performedByUserId: string | null;
+  performedByDisplayName: string | null;
+  performedBySource: string;
+  performedAt: string;
+  beforeState: Record<string, any> | null;
+  afterState: Record<string, any> | null;
+  detail: string | null;
+  createdAt: string;
+}
+
+export interface AuditTrailResponse {
+  records: AuditRecord[];
+  totalCount: number;
+  page: number;
+  size: number;
+}
+
+export type EnglishCopyStatus = "Draft" | "Pending Review" | "Approved" | "Deprecated";
+
+export interface PublishApprovalRequest {
+  id: string;
+  pageId: string;
+  pageName: string;
+  language: string;
+  environment: Environment;
+  tagCount: number;
+  requestedBy: string;
+  requestedAt: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+

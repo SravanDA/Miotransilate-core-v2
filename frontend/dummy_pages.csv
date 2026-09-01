@@ -1,0 +1,5 @@
+pageId,name,module,tagId,tagType,tagEnglish
+BULK_CSV_1,Dashboard Overview,DASHBOARD,DASH_TITLE,Header,Welcome to the Dashboard
+BULK_CSV_1,Dashboard Overview,DASHBOARD,DASH_BTN,Button,Refresh Data
+BULK_CSV_2,User Settings,SETTINGS,SET_TITLE,Header,Profile Settings
+BULK_CSV_2,User Settings,SETTINGS,SET_BTN,Button,Save Changes

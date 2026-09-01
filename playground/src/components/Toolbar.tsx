@@ -1,4 +1,4 @@
-import { RefreshCw, LayoutTemplate } from "lucide-react";
+import { RefreshCw, LayoutTemplate, Settings } from "lucide-react";
 import type { PageSummary } from "../api";
 import { LANGUAGES } from "../types";
 import type { Environment } from "../types";
@@ -16,9 +16,11 @@ interface ToolbarProps {
   showChanges: boolean;
   onToggleChanges: (show: boolean) => void;
   onReset: (env?: string, pageId?: string) => void;
+  currentView: 'playground' | 'settings';
+  onViewChange: (view: 'playground' | 'settings') => void;
 }
 
-const ENVIRONMENTS: Environment[] = ["DEV", "QA", "PRODUCTION"];
+const ENVIRONMENTS: Environment[] = ["MOCK", "DEV", "QA", "PRODUCTION"];
 
 export function Toolbar(props: ToolbarProps) {
   return (
@@ -98,6 +100,15 @@ export function Toolbar(props: ToolbarProps) {
           title="Refresh"
         >
           <RefreshCw className="w-4 h-4 text-gray-600" />
+        </Button>
+
+        <Button 
+          onClick={() => props.onViewChange(props.currentView === 'settings' ? 'playground' : 'settings')}
+          variant={props.currentView === 'settings' ? 'primary' : 'outline'}
+          className="p-1.5 ml-2"
+          title="Data Import Settings"
+        >
+          <Settings className="w-4 h-4" />
         </Button>
       </div>
     </div>

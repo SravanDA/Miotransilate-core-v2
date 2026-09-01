@@ -104,7 +104,7 @@ public class RestLanguageServicesClient implements LanguageServicesClient {
             case "ar" -> "arabic";
             case "bg" -> "bulgarian";
             case "it" -> "italian";
-            case "fr-ca" -> "french";
+            case "fr", "fr-ca" -> "french";
             case "es" -> "spanish";
             case "de" -> "german";
             case "tr" -> "turkish";

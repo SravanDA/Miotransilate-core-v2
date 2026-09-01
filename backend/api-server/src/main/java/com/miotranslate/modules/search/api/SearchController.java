@@ -3,6 +3,7 @@ package com.miotranslate.modules.search.api;
 import com.miotranslate.modules.search.model.Bookmark;
 import com.miotranslate.modules.search.model.RecentlyEditedEvent;
 import com.miotranslate.modules.search.service.SearchService;
+import com.miotranslate.shared.auth.RequiresPermission;
 import com.miotranslate.shared.auth.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1")
+@RequiresPermission("CONTENT_VIEW")
 public class SearchController {
 
     private final SearchService searchService;

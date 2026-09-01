@@ -4,6 +4,7 @@ import com.miotranslate.modules.publishing.model.PublishingApprovalRequest;
 import com.miotranslate.modules.publishing.model.Release;
 import com.miotranslate.modules.publishing.service.PublishingService;
 import com.miotranslate.shared.auth.SecurityUtils;
+import com.miotranslate.shared.auth.RequiresPermission;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1")
+@RequiresPermission("CONTENT_VIEW")
 public class PublishingController {
 
     private final PublishingService publishingService;
@@ -35,6 +37,17 @@ public class PublishingController {
             @PathVariable String languageCode,
             @PathVariable String environment) {
         return ResponseEntity.ok(publishingService.getPrePublishingSummary(pageId, languageCode, environment));
+    }
+
+    @PostMapping("/pages/{pageId}/languages/{languageCode}/environments/{environment}/publish")
+    public ResponseEntity<Release> publishDirect(
+            @PathVariable String pageId,
+            @PathVariable String languageCode,
+            @PathVariable String environment) {
+            
+        UUID userId = SecurityUtils.getCurrentUserId();
+        Release release = publishingService.publishDirect(pageId, languageCode, environment, userId);
+        return ResponseEntity.ok().body(release);
     }
 
     @PostMapping("/pages/{pageId}/languages/{languageCode}/environments/{environment}/approval-requests")
@@ -69,6 +82,7 @@ public class PublishingController {
     }
 
     @PostMapping("/pages/{pageId}/languages/{languageCode}/environments/{environment}/rollback")
+    @RequiresPermission("ROLLBACK")
     public ResponseEntity<Release> executeRollback(
             @PathVariable String pageId,
             @PathVariable String languageCode,

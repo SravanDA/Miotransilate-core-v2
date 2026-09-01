@@ -1,16 +1,20 @@
 CREATE TABLE collaboration.comments (
     comment_id          UUID            NOT NULL,
     tag_id              VARCHAR(150)    NOT NULL REFERENCES registry.tags(tag_id),
-    comment_scope       VARCHAR(20)     NOT NULL DEFAULT 'TAG',
+    parent_comment_id   UUID            NULL,
+    comment_scope       VARCHAR(20)     NOT NULL DEFAULT 'ENGLISH',
     language_code       VARCHAR(10)     NULL REFERENCES admin.languages(language_code),
     comment_text        TEXT            NOT NULL,
     author_id           UUID            NOT NULL REFERENCES admin.users(user_id),
     is_resolved         BOOLEAN         NOT NULL DEFAULT FALSE,
     resolved_at         TIMESTAMPTZ     NULL,
     resolved_by         UUID            NULL REFERENCES admin.users(user_id),
+    is_escalation       BOOLEAN         NOT NULL DEFAULT FALSE,
+    escalation_reason   TEXT            NULL,
     created_at          TIMESTAMPTZ     NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ     NOT NULL DEFAULT now(),
-    CONSTRAINT comments_pkey PRIMARY KEY (comment_id)
+    CONSTRAINT comments_pkey PRIMARY KEY (comment_id),
+    CONSTRAINT fk_parent_comment FOREIGN KEY (parent_comment_id) REFERENCES collaboration.comments(comment_id)
 );
 
 CREATE TABLE collaboration.export_jobs (

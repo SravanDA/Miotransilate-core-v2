@@ -2,6 +2,7 @@ package com.miotranslate.modules.reporting.api;
 
 import com.miotranslate.modules.reporting.model.CoverageMetric;
 import com.miotranslate.modules.reporting.service.ReportingService;
+import com.miotranslate.shared.auth.RequiresPermission;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/v1")
+@RequiresPermission("CONTENT_VIEW")
 public class ReportingController {
 
     private final ReportingService reportingService;

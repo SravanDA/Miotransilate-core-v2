@@ -9,21 +9,20 @@ import java.util.concurrent.TimeUnit;
 public class MockAiTranslationClient implements AiTranslationClient {
 
     @Override
-    public TranslationResult translate(String englishText, String targetLanguageCode, String context) {
-        
+    public java.util.List<com.miotranslate.shared.integration.ai.model.ScreenTranslationResult> translateScreen(String prompt) {
         try {
-            // Simulate network latency (200ms) for local development
             TimeUnit.MILLISECONDS.sleep(200);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         
-        // Mocking translation logic
-        String translatedText = "[AI-" + targetLanguageCode.toUpperCase() + "] " + englishText;
-        String backTranslation = "[Back-English] " + englishText;
-        BigDecimal confidence = new BigDecimal("0.9500");
-        String varIntegrity = "PASSED"; // Assume always passed for mock
-        
-        return new TranslationResult(translatedText, backTranslation, confidence, varIntegrity);
+        // Mocking: In a real test, we would parse the prompt and return results per tag.
+        // For now, return an empty list. The actual mock logic will be updated later.
+        return new java.util.ArrayList<>();
+    }
+
+    @Override
+    public String auditScreen(String prompt) {
+        return "{}";
     }
 }

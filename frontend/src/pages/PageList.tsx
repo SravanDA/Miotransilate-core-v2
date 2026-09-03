@@ -10,8 +10,7 @@ import {
   PencilSimple, 
   Trash, 
   Sparkle as Sparkles,
-  CircleNotch,
-  DownloadSimple
+  CircleNotch
 } from "@phosphor-icons/react";
 import { StoreService } from "../store/StoreService";
 import { Dropdown } from "../components/ui/Dropdown";
@@ -192,24 +191,6 @@ export function PageList() {
 
   const handleRemoveFile = (index: number) => {
     setUploadFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDownloadSampleCsv = () => {
-    const sampleCsv = `PageId,PageName,Module,TagId,Type,English,Spanish,Arabic
-SERSET,Service Settings,Service Settings,SERSET_SERVICE_NAME,General,Service Name,Nombre del servicio,اسم الخدمة
-SERSET,Service Settings,Service Settings,SERSET_ADD_SERVICE,Button,Add Service,Agregar servicio,إضافة خدمة
-CAMREW,Campaign & Rewards,Campaign & Rewards,CAMREW_REWARD_POINTS,General,Reward Points,Puntos de recompensa,نقاط المكافأة
-CAMREW,Campaign & Rewards,Campaign & Rewards,CAMREW_SAVE,Button,Save,Guardar,حفظ`;
-
-    const blob = new Blob([sampleCsv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "miotranslate_sample_import.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -810,7 +791,7 @@ CAMREW,Campaign & Rewards,Campaign & Rewards,CAMREW_SAVE,Button,Save,Guardar,ح�
                     <p className="text-[12px] text-text-tertiary mb-3 text-center">
                       Select one or multiple CSV, XLS, XLSX, or JSON files to bulk import
                     </p>
-                    <div className="flex items-center gap-1.5 flex-wrap justify-center mb-3">
+                    <div className="flex items-center gap-1.5 flex-wrap justify-center">
                       {["CSV", "XLS", "XLSX", "TSV", "JSON"].map((ext) => (
                         <span 
                           key={ext} 
@@ -820,17 +801,6 @@ CAMREW,Campaign & Rewards,Campaign & Rewards,CAMREW_SAVE,Button,Save,Guardar,ح�
                         </span>
                       ))}
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownloadSampleCsv();
-                      }}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent-blue hover:text-accent-blue/80 hover:underline cursor-pointer outline-none bg-accent-blue/10 px-2.5 py-1 rounded-md transition-colors"
-                    >
-                      <DownloadSimple className="w-3.5 h-3.5" weight="bold" />
-                      <span>Download Sample CSV Template</span>
-                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">

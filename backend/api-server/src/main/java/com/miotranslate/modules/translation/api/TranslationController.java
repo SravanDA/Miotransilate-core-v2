@@ -41,11 +41,20 @@ public class TranslationController {
             @PathVariable String tagId,
             @PathVariable String languageCode,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
-            @RequestBody Map<String, String> payload) {
+            @RequestBody Map<String, Object> payload) {
             
         UUID userId = SecurityUtils.getCurrentUserId();
+        String text = payload.get("translatedText") != null ? payload.get("translatedText").toString() : "";
+        java.math.BigDecimal confidence = null;
+        if (payload.get("confidence") != null) {
+            try {
+                double confVal = Double.parseDouble(payload.get("confidence").toString());
+                if (confVal > 1.0) confVal = confVal / 100.0;
+                confidence = java.math.BigDecimal.valueOf(confVal);
+            } catch (Exception ignored) {}
+        }
         TranslationVersion draft = translationService.editTranslationManually(
-                tagId, languageCode, ifMatch, payload.get("translatedText"), userId);
+                tagId, languageCode, ifMatch, text, confidence, userId);
         return ResponseEntity.ok().body(draft);
     }
 

@@ -96,7 +96,7 @@ export function CopyTypeSelector({
         <div
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "absolute z-50 mt-1 w-52 bg-bg-card border border-border-subtle rounded-xl shadow-xl py-1.5 flex flex-col max-h-[260px] overflow-hidden",
+            "absolute z-50 mt-1 w-52 bg-bg-card border border-border-subtle rounded-xl  py-1.5 flex flex-col max-h-[260px] overflow-hidden",
             align === "right" ? "right-0" : "left-0"
           )}
         >

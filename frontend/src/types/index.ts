@@ -5,6 +5,8 @@ export type TranslationStatus =
   | "Stale"
   | "No Trans"
   | "No Eng"
+  | "Needs Attention"
+  | "Blocked"
   | "Deprecated";
 
 export type CopyType = 
@@ -23,7 +25,7 @@ export type CopyType =
   | "Table Column"
   | (string & {});
 
-export type Environment = "MOCK" | "DEV" | "QA" | "PRODUCTION";
+export type Environment = "DEV" | "QA" | "PRODUCTION";
 
 export interface TranslationValue {
   text: string;
@@ -148,5 +150,51 @@ export interface PublishApprovalRequest {
   status: "PENDING" | "APPROVED" | "REJECTED";
   reviewedBy?: string;
   reviewedAt?: string;
+}
+
+export interface PageLanguageReadiness {
+  code: string;
+  name: string;
+  nativeName?: string;
+  approvedCount: number;
+  totalTags: number;
+  coveragePercent: number;
+  lastPublishedVersion: number | null;
+  lastPublishedAt: string | null;
+  hasChanges: boolean;
+  staleCount: number;
+  isPending: boolean;
+  variableErrorsCount: number;
+}
+
+export interface UnpublishedPageSummary {
+  pageId: string;
+  pageName: string;
+  module: string;
+  totalTags: number;
+  languages: PageLanguageReadiness[];
+  hasUnpublishedChanges: boolean;
+  overallReadiness: "ready" | "partial" | "blocked" | "up-to-date";
+}
+
+export interface EnvironmentReleaseStatus {
+  version: number | null;
+  lastPublishedAt: string | null;
+  hasUnpublishedChanges: boolean;
+  deployedLanguagesCount: number;
+}
+
+export interface PageReleasePipelineItem {
+  pageId: string;
+  pageName: string;
+  module: string;
+  totalTags: number;
+  dev: EnvironmentReleaseStatus;
+  qa: EnvironmentReleaseStatus;
+  production: EnvironmentReleaseStatus;
+  pipelineState: "IN_SYNC" | "NEEDS_RELEASE" | "NEEDS_QA" | "APPROVAL_PENDING" | "UNRELEASED";
+  pendingChangesSummary: string;
+  hasProductionChanges: boolean;
+  languages: PageLanguageReadiness[];
 }
 

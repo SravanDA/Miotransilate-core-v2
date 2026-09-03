@@ -265,7 +265,7 @@ export function WorkflowStepper({
   };
 
   return (
-    <div className="bg-bg-card border border-border-subtle rounded-xl p-3.5 shadow-xs">
+    <div className="bg-bg-card border border-border-subtle rounded-xl p-3.5 ">
       {/* Quiet Header */}
       <div className="flex items-center justify-between pb-2.5 border-b border-border-subtle mb-3">
         <div className="flex items-center gap-2">
@@ -323,11 +323,11 @@ export function WorkflowStepper({
                     <div 
                       className={`w-5 h-5 rounded-full flex items-center justify-center transition-all bg-bg-card ${
                         isCompleted
-                          ? "border border-emerald-500/50 text-emerald-500 bg-emerald-500/10 shadow-2xs"
+                          ? "border border-emerald-500/50 text-emerald-500 bg-emerald-500/10 "
                           : isAttention
                           ? "border border-amber-500/50 text-amber-500 bg-amber-500/10"
                           : isActive
-                          ? "border border-accent-blue text-accent-blue bg-accent-blue/10 shadow-2xs"
+                          ? "border border-accent-blue text-accent-blue bg-accent-blue/10 "
                           : "border border-border-strong text-text-tertiary"
                       }`}
                     >

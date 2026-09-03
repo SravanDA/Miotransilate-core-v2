@@ -40,7 +40,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        if (path.startsWith("/v1/auth/login") || path.startsWith("/playground")) {
+        if (path.startsWith("/v1/auth/login")) {
             filterChain.doFilter(request, response);
             return;
         }

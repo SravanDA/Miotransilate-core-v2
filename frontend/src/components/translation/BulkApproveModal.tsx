@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   CheckCircle,
@@ -34,7 +35,20 @@ export function BulkApproveModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  return (
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div 
@@ -42,14 +56,14 @@ export function BulkApproveModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-hidden"
         >
           <motion.div 
             initial={{ scale: 0.96, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 8 }}
             transition={{ type: "spring", duration: 0.25 }}
-            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-md flex flex-col overflow-hidden text-text-primary shadow-2xl"
+            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden text-text-primary my-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-sidebar rounded-t-xl">
@@ -98,10 +112,10 @@ export function BulkApproveModal({
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3.5 border-t border-border-subtle flex items-center justify-end gap-2.5 bg-bg-sidebar rounded-b-xl">
+            <div className="px-6 py-3.5 border-t border-border-subtle flex items-center justify-end gap-2 bg-bg-sidebar rounded-b-xl">
               <button 
                 onClick={onClose}
-                className="h-8 px-3.5 text-[13px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-md transition-colors cursor-pointer outline-none"
+                className="btn-secondary"
               >
                 Cancel
               </button>
@@ -111,7 +125,7 @@ export function BulkApproveModal({
                   onClose();
                 }}
                 disabled={eligibleCount === 0}
-                className="h-8 px-4 bg-accent-blue text-white text-[13px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] cursor-pointer outline-none shadow-xs disabled:opacity-50 disabled:pointer-events-none"
+                className="btn-primary"
               >
                 Approve {eligibleCount} Strings
               </button>
@@ -119,7 +133,8 @@ export function BulkApproveModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

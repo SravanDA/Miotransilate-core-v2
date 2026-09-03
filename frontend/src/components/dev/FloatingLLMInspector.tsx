@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   Key, 
   X, 
@@ -97,7 +98,7 @@ export function FloatingLLMInspector() {
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="relative group w-9 h-9 bg-[#12141a] hover:bg-[#1a1d26] text-amber-400 hover:text-amber-300 border border-[#2b3040] hover:border-accent-blue/50 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-90 cursor-pointer outline-none"
+          className="relative group w-9 h-9 bg-[#12141a] hover:bg-[#1a1d26] text-amber-400 hover:text-amber-300 border border-[#2b3040] hover:border-accent-blue/50 rounded-full  flex items-center justify-center transition-all active:scale-90 cursor-pointer outline-none"
           title={hasCustomKey ? "LLM DevKit (API Key Configured)" : "LLM DevKit (Configure Gemini API Key)"}
         >
           <Key className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" weight="fill" />
@@ -110,15 +111,15 @@ export function FloatingLLMInspector() {
       </div>
 
       {/* Modal Dialog */}
-      {isOpen && (
+      {isOpen && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-150"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsOpen(false);
           }}
         >
           <div 
-            className="w-full max-w-md bg-[#12141c] text-slate-100 border border-[#2b3040] rounded-2xl shadow-2xl overflow-hidden font-sans select-none flex flex-col animate-in zoom-in-95 duration-150"
+            className="w-full max-w-md bg-[#12141c] text-slate-100 border border-[#2b3040] rounded-2xl overflow-hidden font-sans select-none flex flex-col max-h-[90vh] my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -235,8 +236,8 @@ export function FloatingLLMInspector() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleTestConnection}
-                  disabled={isTesting || !apiKeyInput.trim()}
-                  className="h-8.5 px-3.5 bg-[#1e2330] hover:bg-[#282f40] text-slate-200 border border-[#353d52] font-medium rounded-lg text-[11px] flex items-center gap-1.5 cursor-pointer outline-none disabled:opacity-40 transition-colors"
+                  disabled={isTesting}
+                  className="btn-secondary h-8 px-3 text-[11px]"
                 >
                   {isTesting ? <CircleNotch className="w-3.5 h-3.5 animate-spin" /> : <ArrowClockwise className="w-3.5 h-3.5" />}
                   <span>{isTesting ? "Testing..." : "Test Connection"}</span>
@@ -245,7 +246,7 @@ export function FloatingLLMInspector() {
                 <button
                   onClick={handleSave}
                   disabled={!apiKeyInput.trim()}
-                  className="h-8.5 px-4 bg-accent-blue hover:brightness-110 text-white font-medium rounded-lg text-[11px] flex items-center gap-1.5 cursor-pointer outline-none disabled:opacity-40 transition-all shadow-sm"
+                  className="btn-primary h-8 px-3 text-[11px]"
                 >
                   <FloppyDisk className="w-3.5 h-3.5" />
                   <span>Save Key</span>
@@ -253,7 +254,8 @@ export function FloatingLLMInspector() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

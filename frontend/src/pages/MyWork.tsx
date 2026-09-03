@@ -14,6 +14,8 @@ import { CopyButton } from "../components/ui/CopyButton";
 import { ConfidenceBadge } from "../components/translation/ConfidenceBadge";
 import { StatusInProgress, StatusBacklog, StatusTodo } from "../components/ui/LinearIcons";
 import { EmptyStateGraphic } from "../components/ui/EmptyStateGraphic";
+import { DeploymentQueueView } from "../components/publishing/DeploymentQueueView";
+import { PublishModal } from "../components/publishing/PublishModal";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import type { PublishApprovalRequest } from "../types";
@@ -26,6 +28,7 @@ export function MyWork() {
   const canApproveEnglish = can("ENGLISH_APPROVE") || user?.roles?.includes("FN");
   const canResolveEscalation = can("ENGLISH_APPROVE") || user?.roles?.includes("FN");
   const canApprovePublish = can("PUBLISH_PRODUCTION") || user?.roles?.includes("FN") || user?.roles?.includes("SR");
+  const canPublish = can("PUBLISH_QA") || can("PUBLISH_PRODUCTION") || user?.roles?.includes("FN") || user?.roles?.includes("SR");
 
   const [activeTab, setActiveTab] = useState<"pending" | "english" | "publish" | "stale" | "escalations">("pending");
   const [activeLangs, setActiveLangs] = useState(StoreService.getActiveLanguages());
@@ -37,11 +40,21 @@ export function MyWork() {
   const [publishRequests, setPublishRequests] = useState<PublishApprovalRequest[]>([]);
   const [staleList, setStaleList] = useState<any[]>([]);
   const [escalatedList, setEscalatedList] = useState<import("../types").EscalatedItem[]>([]);
+  const [needsReleaseCount, setNeedsReleaseCount] = useState(0);
+  const [syncedCount, setSyncedCount] = useState(0);
+  const [publishTarget, setPublishTarget] = useState<{ pageId: string; pageName: string; langCode?: string } | null>(null);
 
   useEffect(() => {
     StoreService.refreshPages();
     const load = async () => {
       setActiveLangs(StoreService.getActiveLanguages());
+      
+      const pipeline = StoreService.getPageReleasePipeline();
+      const needsRel = pipeline.filter(p => p.pipelineState === "NEEDS_RELEASE" || p.hasProductionChanges).length;
+      const sync = pipeline.filter(p => p.pipelineState === "IN_SYNC").length;
+      setNeedsReleaseCount(needsRel);
+      setSyncedCount(sync);
+
       if (isDev) {
         setPendingList([]);
         setEnglishList([]);
@@ -178,9 +191,9 @@ export function MyWork() {
   const tabs = [
     { id: "pending", label: "Translations", count: pendingList.length, icon: StatusInProgress, desc: "Awaiting approval" },
     { id: "english", label: "English Copy", count: englishList.length, icon: FileText, desc: "Master review" },
-    { id: "publish", label: "Releases", count: publishRequests.length, icon: RocketLaunch, desc: "Prod gates" },
     { id: "stale", label: "Stale", count: staleList.length, icon: StatusBacklog, desc: "Source modified" },
-    { id: "escalations", label: "Escalations", count: escalatedList.length, icon: StatusTodo, desc: "Action required" }
+    { id: "escalations", label: "Escalations", count: escalatedList.length, icon: StatusTodo, desc: "Action required" },
+    { id: "publish", label: "Published & Unpublished", count: needsReleaseCount, icon: RocketLaunch, desc: `${needsReleaseCount} unpublished · ${syncedCount} published` }
   ] as const;
 
   return (
@@ -188,9 +201,9 @@ export function MyWork() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-2">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold tracking-tight text-text-primary">My Work</h1>
+          <h1 className="text-xl font-bold tracking-tight text-text-primary">Overview</h1>
           <p className="text-[13px] text-text-tertiary">
-            Unified governance queue: review translations, approve English drafts, and clear release approval gates.
+            Unified governance queue: review translations, approve English drafts, and manage release pipelines.
           </p>
         </div>
         
@@ -220,7 +233,7 @@ export function MyWork() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`p-3.5 rounded-xl text-left flex flex-col gap-2 transition-all duration-150 outline-none cursor-pointer border ${
                 isActive 
-                  ? "bg-bg-card border-accent-blue/40 shadow-xs ring-1 ring-accent-blue/20" 
+                  ? "bg-bg-card border-accent-blue/40 ring-1 ring-accent-blue/20" 
                   : "bg-bg-main border-border-subtle hover:bg-bg-card hover:border-border-strong text-text-secondary"
               }`}
             >
@@ -238,7 +251,7 @@ export function MyWork() {
       </div>
 
       {/* Quick Access: Recently Edited & Bookmarks */}
-      {(!isDev && (RecentlyEditedService.getRecentEdits().length > 0 || BookmarkService.getBookmarks().length > 0)) && (
+      {(!isDev && activeTab !== "publish" && (RecentlyEditedService.getRecentEdits().length > 0 || BookmarkService.getBookmarks().length > 0)) && (
         <div className="mb-4 p-3 bg-bg-card border border-border-subtle rounded-xl flex items-center gap-4 overflow-x-auto scrollbar-none text-[12px]">
           {BookmarkService.getBookmarks().length > 0 && (
             <div className="flex items-center gap-2 shrink-0">
@@ -291,7 +304,7 @@ export function MyWork() {
             transition={{ duration: 0.15 }}
             className="flex-1 flex flex-col"
           >
-            {isDev ? (
+            {isDev && activeTab !== "publish" ? (
               <div className="flex flex-col items-center justify-center py-24 text-text-tertiary">
                 <EmptyStateGraphic className="mb-4 opacity-80" />
                 <h3 className="text-[14px] font-bold text-text-primary mb-1.5">No active queue for Developer role</h3>
@@ -307,7 +320,7 @@ export function MyWork() {
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[220px] max-w-[220px] shrink-0 bg-bg-sidebar">Location & Tag</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[240px] bg-bg-sidebar">Master English</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[240px] bg-bg-sidebar">AI Draft Translation</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-28 bg-bg-sidebar sticky right-0 z-30 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 shrink-0">Action</th>
+                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-28 bg-bg-sidebar sticky right-0 z-30 -[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 shrink-0">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle">
@@ -353,11 +366,11 @@ export function MyWork() {
                             <ConfidenceBadge confidence={item.conf ?? 95} size="sm" />
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 align-top text-right w-28 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0">
+                        <td className="px-4 py-2.5 align-top text-right w-28 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 border-l border-border-subtle transition-colors shrink-0">
                           {canApprove ? (
                             <button 
                               onClick={() => handleApproveTranslation(item.pageId, item.tag, item.langCode)}
-                              className="h-7 px-3 bg-accent-blue text-white hover:brightness-110 text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer outline-none shadow-xs"
+                              className="btn-primary"
                             >
                               <Check className="w-3.5 h-3.5" weight="bold" />
                               <span>Approve</span>
@@ -365,7 +378,7 @@ export function MyWork() {
                           ) : (
                             <Link 
                               to={`/pages/${item.pageId}/tags/${item.tag}`}
-                              className="h-7 px-3 bg-bg-main border border-border-subtle hover:border-border-strong text-text-primary text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center outline-none"
+                              className="btn-secondary"
                             >
                               View
                             </Link>
@@ -396,7 +409,7 @@ export function MyWork() {
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[220px] max-w-[220px] shrink-0 bg-bg-sidebar">Location & Tag</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[260px] bg-bg-sidebar">Master English Draft</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[120px] bg-bg-sidebar shrink-0">Target Version</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-28 bg-bg-sidebar sticky right-0 z-30 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 shrink-0">Action</th>
+                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-28 bg-bg-sidebar sticky right-0 z-30 border-l border-border-subtle shrink-0">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle">
@@ -437,11 +450,11 @@ export function MyWork() {
                             v{(item.englishVersion || 1) + 1}
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 align-top text-right w-28 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0">
+                        <td className="px-4 py-2.5 align-top text-right w-28 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 border-l border-border-subtle transition-colors shrink-0">
                           {canApproveEnglish ? (
                             <button 
                               onClick={() => handleApproveEnglishDraft(item.pageId, item.tagId)}
-                              className="h-7 px-3 bg-accent-blue text-white hover:brightness-110 text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center gap-1.5 cursor-pointer outline-none shadow-xs"
+                              className="btn-primary"
                             >
                               <Check className="w-3.5 h-3.5" weight="bold" />
                               <span>Approve</span>
@@ -449,7 +462,7 @@ export function MyWork() {
                           ) : (
                             <Link 
                               to={`/pages/${item.pageId}/tags/${item.tagId}`}
-                              className="h-7 px-3 bg-bg-main border border-border-subtle hover:border-border-strong text-text-primary text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center outline-none"
+                              className="btn-secondary"
                             >
                               View
                             </Link>
@@ -473,84 +486,13 @@ export function MyWork() {
                 </table>
               </div>
             ) : activeTab === "publish" ? (
-              <div className="flex-1 overflow-auto scrollbar-none w-full">
-                <table className="w-full min-w-[760px] text-left border-collapse">
-                  <thead className="bg-bg-sidebar border-b border-border-subtle sticky top-0 z-20">
-                    <tr>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[240px] max-w-[240px] shrink-0 bg-bg-sidebar">Page & Target Environment</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[200px] bg-bg-sidebar">Language & Payload</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[180px] bg-bg-sidebar">Requested By</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-44 bg-bg-sidebar sticky right-0 z-30 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 shrink-0">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-subtle">
-                    {publishRequests.length > 0 ? publishRequests.map((req) => (
-                      <tr key={req.id} className="group hover:bg-bg-hover transition-colors cursor-default">
-                        <td className="px-4 py-2.5 align-top w-[240px] max-w-[240px] shrink-0">
-                          <div className="text-[13px] font-bold text-text-primary mb-1 truncate" title={req.pageName}>
-                            {req.pageName}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-mono font-medium rounded border border-emerald-500/20">
-                              {req.environment}
-                            </span>
-                            <span className="text-[11px] text-text-tertiary">Production Gate</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 align-top min-w-[200px]">
-                          <div className="text-[13px] font-semibold text-text-primary">
-                            {req.language.toUpperCase()}
-                          </div>
-                          <div className="text-[11px] text-text-tertiary mt-0.5">
-                            {req.tagCount} approved string{req.tagCount === 1 ? '' : 's'} included
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 align-top min-w-[180px]">
-                          <div className="text-[13px] font-medium text-text-primary truncate" title={req.requestedBy}>
-                            {req.requestedBy}
-                          </div>
-                          <div className="text-[11px] text-text-tertiary mt-0.5">
-                            {new Date(req.requestedAt).toLocaleDateString()} · {new Date(req.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 align-top text-right w-44 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0">
-                          {canApprovePublish ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <button 
-                                onClick={() => handleReviewPublish(req.id, "REJECT")}
-                                className="h-7 px-3 border border-border-subtle hover:border-danger/30 text-text-secondary hover:text-danger hover:bg-danger/10 text-[12px] font-medium rounded-md transition-colors cursor-pointer outline-none"
-                              >
-                                Reject
-                              </button>
-                              <button 
-                                onClick={() => handleReviewPublish(req.id, "APPROVE")}
-                                className="h-7 px-3 bg-accent-blue text-white hover:brightness-110 text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs"
-                              >
-                                <Check className="w-3.5 h-3.5" weight="bold" />
-                                <span>Approve</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-text-tertiary italic">Requires Support Reviewer</span>
-                          )}
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={4} className="px-5 py-24 text-center">
-                          <div className="flex flex-col items-center justify-center py-20 text-text-tertiary bg-bg-hover/30 rounded-xl border border-dashed border-border-subtle">
-                            <EmptyStateGraphic className="mb-4 opacity-80" />
-                            <h3 className="text-[14px] font-bold text-text-primary mb-1.5">No Pending Release Requests</h3>
-                            <p className="text-[12px] max-w-sm text-balance">
-                              No production releases are currently waiting for approval.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <DeploymentQueueView
+                canPublish={Boolean(canPublish)}
+                canApprovePublish={Boolean(canApprovePublish)}
+                onDeployPage={(pageId, pageName, langCode) => setPublishTarget({ pageId, pageName, langCode })}
+                publishRequests={publishRequests}
+                onReviewPublish={handleReviewPublish}
+              />
             ) : activeTab === "stale" ? (
               <div className="flex-1 overflow-auto scrollbar-none w-full">
                 <div className="px-4 py-2 bg-bg-main border-b border-border-subtle flex items-center justify-between">
@@ -574,7 +516,7 @@ export function MyWork() {
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[220px] max-w-[220px] shrink-0 bg-bg-sidebar">Location & Tag</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-center w-[120px] bg-bg-sidebar shrink-0">Version Delta</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-center w-[120px] bg-bg-sidebar shrink-0">Stale Age</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-28 bg-bg-sidebar sticky right-0 z-30 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 shrink-0">Action</th>
+                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-28 bg-bg-sidebar sticky right-0 z-30 border-l border-border-subtle shrink-0">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle">
@@ -606,21 +548,21 @@ export function MyWork() {
                             <span>{item.staleDays} days</span>
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 align-middle text-right w-36 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0">
+                        <td className="px-4 py-2.5 align-middle text-right w-36 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 border-l border-border-subtle transition-colors shrink-0">
                           <div className="flex items-center justify-end gap-1.5">
                             {canApprove && (
                               <button 
                                 onClick={() => handleConfirmStaleTranslation(item.pageId, item.tag, item.langCode)}
-                                className="h-7 px-2.5 bg-accent-blue text-white hover:brightness-110 text-[11px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center gap-1 cursor-pointer outline-none shadow-xs"
+                                className="btn-primary"
                                 title="Confirm existing translation is still valid"
                               >
-                                <Check className="w-3 h-3" weight="bold" />
+                                <Check className="w-3.5 h-3.5" weight="bold" />
                                 <span>Confirm</span>
                               </button>
                             )}
                             <Link 
                               to={`/pages/${item.pageId}/tags/${item.tag}`}
-                              className="h-7 px-2.5 bg-bg-main border border-border-subtle hover:border-border-strong text-text-primary text-[11px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center outline-none"
+                              className="btn-secondary"
                             >
                               Review
                             </Link>
@@ -651,7 +593,7 @@ export function MyWork() {
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[220px] max-w-[220px] shrink-0 bg-bg-sidebar">Tag & Page</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[180px] bg-bg-sidebar shrink-0">Escalated By</th>
                       <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[260px] bg-bg-sidebar">Reason & Context</th>
-                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-36 bg-bg-sidebar sticky right-0 z-30 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 shrink-0">Action</th>
+                      <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider text-right w-36 bg-bg-sidebar sticky right-0 z-30 border-l border-border-subtle shrink-0">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle">
@@ -694,17 +636,17 @@ export function MyWork() {
                               {englishText}
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 align-top text-right w-36 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 shadow-[-6px_0_12px_rgba(0,0,0,0.3)] border-l border-border-subtle/50 transition-colors shrink-0 space-y-2">
+                          <td className="px-4 py-2.5 align-top text-right w-36 bg-bg-card group-hover:bg-bg-hover sticky right-0 z-10 border-l border-border-subtle transition-colors shrink-0 space-y-2">
                             <Link 
                               to={`/pages/${item.pageId}/tags/${item.tagId}`}
-                              className="h-7 px-3 bg-bg-main border border-border-subtle hover:border-border-strong text-text-primary text-[12px] font-medium rounded-md transition-all active:scale-[0.98] inline-flex items-center justify-center outline-none w-full"
+                              className="btn-secondary w-full"
                             >
                               Review
                             </Link>
                             {canResolveEscalation && (
                               <button 
                                 onClick={() => handleResolveEscalation(item.tagId, item.comment.commentId)}
-                                className="h-7 px-3 bg-accent-blue text-white hover:brightness-110 text-[12px] font-medium rounded-md transition-all active:scale-[0.98] cursor-pointer outline-none shadow-xs inline-flex items-center justify-center gap-1.5 w-full"
+                                className="btn-primary w-full"
                               >
                                 <Check className="w-3.5 h-3.5" weight="bold" />
                                 <span>Resolve</span>
@@ -733,7 +675,43 @@ export function MyWork() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Publish Modal triggered from Deployment Queue */}
+      {publishTarget && (
+        <PublishModal
+          isOpen={Boolean(publishTarget)}
+          pageId={publishTarget.pageId}
+          pageName={publishTarget.pageName}
+          initialLanguage={publishTarget.langCode}
+          initialEnvironment="PRODUCTION"
+          availableLanguages={activeLangs}
+          tags={StoreService.getTags(publishTarget.pageId)}
+          totalTags={StoreService.getTags(publishTarget.pageId).length}
+          onClose={() => {
+            setPublishTarget(null);
+            const pipeline = StoreService.getPageReleasePipeline();
+            setNeedsReleaseCount(pipeline.filter(p => p.pipelineState === "NEEDS_RELEASE" || p.hasProductionChanges).length);
+            setSyncedCount(pipeline.filter(p => p.pipelineState === "IN_SYNC").length);
+          }}
+          onPublish={(env, langCode) => {
+            if (!publishTarget) return;
+            toast(`Published ${publishTarget.pageName} (${langCode.toUpperCase()}) to ${env}`);
+            const pipeline = StoreService.getPageReleasePipeline();
+            setNeedsReleaseCount(pipeline.filter(p => p.pipelineState === "NEEDS_RELEASE" || p.hasProductionChanges).length);
+            setSyncedCount(pipeline.filter(p => p.pipelineState === "IN_SYNC").length);
+          }}
+          onPublishAll={(env) => {
+            if (!publishTarget) return;
+            toast(`Published all languages for ${publishTarget.pageName} to ${env}`);
+            const pipeline = StoreService.getPageReleasePipeline();
+            setNeedsReleaseCount(pipeline.filter(p => p.pipelineState === "NEEDS_RELEASE" || p.hasProductionChanges).length);
+            setSyncedCount(pipeline.filter(p => p.pipelineState === "IN_SYNC").length);
+          }}
+        />
+      )}
     </div>
   );
 }
+
+export const Overview = MyWork;
 

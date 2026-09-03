@@ -19,5 +19,7 @@ public interface TranslationRepository extends JpaRepository<Translation, Transl
     @Query("SELECT t FROM Translation t WHERE t.tagId = :tagId AND t.languageCode = :languageCode")
     Optional<Translation> findByIdForUpdate(@Param("tagId") String tagId, @Param("languageCode") String languageCode);
 
+    List<Translation> findByTagId(String tagId);
+
     List<Translation> findByTagIdInAndLanguageCode(java.util.Collection<String> tagIds, String languageCode);
 }

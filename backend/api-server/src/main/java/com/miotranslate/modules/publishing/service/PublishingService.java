@@ -392,11 +392,6 @@ public class PublishingService {
         PushResult pushResult = languageServicesClient.pushBundle(
                 pageId, targetLang, environment, tagsToPublish, removeTags);
 
-        // If publishing to MOCK environment, also mirror to DEV in MockLsDataStore so default DEV playground view is synced
-        if ("MOCK".equalsIgnoreCase(environment)) {
-            languageServicesClient.pushBundle(pageId, targetLang, "DEV", tagsToPublish, removeTags);
-        }
-
         finalizeRelease(release.getReleaseId(), pushResult);
         return release;
     }

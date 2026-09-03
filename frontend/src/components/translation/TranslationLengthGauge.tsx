@@ -44,7 +44,7 @@ export function TranslationLengthGauge({ sourceText, translatedText }: Translati
       <div className="h-1.5 w-full bg-border-subtle rounded-full overflow-hidden">
         {/* Progress Bar Fill */}
         <div 
-          className={cn("h-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-full", barColor, severity === "danger" ? "shadow-[0_0_8px_rgba(244,63,94,0.6)]" : "")}
+          className={cn("h-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-full", barColor, severity === "danger" ? "-[0_0_8px_rgba(244,63,94,0.6)]" : "")}
           style={{ width: `${barWidth}%` }}
         />
       </div>

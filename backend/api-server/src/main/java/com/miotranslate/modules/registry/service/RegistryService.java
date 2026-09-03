@@ -178,9 +178,11 @@ public class RegistryService {
             if (ec != null) {
                 tagObj.put("english", ec.get("text") != null ? ec.get("text") : "");
                 tagObj.put("englishVersion", ec.get("currentVersion") != null ? ec.get("currentVersion") : 0);
+                tagObj.put("englishStatus", ec.get("status") != null ? ec.get("status") : "NO_COPY");
             } else {
                 tagObj.put("english", "");
                 tagObj.put("englishVersion", 0);
+                tagObj.put("englishStatus", "NO_COPY");
             }
             
             tagObj.put("values", transMap.getOrDefault(t.getTagId(), new java.util.HashMap<>()));

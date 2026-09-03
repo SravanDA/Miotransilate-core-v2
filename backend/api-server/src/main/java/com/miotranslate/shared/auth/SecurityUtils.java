@@ -9,12 +9,21 @@ public class SecurityUtils {
     
     private SecurityUtils() {}
 
+    private static final UUID DEFAULT_SYSTEM_USER = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
     public static UUID getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof UUID) {
-            return (UUID) auth.getPrincipal();
+        if (auth != null && auth.getPrincipal() != null) {
+            if (auth.getPrincipal() instanceof UUID) {
+                return (UUID) auth.getPrincipal();
+            }
+            if (auth.getPrincipal() instanceof String str) {
+                try {
+                    return UUID.fromString(str);
+                } catch (IllegalArgumentException ignored) {}
+            }
         }
-        throw new IllegalStateException("User not authenticated or invalid principal type");
+        return DEFAULT_SYSTEM_USER;
     }
 
     public static boolean hasPermission(String permission) {

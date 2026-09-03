@@ -44,6 +44,9 @@ public class TranslationService {
     private final TranslationEngine translationEngine;
     private final TranslationPersistenceService persistenceService;
 
+    @org.springframework.beans.factory.annotation.Value("${miotranslate.bulk-approve.confidence-threshold:0.85}")
+    private BigDecimal bulkApproveThreshold;
+
     public TranslationService(TranslationRepository translationRepository,
                               TranslationVersionRepository versionRepository,
                               TagRepository tagRepository,
@@ -90,7 +93,7 @@ public class TranslationService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public TranslationVersion editTranslationManually(String tagId, String languageCode, String ifMatchETag, String text, UUID userId) {
+    public TranslationVersion editTranslationManually(String tagId, String languageCode, String ifMatchETag, String text, BigDecimal confidenceScore, UUID userId) {
         Translation translation = translationRepository.findByIdForUpdate(tagId, languageCode)
                 .orElseGet(() -> {
                     Translation newTrans = new Translation();
@@ -111,10 +114,11 @@ public class TranslationService {
         draft.setVersionNumber(nextVersion);
         draft.setText(text);
         draft.setCreationMethod("MANUAL");
+        draft.setConfidenceScore(confidenceScore != null ? confidenceScore : new BigDecimal("0.95"));
         
         // Fetch current English copy version
-        EnglishCopy ec = englishCopyRepository.findById(tagId).orElseThrow();
-        draft.setSourceEnglishVersion(ec.getCurrentVersionNumber() != null ? ec.getCurrentVersionNumber() : 1);
+        EnglishCopy ec = englishCopyRepository.findById(tagId).orElse(null);
+        draft.setSourceEnglishVersion(ec != null && ec.getCurrentVersionNumber() != null ? ec.getCurrentVersionNumber() : 1);
         
         draft.setAuthoredBy(userId);
         draft.setStatus("DRAFT");
@@ -128,6 +132,11 @@ public class TranslationService {
         translationRepository.save(translation);
         auditService.record("TRANSLATION_MANUAL_EDIT", "TRANSLATION", tagId + "/" + languageCode, "Manual edit saved");
         return draft;
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public TranslationVersion editTranslationManually(String tagId, String languageCode, String ifMatchETag, String text, UUID userId) {
+        return editTranslationManually(tagId, languageCode, ifMatchETag, text, null, userId);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -188,6 +197,21 @@ public class TranslationService {
         
         if (!"STALE".equals(translation.getStatus())) throw new IllegalStateException("Not stale");
         
+        // Update version row's source_english_version to current English copy version
+        EnglishCopy ec = englishCopyRepository.findById(tagId).orElse(null);
+        if (ec != null && ec.getCurrentVersionNumber() != null) {
+            TranslationVersion latest = versionRepository
+                .findTopByTagIdAndLanguageCodeOrderByVersionNumberDesc(tagId, languageCode)
+                .orElse(null);
+            if (latest != null) {
+                latest.setSourceEnglishVersion(ec.getCurrentVersionNumber());
+                latest.setStatus("APPROVED");
+                latest.setApprovedBy(userId);
+                latest.setApprovedAt(OffsetDateTime.now());
+                versionRepository.save(latest);
+            }
+        }
+        
         translation.setStatus("APPROVED");
         translation.setEtagVersion(translation.getEtagVersion() + 1);
         translation.setStaleTriggeredAt(null);
@@ -204,8 +228,7 @@ public class TranslationService {
 
     @Transactional(readOnly = true)
     public List<TranslationVersion> getVersions(String tagId, String languageCode) {
-        // dummy return
-        return List.of();
+        return versionRepository.findByTagIdAndLanguageCodeOrderByVersionNumberDesc(tagId, languageCode);
     }
 
     public Map<String, Object> generateAiTranslationsBulk(String pageId, String languageCode, UUID userId) {
@@ -259,22 +282,96 @@ public class TranslationService {
     public Map<String, Object> bulkApproveTranslations(String pageId, String languageCode, UUID userId) {
         List<Tag> tags = tagRepository.findByPageIdAndStatusNot(pageId, "DEPRECATED");
         int approvedCount = 0;
-        
-        BigDecimal threshold = new BigDecimal("0.90"); // Mock threshold
+        int skippedCount = 0;
+        Map<String, String> skipReasons = new HashMap<>();
         
         for (Tag tag : tags) {
             Translation translation = translationRepository.findByIdForUpdate(tag.getTagId(), languageCode).orElse(null);
-            if (translation != null && ("DRAFT".equals(translation.getStatus()) || "PENDING_REVIEW".equals(translation.getStatus()))) {
-                TranslationVersion latest = versionRepository.findTopByTagIdAndLanguageCodeOrderByVersionNumberDesc(tag.getTagId(), languageCode).orElse(null);
-                if (latest != null && latest.getConfidenceScore() != null && latest.getConfidenceScore().compareTo(threshold) >= 0) {
-                    reviewTranslation(tag.getTagId(), languageCode, String.valueOf(translation.getEtagVersion()), "APPROVE", userId);
-                    approvedCount++;
+            if (translation == null) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "NO_TRANSLATION");
+                continue;
+            }
+
+            // Gate 1: Only DRAFT status is eligible for bulk approve.
+            // NEEDS_ATTENTION, BLOCKED, and already-APPROVED are excluded.
+            String headStatus = translation.getStatus();
+            if (!"DRAFT".equals(headStatus)) {
+                if (!"APPROVED".equals(headStatus)) {  // Don't count already-approved as "skipped"
+                    skippedCount++;
+                    skipReasons.put(tag.getTagId(), "STATUS_" + headStatus);
                 }
+                continue;
+            }
+
+            TranslationVersion latest = versionRepository
+                    .findTopByTagIdAndLanguageCodeOrderByVersionNumberDesc(tag.getTagId(), languageCode)
+                    .orElse(null);
+            if (latest == null) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "NO_VERSION");
+                continue;
+            }
+
+            // Gate 2: Confidence score must exist and meet the configurable threshold
+            if (latest.getConfidenceScore() == null) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "NO_CONFIDENCE_SCORE");
+                continue;
+            }
+            if (latest.getConfidenceScore().compareTo(bulkApproveThreshold) < 0) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "LOW_CONFIDENCE_" + latest.getConfidenceScore());
+                continue;
+            }
+
+            // Gate 3: Variable integrity must have passed
+            if (!"PASSED".equals(latest.getVariableIntegrityStatus())) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "VARIABLE_INTEGRITY_" + latest.getVariableIntegrityStatus());
+                continue;
+            }
+
+            // Gate 4: Risk must not be high, and ambiguity must not be guessed
+            if ("high".equalsIgnoreCase(latest.getRisk())) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "HIGH_RISK");
+                continue;
+            }
+            if ("guessed".equalsIgnoreCase(latest.getResolvedBy())) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "AMBIGUITY_GUESSED");
+                continue;
+            }
+
+            // Gate 5: Back-translation must exist (no verifiability = no auto-approve)
+            if (latest.getBackTranslation() == null || latest.getBackTranslation().isBlank()) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "NO_BACK_TRANSLATION");
+                continue;
+            }
+
+            // All gates passed — approve
+            try {
+                reviewTranslation(tag.getTagId(), languageCode, String.valueOf(translation.getEtagVersion()), "APPROVE", userId);
+                approvedCount++;
+            } catch (Exception e) {
+                skippedCount++;
+                skipReasons.put(tag.getTagId(), "APPROVE_ERROR_" + e.getMessage());
+                log.warn("Bulk approve failed for tag {}: {}", tag.getTagId(), e.getMessage());
             }
         }
-        
+
+        log.info("Bulk approve for page {} / {}: approved={}, skipped={}, total={}",
+                pageId, languageCode, approvedCount, skippedCount, tags.size());
+
         Map<String, Object> response = new HashMap<>();
         response.put("approved", approvedCount);
+        response.put("skipped", skippedCount);
+        response.put("total", tags.size());
+        response.put("threshold", bulkApproveThreshold.toString());
+        response.put("skipReasons", skipReasons);
         return response;
     }
+
 }

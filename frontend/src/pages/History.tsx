@@ -124,7 +124,7 @@ function RecordCard({ record }: { record: AuditRecord }) {
     <div className="flex gap-3.5 group relative">
       {/* Sleek Linear Timeline Node */}
       <div className="flex flex-col items-center">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border border-border-subtle ${bg} ${color} shadow-xs`}>
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border border-border-subtle ${bg} ${color} `}>
           <Icon className="w-3.5 h-3.5" weight="bold" />
         </div>
         <div className="w-px h-full bg-border-subtle group-last:bg-transparent my-1" />
@@ -132,7 +132,7 @@ function RecordCard({ record }: { record: AuditRecord }) {
       
       {/* Content Card */}
       <div className="flex-1 pb-4">
-        <div className="bg-bg-card border border-border-subtle rounded-xl p-3.5 hover:border-border-strong transition-all shadow-xs">
+        <div className="bg-bg-card border border-border-subtle rounded-xl p-3.5 hover:border-border-strong transition-all ">
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-col gap-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap text-[13px]">
@@ -311,7 +311,7 @@ export function History() {
       </div>
 
       {/* Linear-Style Toolbar & Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3 bg-bg-card border border-border-subtle rounded-xl shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-3 bg-bg-card border border-border-subtle rounded-xl ">
         <div className="flex flex-wrap items-center gap-2.5 flex-1">
           
           {/* Search Box */}
@@ -356,7 +356,7 @@ export function History() {
               onClick={() => { setDateRange(preset.id); setPage(0); }}
               className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer outline-none ${
                 dateRange === preset.id
-                  ? "bg-bg-card text-text-primary font-semibold shadow-xs"
+                  ? "bg-bg-card text-text-primary font-semibold "
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
@@ -407,14 +407,14 @@ export function History() {
             <button 
               disabled={page === 0}
               onClick={() => setPage(p => p - 1)}
-              className="h-7 px-2.5 flex items-center justify-center rounded-md border border-border-subtle bg-bg-card hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer text-[12px] font-medium"
+              className="h-8 px-3 flex items-center justify-center rounded-lg border border-border-subtle hover:border-border-strong bg-bg-card hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer text-[12px] font-medium text-text-secondary hover:text-text-primary  active:scale-[0.98] outline-none"
             >
               <CaretLeft className="w-3.5 h-3.5 mr-1" /> Previous
             </button>
             <button 
               disabled={(page + 1) * size >= data.totalCount}
               onClick={() => setPage(p => p + 1)}
-              className="h-7 px-2.5 flex items-center justify-center rounded-md border border-border-subtle bg-bg-card hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer text-[12px] font-medium"
+              className="h-8 px-3 flex items-center justify-center rounded-lg border border-border-subtle hover:border-border-strong bg-bg-card hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer text-[12px] font-medium text-text-secondary hover:text-text-primary  active:scale-[0.98] outline-none"
             >
               Next <CaretRight className="w-3.5 h-3.5 ml-1" />
             </button>

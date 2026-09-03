@@ -17,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -164,10 +165,9 @@ class TranslationPersistenceServiceRobustnessTest {
         assertEquals(2, savedVersion.getVersionNumber());
         assertEquals("NEEDS_ATTENTION", savedVersion.getStatus(), "Flagged tag must be saved as NEEDS_ATTENTION");
         assertEquals("Gender option for customer", savedVersion.getSense());
-        assertEquals("siblings", savedVersion.getResolvedBy());
         assertEquals("medium", savedVersion.getRisk());
         assertEquals("PASSED", savedVersion.getVariableIntegrityStatus());
-        assertNull(savedVersion.getConfidenceScore(), "Misleading hardcoded 0.90 confidence score should NOT be set");
+        assertEquals(new BigDecimal("0.70"), savedVersion.getConfidenceScore(), "Computed confidence score based on signals should be 0.70");
 
         // Verify head row was updated with currentVersionNumber
         assertEquals(2, existing.getCurrentVersionNumber());

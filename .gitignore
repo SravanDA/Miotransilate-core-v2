@@ -10,3 +10,5 @@ dist/
 .env.local
 .agents/
 scratch/
+.impeccable/
+

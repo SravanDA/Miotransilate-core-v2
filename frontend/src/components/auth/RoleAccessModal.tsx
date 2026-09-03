@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   ShieldCheck,
   Check,
@@ -265,7 +266,18 @@ export const RoleAccessModal: React.FC<RoleAccessModalProps> = ({ isOpen, onClos
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === "undefined") return null;
 
   const simulatedRole = localStorage.getItem('miotranslate_simulate_role');
   const activeRoles = simulatedRole ? [simulatedRole] : (user?.roles || ["USER"]);
@@ -297,16 +309,16 @@ export const RoleAccessModal: React.FC<RoleAccessModalProps> = ({ isOpen, onClos
     return true;
   });
 
-  return (
+  return createPortal(
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs overflow-hidden"
     >
       <motion.div 
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden my-auto"
       >
         {/* Header */}
         <div className="px-6 py-5 border-b border-border-subtle flex items-center justify-between bg-bg-sidebar rounded-t-xl">
@@ -486,12 +498,13 @@ export const RoleAccessModal: React.FC<RoleAccessModalProps> = ({ isOpen, onClos
           </span>
           <button
             onClick={onClose}
-            className="h-8 px-4 bg-bg-card hover:bg-bg-hover text-text-primary text-[12px] font-medium rounded-md border border-border-subtle hover:border-border-strong transition-colors cursor-pointer outline-none"
+            className="btn-secondary"
           >
             Close
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };

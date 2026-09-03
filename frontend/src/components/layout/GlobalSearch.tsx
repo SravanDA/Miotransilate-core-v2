@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { 
   MagnifyingGlass as Search, 
@@ -27,9 +28,7 @@ interface SearchResult {
 
 const STATIC_NAV: SearchResult[] = [
   { id: "nav-pages", type: "nav", title: "Pages List", subtitle: "Browse all pages and modules", path: "/pages" },
-  { id: "nav-work", type: "nav", title: "My Work / Review Queue", subtitle: "Review pending translations, English copy, releases", path: "/work" },
-  { id: "nav-coverage", type: "nav", title: "Coverage Matrix", subtitle: "Translation and deployment coverage across languages", path: "/coverage" },
-  { id: "nav-deployments", type: "nav", title: "Deployments", subtitle: "Publish history, CDN releases, active bundles", path: "/deployments" },
+  { id: "nav-overview", type: "nav", title: "Overview & Deployment Center", subtitle: "Unified governance queue: review translations, English copy, release readiness, and publish history", path: "/overview" },
   { id: "nav-history", type: "nav", title: "Audit Trail / History", subtitle: "Detailed audit history across all changes", path: "/history" },
   { id: "nav-settings", type: "nav", title: "System Settings", subtitle: "Manage users, roles, languages, and configs", path: "/settings" },
 ];
@@ -84,7 +83,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           Object.entries(t.values).forEach(([lang, val]) => {
             if (val.text && val.text.toLowerCase().includes(q)) {
               matchTrans = true;
-              transSnippet = `[${lang.toUpperCase()}] ${val.text}`;
+              transSnippet = `(${lang.toUpperCase()}) ${val.text}`;
             }
           });
         }
@@ -139,20 +138,31 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     }
   };
 
-  if (!isOpen) return null;
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
 
-  return (
+  if (!isOpen || typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       <div 
         onClick={onClose}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60"
+        className="fixed inset-0 z-[9999] flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-xs overflow-hidden"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: -10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: -10 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          className="bg-bg-card border border-border-subtle rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]"
+          className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[75vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search Header Input */}
@@ -175,7 +185,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 <X className="w-4 h-4" />
               </button>
             ) : (
-              <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold text-text-tertiary bg-bg-main border border-border-strong rounded shadow-xs">
+              <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold text-text-tertiary bg-bg-main border border-border-strong rounded ">
                 ESC
               </kbd>
             )}
@@ -246,6 +256,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

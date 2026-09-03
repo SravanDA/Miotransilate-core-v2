@@ -3,9 +3,7 @@ import { Shell } from "./components/layout/Shell";
 import { PageList } from "./pages/PageList";
 import { PageDetail } from "./pages/PageDetail";
 import { TagDetail } from "./pages/TagDetail";
-import { Deployments } from "./pages/Deployments";
 import { Settings } from "./pages/Settings";
-import { CoverageDashboard } from "./pages/CoverageDashboard";
 import { MyWork } from "./pages/MyWork";
 import { Guide } from "./pages/Guide";
 import { History } from "./pages/History";
@@ -65,31 +63,18 @@ function App() {
               } 
             />
             
-            {/* Work and Workflows */}
+            {/* Overview / Governance Queue */}
             <Route 
-              path="work" 
+              path="overview" 
               element={
                 <ProtectedRoute permission="CONTENT_VIEW">
                   <MyWork />
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="coverage" 
-              element={
-                <ProtectedRoute permission="CONTENT_VIEW">
-                  <CoverageDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="deployments" 
-              element={
-                <ProtectedRoute permission="CONTENT_VIEW">
-                  <Deployments />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="work" element={<Navigate to="/overview" replace />} />
+            <Route path="coverage" element={<Navigate to="/pages" replace />} />
+            <Route path="deployments" element={<Navigate to="/overview" replace />} />
             <Route 
               path="history" 
               element={

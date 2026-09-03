@@ -32,7 +32,7 @@ public class GeminiTranslationClient implements AiTranslationClient {
     @Value("${miotranslate.gemini.api-key:}")
     private String apiKey;
 
-    @Value("${miotranslate.gemini.model:gemini-2.5-flash}")
+    @Value("${miotranslate.gemini.model:gemini-3.6-flash}")
     private String model;
 
     /**

@@ -3,9 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   CaretRight,
   Cube,
-  CheckSquare,
+  SquaresFour,
   ChartBar,
-  RocketLaunch,
   ClockCounterClockwise,
   GearSix,
   BookOpen,
@@ -71,7 +70,7 @@ export const Breadcrumbs: React.FC = () => {
   const allPages = StoreService.getPages();
 
   // Top-level workspace routes (Linear 1:1 typography with unified #6773e4 accent icon)
-  if (segments[0] === "work" || segments[0] === "my-work") {
+  if (segments[0] === "overview" || segments[0] === "work" || segments[0] === "my-work" || segments[0] === "deployments") {
     return (
       <div className="flex items-center gap-1.5 text-[14px] font-semibold text-text-primary min-w-0">
         <Link to="/pages" className="hover:text-text-secondary transition-colors shrink-0 outline-none">
@@ -79,8 +78,8 @@ export const Breadcrumbs: React.FC = () => {
         </Link>
         <CaretRight className="w-3 h-3 text-text-tertiary/70 shrink-0 mx-0.5" weight="bold" />
         <div className="flex items-center gap-1.5 shrink-0">
-          <CheckSquare className="w-4 h-4 text-[#6773e4] shrink-0" weight="bold" />
-          <span>My Work</span>
+          <SquaresFour className="w-4 h-4 text-[#6773e4] shrink-0" weight="bold" />
+          <span>Overview</span>
         </div>
       </div>
     );
@@ -96,21 +95,6 @@ export const Breadcrumbs: React.FC = () => {
         <div className="flex items-center gap-1.5 shrink-0">
           <ChartBar className="w-4 h-4 text-[#6773e4] shrink-0" weight="bold" />
           <span>Coverage</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (segments[0] === "deployments") {
-    return (
-      <div className="flex items-center gap-1.5 text-[14px] font-semibold text-text-primary min-w-0">
-        <Link to="/pages" className="hover:text-text-secondary transition-colors shrink-0 outline-none">
-          Pages
-        </Link>
-        <CaretRight className="w-3 h-3 text-text-tertiary/70 shrink-0 mx-0.5" weight="bold" />
-        <div className="flex items-center gap-1.5 shrink-0">
-          <RocketLaunch className="w-4 h-4 text-[#6773e4] shrink-0" weight="bold" />
-          <span>Deployments</span>
         </div>
       </div>
     );
@@ -228,7 +212,7 @@ export const Breadcrumbs: React.FC = () => {
 
           {/* Quick Page Switcher Dropdown */}
           {isPageDropdownOpen && (
-            <div className="absolute left-0 top-full mt-2 w-64 bg-bg-card border border-border-strong rounded-lg shadow-2xl py-1 z-50 overflow-hidden text-[13px] font-normal">
+            <div className="absolute left-0 top-full mt-2 w-64 bg-bg-card border border-border-strong rounded-lg  py-1 z-50 overflow-hidden text-[13px] font-normal">
               <div className="px-2.5 py-1.5 border-b border-border-subtle">
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-text-tertiary absolute left-2 top-1/2 -translate-y-1/2" />

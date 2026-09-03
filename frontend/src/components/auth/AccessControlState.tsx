@@ -89,7 +89,7 @@ export function AccessControlGraphic({ className = "w-28 h-28 sm:w-32 sm:h-32" }
           viewBox="0 0 100 100" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
+          className="w-full h-full drop--[0_8px_20px_rgba(0,0,0,0.5)]"
         >
           {/* Outer Dashed Orbit */}
           <circle cx="50" cy="50" r="44" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="1" strokeDasharray="3 3" />
@@ -152,7 +152,7 @@ export function AccessControlGraphic({ className = "w-28 h-28 sm:w-32 sm:h-32" }
           viewBox="0 0 100 100" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full drop-shadow-[0_6px_16px_rgba(0,0,0,0.06)]"
+          className="w-full h-full drop--[0_6px_16px_rgba(0,0,0,0.06)]"
         >
           {/* Outer Dashed Orbit */}
           <circle cx="50" cy="50" r="44" stroke="#64748b" strokeOpacity="0.2" strokeWidth="1" strokeDasharray="3 3" />
@@ -243,7 +243,7 @@ export function AccessControlState({
         </p>
 
         {requiredPermission && (
-          <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1 bg-bg-card border border-border-subtle rounded-md text-[12px] text-text-secondary shadow-xs">
+          <div className="mb-6 inline-flex items-center gap-1.5 px-3 py-1 bg-bg-card border border-border-subtle rounded-md text-[12px] text-text-secondary ">
             <span>Required permission:</span>
             <strong className="text-text-primary font-medium">{getPermissionDisplayName(requiredPermission)}</strong>
           </div>
@@ -253,7 +253,7 @@ export function AccessControlState({
         <div className="flex flex-wrap items-center justify-center gap-2.5">
           <Link
             to="/pages"
-            className="h-8 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-md bg-[#5e6ad2] hover:bg-[#525ec2] text-white text-[12px] font-medium transition-all shadow-xs cursor-pointer active:scale-[0.98] outline-none"
+            className="h-8 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-md bg-[#5e6ad2] hover:bg-[#525ec2] text-white text-[12px] font-medium transition-all  cursor-pointer active:scale-[0.98] outline-none"
           >
             <ArrowLeft className="w-3.5 h-3.5" weight="bold" />
             <span>Back to Pages</span>
@@ -261,7 +261,7 @@ export function AccessControlState({
 
           <button
             onClick={() => setIsRoleModalOpen(true)}
-            className="h-8 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-md border border-border-subtle bg-bg-card hover:bg-bg-hover hover:border-border-strong text-text-primary text-[12px] font-medium transition-all shadow-xs cursor-pointer active:scale-[0.98] outline-none"
+            className="h-8 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-md border border-border-subtle bg-bg-card hover:bg-bg-hover hover:border-border-strong text-text-primary text-[12px] font-medium transition-all  cursor-pointer active:scale-[0.98] outline-none"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-text-secondary" weight="bold" />
             <span>View Role Permissions</span>

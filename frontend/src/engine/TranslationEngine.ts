@@ -106,13 +106,33 @@ export class TranslationEngine {
       );
 
       let needsAttentionCount = 0;
+      let blockedCount = 0;
       const updates: { tagId: string; value: Partial<TranslationValue> }[] = [];
 
       results.forEach((result, idx) => {
         if (!requests[idx]) return;
         const tagId = requests[idx].tagId;
-        const isLowConfidence = result.confidence !== undefined && result.confidence < 70;
-        if (isLowConfidence) {
+        const originalEnglish = requests[idx].req.english;
+
+        // The provider now returns signal-derived confidence and status.
+        // Enforce additional safety checks here as the last line of defense.
+        let finalConfidence = result.confidence ?? 0;
+        let finalStatus = result.status || "Pending Review";
+
+        // Safety check: if translated text equals original English, force low confidence
+        if (result.translatedText === originalEnglish && originalEnglish.trim().length > 2) {
+          finalConfidence = Math.min(finalConfidence, 10);
+          finalStatus = "Needs Attention";
+        }
+
+        // Safety check: confidence below 50 always means needs attention
+        if (finalConfidence < 50 && finalStatus !== "Needs Attention" && finalStatus !== "Blocked" && finalStatus !== "No Trans") {
+          finalStatus = "Needs Attention";
+        }
+
+        if (finalStatus === "Blocked" || result.stateCause?.startsWith("blocked")) {
+          blockedCount++;
+        } else if (finalStatus === "Needs Attention" || finalConfidence < 50) {
           needsAttentionCount++;
         }
 
@@ -120,8 +140,8 @@ export class TranslationEngine {
           tagId,
           value: {
             text: result.translatedText,
-            status: (result.status as any) || (isLowConfidence ? "Needs Attention" : "Pending Review"),
-            confidence: result.confidence,
+            status: finalStatus as any,
+            confidence: finalConfidence,
             stateCause: result.stateCause,
             backTranslation: result.backTranslation,
           }
@@ -132,11 +152,11 @@ export class TranslationEngine {
       await StoreService.batchUpdateTranslations(pageId, targetLanguage, updates);
 
       return {
-        status: needsAttentionCount > 0 ? "PARTIAL_SUCCESS" : "COMPLETE",
+        status: (blockedCount > 0 || needsAttentionCount > 0) ? "PARTIAL_SUCCESS" : "COMPLETE",
         total: requests.length,
         translated: updates.length,
         needsAttention: needsAttentionCount,
-        blocked: 0,
+        blocked: blockedCount,
         remainingTagIds: [],
         blockedTagIds: []
       };
@@ -153,6 +173,70 @@ export class TranslationEngine {
         error: e?.message || "Translation provider error. Please check API key in LLM DevKit."
       };
     }
+  }
+
+  async translatePageAllLanguages(
+    pageId: string,
+    languages: string[],
+    onProgress?: (progress: {
+      currentLang: string;
+      completedLangs: number;
+      totalLangs: number;
+      langResult?: {
+        status: "COMPLETE" | "PARTIAL_SUCCESS" | "NO_ELIGIBLE_TAGS" | "FAILED";
+        total: number;
+        translated: number;
+        needsAttention: number;
+        blocked: number;
+        error?: string;
+      };
+    }) => void
+  ): Promise<{
+    totalTranslated: number;
+    results: Record<string, any>;
+  }> {
+    const results: Record<string, any> = {};
+    let totalTranslated = 0;
+
+    for (let i = 0; i < languages.length; i++) {
+      const lang = languages[i];
+      if (onProgress) {
+        onProgress({
+          currentLang: lang,
+          completedLangs: i,
+          totalLangs: languages.length
+        });
+      }
+
+      try {
+        const res = await this.translatePageBatch(pageId, lang);
+        results[lang] = res;
+        totalTranslated += res.translated;
+      } catch (err: any) {
+        results[lang] = {
+          status: "FAILED",
+          total: 0,
+          translated: 0,
+          needsAttention: 0,
+          blocked: 0,
+          remainingTagIds: [],
+          blockedTagIds: [],
+          error: err?.message || "Translation error"
+        };
+      }
+
+      if (onProgress) {
+        onProgress({
+          currentLang: lang,
+          completedLangs: i + 1,
+          totalLangs: languages.length,
+          langResult: results[lang]
+        });
+      }
+    }
+
+    await StoreService.refreshPageDetail(pageId);
+    return { totalTranslated, results };
   }
 }
 

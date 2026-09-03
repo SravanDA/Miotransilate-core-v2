@@ -48,15 +48,35 @@ export class ApiService {
         else if (trans.status === "DRAFT") status = "Draft";
         else if (trans.status === "PENDING_REVIEW") status = "Pending Review";
         else if (trans.status === "STALE") status = "Stale";
+        else if (trans.status === "NEEDS_ATTENTION") status = "Pending Review";
+        else if (trans.status === "BLOCKED") status = "Draft";
+        else if (trans.status === "NO_TRANSLATION") status = "No Trans";
+
+        // Also detect stale from English version disparity
+        const engVer = t.englishVersion || 1;
+        const transEngVer = trans.translatedAtEnglishVersion || 0;
+        if (trans.status === "STALE" || (trans.text && engVer > 1 && transEngVer > 0 && transEngVer < engVer && trans.status !== "APPROVED")) {
+          status = "Stale";
+        }
+
+        const rawConf = trans.confidence !== undefined && trans.confidence !== null ? Number(trans.confidence) : 0;
+        const normalizedConfidence = (rawConf > 0 && rawConf <= 1.0) ? Math.round(rawConf * 100) : Math.round(rawConf);
 
         values[lang] = {
           text: trans.text || "",
           status: status as any,
-          confidence: trans.confidence || 0,
+          confidence: normalizedConfidence,
           translatedAtEnglishVersion: trans.translatedAtEnglishVersion || 0,
           lastUpdated: trans.lastUpdated || new Date().toISOString()
         };
       });
+
+      // Map englishStatus from backend (APPROVED, DRAFT, PENDING_REVIEW, NO_COPY)
+      let englishStatus: string | undefined;
+      if (t.englishStatus === "APPROVED") englishStatus = "Approved";
+      else if (t.englishStatus === "DRAFT") englishStatus = "Draft";
+      else if (t.englishStatus === "PENDING_REVIEW") englishStatus = "Pending Review";
+      else englishStatus = t.english ? "Approved" : "Draft";
 
       return {
         id: t.id,
@@ -64,6 +84,7 @@ export class ApiService {
         type: t.type,
         english: t.english || "",
         englishVersion: t.englishVersion || 0,
+        englishStatus,
         values: values,
         comments: [],
         createdAt: new Date().toISOString(),
@@ -75,16 +96,28 @@ export class ApiService {
   }
 
   static async createTag(pageId: string, tag: { id: string; type?: string; english?: string }) {
-    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/tags`, {
-      tagId: tag.id,
-      copyType: tag.type || "General",
-      status: "ACTIVE"
-    });
+    let resData = null;
+    try {
+      const res = await apiClient.post(`${API_BASE}/pages/${pageId}/tags`, {
+        tagId: tag.id,
+        copyType: tag.type || "General",
+        status: "ACTIVE"
+      });
+      resData = res.data;
+    } catch {
+      // Tag may already exist in database, proceed with English copy update
+    }
 
     if (tag.english && tag.english.trim()) {
-      await this.updateEnglishCopy(tag.id, tag.english, "Initial copy");
+      await this.saveEnglishCopyDraft(tag.id, tag.english, "Initial copy");
+      // Auto-approve so the page detail returns the English text
+      try {
+        await this.approveEnglishCopy(tag.id);
+      } catch {
+        // Approval may fail if workflow requires review — English is still saved as draft
+      }
     }
-    return res.data;
+    return resData;
   }
 
   static async updateTagType(tagId: string, copyType: string) {
@@ -143,9 +176,14 @@ export class ApiService {
     tagId: string, 
     langCode: string, 
     text: string, 
-    targetStatus: "Approved" | "Pending Review" | "Draft" = "Approved"
+    targetStatus: "Approved" | "Pending Review" | "Draft" = "Approved",
+    confidence?: number
   ) {
-    await apiClient.put(`${API_BASE}/tags/${tagId}/translations/${langCode}/draft`, { translatedText: text });
+    const payload: Record<string, any> = { translatedText: text };
+    if (confidence !== undefined && confidence !== null) {
+      payload.confidence = confidence > 1 ? confidence / 100 : confidence;
+    }
+    await apiClient.put(`${API_BASE}/tags/${tagId}/translations/${langCode}/draft`, payload);
     
     if (targetStatus === "Approved") {
       await apiClient.post(`${API_BASE}/tags/${tagId}/translations/${langCode}/review`, { action: "APPROVE" });

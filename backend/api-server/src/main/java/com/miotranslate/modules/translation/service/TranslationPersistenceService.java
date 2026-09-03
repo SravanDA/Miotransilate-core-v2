@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 /**
@@ -32,6 +34,7 @@ import java.util.UUID;
  * - P0-6: Blocked tags are persisted with FAILED/BLOCKED status instead of being silently dropped
  * - P0-7: Approved translations are guarded from re-translation
  * - P0-8: currentVersionNumber is set on the head row
+ * - CONFIDENCE-FIX: Derives a real, multi-signal confidence score (replaces the old fabricated 0.90)
  */
 @Slf4j
 @Service
@@ -44,6 +47,85 @@ public class TranslationPersistenceService {
     private final AuditService auditService;
 
     /**
+     * Compute a REAL confidence score from the multi-signal pipeline output.
+     *
+     * This replaces the old approach of either hardcoding 0.90 or leaving it null.
+     * The score is derived from deterministic signals — not from the LLM grading itself.
+     *
+     * Scoring logic (starts at 0.95, penalties subtract):
+     *   - risk=high:        -0.25  (model itself says this is risky)
+     *   - risk=medium:      -0.10
+     *   - resolved_by=guessed: -0.20  (no context resolved the ambiguity)
+     *   - isFlagged:        -0.10  (RiskGate triage flagged it)
+     *   - isBlocked:        forced to 0.00 (hard validation failure)
+     *   - No back_translation: -0.10  (no verifiability)
+     *   - triageCause contains audit:wrong_sense or audit:wrong_register: -0.25
+     *   - triageCause contains audit:awkward: -0.10
+     *   - triageCause contains short_ambiguous: -0.05
+     *   - triageCause contains high_blast_radius: -0.05
+     *
+     * Floor: 0.05 (never 0 unless blocked)
+     * Ceiling: 0.95 (AI never gets 1.00 — only human review can confirm 100%)
+     */
+    private BigDecimal computeConfidenceScore(EngineResult result) {
+        // Blocked tags always get 0
+        if (result.isBlocked()) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+
+        double score = 0.95;  // Base: clean, low-risk, unambiguous, verified
+
+        // Signal 1: Model's self-assessed risk
+        String risk = result.getRisk();
+        if ("high".equalsIgnoreCase(risk)) {
+            score -= 0.25;
+        } else if ("medium".equalsIgnoreCase(risk)) {
+            score -= 0.10;
+        }
+
+        // Signal 2: How ambiguity was resolved
+        String resolvedBy = result.getResolvedBy();
+        if ("guessed".equalsIgnoreCase(resolvedBy)) {
+            score -= 0.20;
+        }
+
+        // Signal 3: RiskGate triage flagging
+        if (result.isFlagged()) {
+            score -= 0.10;
+        }
+
+        // Signal 4: Back-translation availability (verifiability)
+        String backTranslation = result.getRawResult() != null ? result.getRawResult().getBackTranslation() : null;
+        if (backTranslation == null || backTranslation.isBlank()) {
+            score -= 0.10;
+        }
+
+        // Signal 5: Layer-3 audit verdict (encoded in triageCause)
+        String triageCause = result.getTriageCause();
+        if (triageCause != null) {
+            if (triageCause.contains("audit:wrong_sense") || triageCause.contains("audit:wrong_register")) {
+                score -= 0.25;
+            } else if (triageCause.contains("audit:awkward")) {
+                score -= 0.10;
+            } else if (triageCause.contains("audit:unsure")) {
+                score -= 0.15;
+            }
+            // Additional triage signals
+            if (triageCause.contains("short_ambiguous")) {
+                score -= 0.05;
+            }
+            if (triageCause.contains("high_blast_radius")) {
+                score -= 0.05;
+            }
+        }
+
+        // Floor at 0.05 (non-blocked always gets at least minimal score)
+        score = Math.max(0.05, Math.min(0.95, score));
+
+        return BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Persist a single engine result (from bulk AI translation).
      * 
      * Fixes applied:
@@ -52,11 +134,12 @@ public class TranslationPersistenceService {
      * - P0-6: Blocked results are persisted with variableIntegrityStatus=FAILED and status=BLOCKED
      * - P0-7: Skips tags whose translation is already APPROVED and not STALE
      * - P0-8: Sets currentVersionNumber on the head row
+     * - CONFIDENCE-FIX: Computes a real confidence score from pipeline signals
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void saveEngineResult(EngineResult result, String languageCode, UUID userId) {
         String tagId = result.getTagId();
-        EnglishCopy ec = englishCopyRepository.findById(tagId).orElseThrow();
+        EnglishCopy ec = englishCopyRepository.findById(tagId).orElse(null);
 
         Translation translation = translationRepository.findByIdForUpdate(tagId, languageCode)
                 .orElseGet(() -> {
@@ -109,9 +192,15 @@ public class TranslationPersistenceService {
         draft.setRisk(result.getRisk());
         draft.setModelUsed(result.getModelUsed());
         
-        // Do NOT set a hardcoded confidence score. The old `new BigDecimal("0.90")` was actively
-        // misleading — a fabricated number in the shape of a measurement. Reviewers should look
-        // at the `risk` enum and triage cause, not a decimal.
+        // CONFIDENCE-FIX: Compute a REAL confidence score from the multi-signal pipeline.
+        // This replaces the old pattern of either hardcoding 0.90 or leaving it null.
+        // The score is derived from risk, resolved_by, triage flags, audit verdict,
+        // and back-translation availability — NOT from the LLM grading itself.
+        BigDecimal computedConfidence = computeConfidenceScore(result);
+        draft.setConfidenceScore(computedConfidence);
+        log.debug("Tag {} confidence: {} (risk={}, resolvedBy={}, flagged={}, blocked={})",
+                tagId, computedConfidence, result.getRisk(), result.getResolvedBy(),
+                result.isFlagged(), result.isBlocked());
 
         translation.setStatus(draft.getStatus());
         translation.setEtagVersion(translation.getEtagVersion() + 1);
@@ -123,7 +212,7 @@ public class TranslationPersistenceService {
 
         auditService.record("AI_TRANSLATION_GENERATED", "TRANSLATION",
                 tagId + "/" + languageCode,
-                String.format("AI Engine Draft v%d created [%s]", nextVersion, draft.getStatus()));
+                String.format("AI Engine Draft v%d created [%s] confidence=%.2f", nextVersion, draft.getStatus(), computedConfidence));
     }
 
     /**
@@ -186,3 +275,4 @@ public class TranslationPersistenceService {
         return draft;
     }
 }
+

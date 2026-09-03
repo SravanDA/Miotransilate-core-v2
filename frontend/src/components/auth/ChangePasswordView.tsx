@@ -104,10 +104,10 @@ export const ChangePasswordView: React.FC = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg-main p-4">
-      <div className="w-full max-w-sm p-6 sm:p-8 bg-bg-card rounded-xl border border-border-subtle shadow-2xl">
+      <div className="w-full max-w-sm p-6 sm:p-8 bg-bg-card rounded-xl border border-border-subtle ">
         {/* Brand Header */}
         <div className="text-center mb-6 flex flex-col items-center gap-3">
-          <div className="w-11 h-11 bg-accent-blue/10 border border-accent-blue/20 rounded-xl flex items-center justify-center shadow-xs">
+          <div className="w-11 h-11 bg-accent-blue/10 border border-accent-blue/20 rounded-xl flex items-center justify-center ">
             <Key className="w-5 h-5 text-accent-blue" weight="bold" />
           </div>
           <div>
@@ -242,7 +242,7 @@ export const ChangePasswordView: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-9 mt-3 bg-[#5e6ad2] hover:bg-[#525ec2] text-white font-medium text-[13px] rounded-md transition-all disabled:opacity-50 cursor-pointer outline-none shadow-xs active:scale-[0.98] flex items-center justify-center gap-2"
+            className="w-full h-9 mt-3 bg-[#5e6ad2] hover:bg-[#525ec2] text-white font-medium text-[13px] rounded-md transition-all disabled:opacity-50 cursor-pointer outline-none  active:scale-[0.98] flex items-center justify-center gap-2"
           >
             {loading ? "Updating password..." : "Update Password"}
           </button>

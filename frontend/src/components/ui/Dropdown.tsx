@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown, Check } from "@phosphor-icons/react";
 
 export interface DropdownOption {
   value: string;
   label: string;
+  icon?: React.ReactNode;
 }
 
 export interface DropdownGroup {
@@ -53,18 +54,22 @@ export function Dropdown({
     };
   }, [isOpen]);
 
-  // Find the selected label
+  // Find the selected label and icon
   let selectedLabel = placeholder;
+  let selectedIcon: React.ReactNode = undefined;
+
   for (const item of options) {
     if (isGroup(item)) {
       const found = item.options.find((opt) => opt.value === value);
       if (found) {
         selectedLabel = found.label;
+        selectedIcon = found.icon;
         break;
       }
     } else {
       if (item.value === value) {
         selectedLabel = item.label;
+        selectedIcon = item.icon;
         break;
       }
     }
@@ -81,21 +86,24 @@ export function Dropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between w-full h-8 px-2.5 bg-bg-card text-[13px] font-medium text-text-primary cursor-pointer outline-none transition-colors ${
-          isOpen ? "border border-border-strong" : "border border-border-subtle hover:bg-bg-hover"
-        } ${disabled ? "opacity-60 cursor-not-allowed bg-bg-hover" : ""} rounded-md`}
+        className={`flex items-center justify-between w-full h-8 px-2.5 bg-bg-card text-[12px] font-medium text-text-primary cursor-pointer outline-none transition-all ${
+          isOpen ? "border border-border-strong ring-1 ring-border-strong/50" : "border border-border-subtle hover:border-border-strong hover:bg-bg-hover"
+        } ${disabled ? "opacity-60 cursor-not-allowed bg-bg-hover" : ""} rounded-lg `}
       >
-        <span className="truncate pr-3">{selectedLabel}</span>
+        <div className="flex items-center gap-1.5 truncate pr-2 min-w-0">
+          {selectedIcon && <span className="shrink-0 flex items-center">{selectedIcon}</span>}
+          <span className="truncate">{selectedLabel}</span>
+        </div>
         <CaretDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isOpen ? "rotate-180 text-text-primary" : "text-text-tertiary"}`} weight="bold" />
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute left-0 top-full z-[999] min-w-full min-w-[210px] mt-1 bg-bg-card border border-border-strong rounded-xl max-h-[300px] overflow-y-auto py-1.5 scrollbar-none shadow-2xl">
+        <div className="absolute left-0 top-full z-[999] min-w-full min-w-[200px] mt-1 bg-bg-card border border-border-strong rounded-xl max-h-[300px] overflow-y-auto p-1 scrollbar-none flex flex-col gap-0.5 animate-fadeIn shadow-lg">
           {options.map((item, index) => {
             if (isGroup(item)) {
               return (
-                <div key={index}>
-                  <div className="px-3 pt-2 pb-1.5 text-[11px] font-bold text-text-tertiary uppercase tracking-wider">
+                <div key={index} className="flex flex-col gap-0.5">
+                  <div className="px-2.5 pt-2 pb-1 text-[10px] font-bold text-text-tertiary uppercase tracking-wider">
                     {item.groupLabel}
                   </div>
                   {item.options.map((opt) => {
@@ -105,12 +113,15 @@ export function Dropdown({
                         type="button"
                         key={opt.value}
                         onClick={() => handleSelect(opt.value)}
-                        className={`w-full text-left px-3 py-1.5 text-[12px] font-medium transition-colors outline-none cursor-pointer flex items-center justify-between ${
+                        className={`w-full text-left px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors outline-none cursor-pointer flex items-center justify-between ${
                           isSelected ? "bg-bg-active text-accent-blue font-semibold" : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
                         }`}
                       >
-                        <span className="truncate">{opt.label}</span>
-                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-accent-blue ml-2 shrink-0" />}
+                        <div className="flex items-center gap-2 truncate">
+                          {opt.icon && <span className="shrink-0 flex items-center">{opt.icon}</span>}
+                          <span className="truncate">{opt.label}</span>
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-accent-blue ml-2 shrink-0" weight="bold" />}
                       </button>
                     );
                   })}
@@ -123,12 +134,15 @@ export function Dropdown({
                   type="button"
                   key={item.value}
                   onClick={() => handleSelect(item.value)}
-                  className={`w-full text-left px-3 py-1.5 text-[12px] font-medium transition-colors outline-none cursor-pointer flex items-center justify-between ${
+                  className={`w-full text-left px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors outline-none cursor-pointer flex items-center justify-between ${
                     isSelected ? "bg-bg-active text-accent-blue font-semibold" : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
                   }`}
                 >
-                  <span className="truncate">{item.label}</span>
-                  {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-accent-blue ml-2 shrink-0" />}
+                  <div className="flex items-center gap-2 truncate">
+                    {optIcon(item) && <span className="shrink-0 flex items-center">{item.icon}</span>}
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-accent-blue ml-2 shrink-0" weight="bold" />}
                 </button>
               );
             }
@@ -137,4 +151,8 @@ export function Dropdown({
       )}
     </div>
   );
+}
+
+function optIcon(item: DropdownOption) {
+  return item.icon !== undefined;
 }

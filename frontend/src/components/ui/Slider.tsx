@@ -44,7 +44,7 @@ export function Slider({
               {label}
             </label>
           )}
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-bg-main border border-border-subtle rounded-md shadow-2xs">
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-bg-main border border-border-subtle rounded-md ">
             <span className="font-mono text-[12px] font-semibold text-text-primary">
               {value}
             </span>

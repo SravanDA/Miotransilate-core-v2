@@ -44,11 +44,14 @@ miotranslate:
     secret: "miotranslate-super-secure-jwt-signing-key-minimum-256-bits-long"
   gemini:
     api-key: ${GEMINI_API_KEY:}
-    model: gemini-2.5-flash
+    model: gemini-3.6-flash
     timeout-ms: 30000
+  bulk-approve:
+    confidence-threshold: 0.85  # Minimum computed confidence for auto-approval (0.00–0.95)
   language-services:
     domain: "miosalon"
     endpoints:
       DEV: "http://localhost:9090/multilingual/bulkImportPages"
       QA: "http://localhost:9090/multilingual/bulkImportPages"
       PRODUCTION: "https://languageservices.example.com/multilingual/bulkImportPages"
+

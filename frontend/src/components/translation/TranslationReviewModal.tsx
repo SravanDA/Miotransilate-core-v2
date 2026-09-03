@@ -1,6 +1,7 @@
 import {
   useState,
   useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X,
   WarningCircle as AlertCircle,
   ArrowsClockwise as RefreshCw,
@@ -90,7 +91,20 @@ export function TranslationReviewModal({
     onClose();
   };
 
-  return (
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div 
@@ -98,14 +112,14 @@ export function TranslationReviewModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-hidden"
         >
           <motion.div 
             initial={{ scale: 0.96, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 8 }}
             transition={{ type: "spring", duration: 0.25 }}
-            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden text-text-primary shadow-2xl"
+            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden text-text-primary my-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-sidebar rounded-t-xl">
@@ -200,7 +214,7 @@ export function TranslationReviewModal({
                     setReviewerComment(e.target.value);
                     if (e.target.value.trim()) setCommentError("");
                   }}
-                  className="w-full h-9 px-3 bg-bg-main border border-border-strong rounded-md text-[13px] text-text-primary focus:border-accent-blue outline-none placeholder:text-text-tertiary transition-colors"
+                  className="w-full h-8 px-2.5 bg-bg-main border border-border-strong rounded-lg text-[13px] text-text-primary focus:border-accent-blue outline-none placeholder:text-text-tertiary transition-colors"
                 />
                 {commentError && (
                   <p className="text-[11px] font-medium text-danger mt-1">{commentError}</p>
@@ -214,7 +228,7 @@ export function TranslationReviewModal({
                 {onReject && (
                   <button 
                     onClick={handleReject}
-                    className="h-8 px-3 text-[12px] font-medium text-text-secondary hover:text-danger hover:bg-danger/10 border border-border-subtle hover:border-danger/30 rounded-md transition-colors cursor-pointer outline-none"
+                    className="btn-danger"
                   >
                     Reject
                   </button>
@@ -222,7 +236,7 @@ export function TranslationReviewModal({
                 {onReturnForRevision && (
                   <button 
                     onClick={handleReturnForRevision}
-                    className="h-8 px-3 text-[12px] font-medium text-text-secondary hover:text-amber-500 hover:bg-amber-500/10 border border-border-subtle hover:border-amber-500/30 rounded-md transition-colors cursor-pointer outline-none"
+                    className="btn-secondary text-amber-500 hover:text-amber-400 border-amber-500/30"
                   >
                     Return for Revision
                   </button>
@@ -232,13 +246,13 @@ export function TranslationReviewModal({
               <div className="flex items-center gap-2">
                 <button 
                   onClick={onClose}
-                  className="h-8 px-3.5 text-[12px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-md transition-colors cursor-pointer outline-none"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleApprove}
-                  className="h-8 px-4 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] cursor-pointer outline-none shadow-xs"
+                  className="btn-primary"
                 >
                   {isEdited ? "Edit & Approve" : "Approve Translation"}
                 </button>
@@ -247,6 +261,7 @@ export function TranslationReviewModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

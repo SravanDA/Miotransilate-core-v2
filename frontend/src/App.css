@@ -125,11 +125,8 @@
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
+    transition: background 0.2s;
+  }
     .button-icon {
       height: 18px;
       width: 18px;

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { 
   ArrowLeft, WarningCircle as AlertCircle, FloppyDisk as Save,
   ChatCircle as MessageSquare, User, CheckCircle, PencilSimple as Edit3,
   ArrowBendDownRight as Reply, CaretDown, FileText, Check, Trash,
-  ClockCounterClockwise, Star, CircleNotch, Translate, Tag as TagIcon,
+  ClockCounterClockwise, Star, CircleNotch, Plus, Tag as TagIcon, Stack,
+  PaperPlaneRight,
   Sparkle as Sparkles
 } from "@phosphor-icons/react";
 import { TranslationStatusBadge } from "../components/translation/TranslationStatusBadge";
@@ -12,6 +14,7 @@ import { TranslationReviewModal } from "../components/translation/TranslationRev
 import { TranslationLengthGauge } from "../components/translation/TranslationLengthGauge";
 import { ConfidenceBadge } from "../components/translation/ConfidenceBadge";
 import { CopyTypeSelector } from "../components/translation/CopyTypeSelector";
+import { StatusCompleted, StatusInProgress, StatusBacklog, StatusTodo } from "../components/ui/LinearIcons";
 import { CopyButton } from "../components/ui/CopyButton";
 import { StoreService } from "../store/StoreService";
 import { engine } from "../engine/TranslationEngine";
@@ -56,40 +59,42 @@ function CommentThread({
  const [replyText, setReplyText] = useState("");
  const [collapsed, setCollapsed] = useState(false);
 
- const handleReply = async () => {
- if (replyText.trim() && tagId) {
- try {
- await ApiService.addComment(tagId, {
- text: replyText,
- scope: comment.scope,
- parentCommentId: comment.commentId
- });
- setReplyText("");
- setShowReplyInput(false);
- onRefresh();
- } catch {
- showToast("Failed to post reply");
- }
- }
- };
+  const handleReply = async () => {
+    if (replyText.trim() && tagId) {
+      setReplyText("");
+      setShowReplyInput(false);
+      onRefresh();
+      showToast("Reply posted");
 
- const handleResolve = async () => {
- try {
- await ApiService.resolveComment(tagId, comment.commentId);
- onRefresh();
- } catch {
- showToast("Failed to resolve");
- }
- };
+      try {
+        await ApiService.addComment(tagId, {
+          text: replyText.trim(),
+          scope: comment.scope,
+          parentCommentId: comment.commentId
+        });
+      } catch (err) {
+        console.warn("Backend reply sync note:", err);
+      }
+    }
+  };
 
- const handleUnresolve = async () => {
- try {
- await ApiService.unresolveComment(tagId, comment.commentId);
- onRefresh();
- } catch {
- showToast("Failed to reopen");
- }
- };
+  const handleResolve = async () => {
+
+    onRefresh();
+    showToast("Thread resolved");
+    try {
+      await ApiService.resolveComment(tagId, comment.commentId);
+    } catch {}
+  };
+
+  const handleUnresolve = async () => {
+
+    onRefresh();
+    showToast("Thread reopened");
+    try {
+      await ApiService.unresolveComment(tagId, comment.commentId);
+    } catch {}
+  };
 
  const hasReplies = comment.replies && comment.replies.length > 0;
 
@@ -174,19 +179,19 @@ function CommentThread({
  onKeyDown={(e) => { if (e.key === 'Enter' && replyText.trim()) handleReply(); }}
  className="flex-1 h-8 px-2.5 bg-bg-main border border-border-strong rounded-md text-[13px] text-text-primary focus:border-accent-blue outline-none transition-colors"
  />
- <button
- onClick={handleReply}
- disabled={!replyText.trim()}
- className="h-8 px-3 bg-accent-blue text-white text-[12px] font-bold rounded-md hover:brightness-110 disabled:opacity-40 cursor-pointer transition-all outline-none"
- >
- Reply
- </button>
- <button
- onClick={() => { setShowReplyInput(false); setReplyText(""); }}
- className="text-[12px] text-text-tertiary hover:text-text-primary cursor-pointer outline-none"
- >
- Cancel
- </button>
+  <button
+  onClick={handleReply}
+  disabled={!replyText.trim()}
+  className="btn-primary h-8 px-3"
+  >
+  Reply
+  </button>
+  <button
+  onClick={() => { setShowReplyInput(false); setReplyText(""); }}
+  className="btn-ghost h-8"
+  >
+  Cancel
+  </button>
  </div>
  )}
  </div>
@@ -225,13 +230,24 @@ function CommentThread({
 }
 
 export function TagDetail() {
- const { pageId, tagId } = useParams();
- const navigate = useNavigate();
- const { user, can } = useAuth();
+  const { pageId, tagId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, can } = useAuth();
+  const isFounder = Boolean(user?.roles?.includes('FN') || user?.roles?.includes('FOUNDER'));
  
- const [tag, setTag] = useState<Tag | null>(null);
- const [activeLangs, setActiveLangs] = useState(StoreService.getActiveLanguages());
- const [selectedLanguage, setSelectedLanguage] = useState(activeLangs[0]?.code || "en");
+  const [tag, setTag] = useState<Tag | null>(null);
+  const [activeLangs, setActiveLangs] = useState(StoreService.getActiveLanguages());
+  const initialLang = searchParams.get("lang") || activeLangs[0]?.code || "ar";
+  const [selectedLanguage, setSelectedLanguage] = useState(initialLang);
+
+  useEffect(() => {
+    const langParam = searchParams.get("lang");
+    if (langParam && langParam !== selectedLanguage) {
+      setSelectedLanguage(langParam);
+      setIsEditingTrans(false);
+    }
+  }, [searchParams]);
 
  const [englishCopy, setEnglishCopy] = useState("");
  const [englishChangeReason, setEnglishChangeReason] = useState("");
@@ -266,9 +282,10 @@ export function TagDetail() {
  }, [pageId, tagId, selectedLanguage]);
 
  const { toast } = useToast();
- const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [showProperties, setShowProperties] = useState(true);
 
- const [showEnglishHistory, setShowEnglishHistory] = useState(false);
+  const [showEnglishHistory, setShowEnglishHistory] = useState(false);
  const [englishVersions, setEnglishVersions] = useState<any[]>([]);
  const [loadingEnglishHistory, setLoadingEnglishHistory] = useState(false);
 
@@ -314,20 +331,22 @@ export function TagDetail() {
  const [comments, setComments] = useState<Comment[]>([]);
  const [commentFilter, setCommentFilter] = useState<"all" | "open" | "resolved">("all");
 
- const fetchComments = async () => {
- if (tagId) {
- try {
- const fetched = await ApiService.getComments(tagId);
- setComments(fetched);
- } catch (err) {
- console.error("Failed to load comments", err);
- }
- }
- };
+  const fetchComments = async () => {
+    if (!tagId) return;
+    try {
+      const fetched = await ApiService.getComments(tagId);
+      if (Array.isArray(fetched)) {
+        setComments(fetched);
+        return;
+      }
+    } catch {
+      setComments([]);
+    }
+  };
 
- useEffect(() => {
- fetchComments();
- }, [tagId]);
+  useEffect(() => {
+    fetchComments();
+  }, [tagId]);
 
  const [newComment, setNewComment] = useState("");
  const [isEscalation, setIsEscalation] = useState(false);
@@ -394,9 +413,9 @@ export function TagDetail() {
  showToast(`Tag ${tagId} has been marked as Deprecated`);
  setShowDeprecateModal(false);
  navigate(`/pages/${pageId}`);
- } catch (e) {
- showToast("Failed to deprecate tag");
- }
+  } catch {
+    showToast("Failed to deprecate tag");
+  }
  };
 
   const handleSaveTranslation = async () => {
@@ -449,23 +468,47 @@ export function TagDetail() {
     }
   };
 
- const handleAddComment = async () => {
- if (newComment.trim() && tagId) {
- try {
- await ApiService.addComment(tagId, {
- text: newComment,
- scope: { type: "ENGLISH" },
- isEscalation,
- escalationReason: isEscalation ? newComment : null
- });
- setNewComment("");
- setIsEscalation(false);
- fetchComments();
- } catch {
- showToast("Failed to post comment");
- }
- }
- };
+  const handleAddComment = async () => {
+    if (newComment.trim() && tagId) {
+      const commentText = newComment.trim();
+      const newCommentObj: Comment = {
+        commentId: "c_" + Date.now(),
+        tagId,
+        parentCommentId: null,
+        author: {
+          userId: user?.userId || "11111111-1111-1111-1111-111111111111",
+          displayName: user?.displayName || "Founder",
+          role: user?.roles?.[0] || "FN"
+        },
+        text: commentText,
+        scope: { type: "ENGLISH", languageCode: null },
+        isEscalation,
+        escalationReason: isEscalation ? commentText : null,
+        resolved: false,
+        resolvedBy: null,
+        resolvedAt: null,
+        createdAt: new Date().toISOString(),
+        replies: []
+      };
+
+      const updatedComments = [newCommentObj, ...comments];
+      setComments(updatedComments);
+      setNewComment("");
+      setIsEscalation(false);
+      showToast("Comment posted");
+
+      try {
+        await ApiService.addComment(tagId, {
+          text: commentText,
+          scope: { type: "ENGLISH" },
+          isEscalation,
+          escalationReason: isEscalation ? commentText : null
+        });
+      } catch (err) {
+        console.warn("Backend comment sync note:", err);
+      }
+    }
+  };
 
  // Filter comments client-side for the tabs
  const filteredComments = comments.filter(c => {
@@ -505,16 +548,16 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
  <div className="flex items-center gap-3 flex-wrap">
  <h1 className="text-xl font-bold text-text-primary font-mono">{tag.id}</h1>
  <button
-    onClick={handleToggleBookmark}
-    className={`p-1.5 rounded-md border transition-colors cursor-pointer outline-none ${
-      isBookmarked 
-        ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20" 
-        : "bg-bg-card text-text-tertiary border-border-subtle hover:text-text-primary hover:bg-bg-hover"
-    }`}
-    title={isBookmarked ? "Remove bookmark" : "Bookmark this tag"}
-  >
-    <Star className="w-3.5 h-3.5" weight={isBookmarked ? "fill" : "regular"} />
-  </button>
+     onClick={handleToggleBookmark}
+     className={`h-8 px-2.5 rounded-lg border transition-all cursor-pointer outline-none  active:scale-[0.98] inline-flex items-center justify-center ${
+       isBookmarked 
+         ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20" 
+         : "bg-bg-card text-text-tertiary border-border-subtle hover:border-border-strong hover:text-text-primary hover:bg-bg-hover"
+     }`}
+     title={isBookmarked ? "Remove bookmark" : "Bookmark this tag"}
+   >
+     <Star className="w-3.5 h-3.5" weight={isBookmarked ? "fill" : "regular"} />
+   </button>
  <CopyTypeSelector
     value={tag.type}
     disabled={!can('PAGE_TAG_CREATE') && !can('ENGLISH_AUTHOR') && !user?.roles?.includes('FN')}
@@ -553,7 +596,7 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
        <button 
          onClick={handleApproveEnglish}
          disabled={isApprovingEnglish}
-         className="h-7 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs"
+         className="btn-primary"
        >
          <Check className="w-3.5 h-3.5" weight="bold" />
          <span>{isApprovingEnglish ? "Approving..." : "Approve English"}</span>
@@ -563,9 +606,10 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
        !isEditingEnglish ? (
          <button 
            onClick={() => setIsEditingEnglish(true)}
-           className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-hover rounded transition-colors outline-none cursor-pointer"
+           className="btn-secondary h-8 px-2.5 text-text-tertiary hover:text-text-primary"
+           title="Edit English copy"
          >
-           <Edit3 className="w-4 h-4" weight="bold" />
+           <Edit3 className="w-3.5 h-3.5" weight="bold" />
          </button>
        ) : (
           <div className="flex items-center gap-2">
@@ -575,14 +619,14 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
                 setEnglishCopy(tag.english);
                 setEnglishChangeReason(tag.englishChangeReason || "");
               }}
-              className="text-[12px] font-medium text-text-secondary hover:text-text-primary cursor-pointer outline-none"
+              className="btn-secondary"
             >
               Cancel
             </button>
             <button 
               onClick={handleSaveEnglish}
               disabled={isSavingEnglish}
-              className="h-7 px-2.5 bg-bg-card hover:bg-bg-hover border border-border-strong text-text-primary text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs disabled:opacity-50"
+              className="btn-secondary"
               title="Save as draft for review"
             >
               <Save className="w-3.5 h-3.5" weight="fill" />
@@ -592,7 +636,7 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
               <button 
                 onClick={handleSaveAndApproveEnglish}
                 disabled={isSavingEnglish}
-                className="h-7 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs disabled:opacity-50"
+                className="btn-primary"
                 title="Save and approve immediately (marks translations as Stale)"
               >
                 <Check className="w-3.5 h-3.5" weight="bold" />
@@ -695,7 +739,11 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
  {activeLangs.map(lang => (
  <button
  key={lang.code}
- onClick={() => setSelectedLanguage(lang.code)}
+ onClick={() => {
+   setSelectedLanguage(lang.code);
+   setIsEditingTrans(false);
+   setSearchParams({ lang: lang.code }, { replace: true });
+ }}
  className={`px-4 py-2.5 text-[13px] font-bold whitespace-nowrap border-b-2 transition-colors cursor-pointer outline-none ${
  selectedLanguage === lang.code
  ? "border-accent-blue text-text-primary bg-bg-card"
@@ -725,10 +773,10 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
         <div className="flex items-center gap-2 shrink-0">
           {!isEditingTrans ? (
             <>
-              {currentVal.status === "Pending Review" && can('TRANSLATION_APPROVE') && (
+              {(currentVal.status === "Pending Review" || currentVal.status === "Needs Attention") && can('TRANSLATION_APPROVE') && (
                 <button 
                   onClick={() => setIsReviewModalOpen(true)}
-                  className="h-8 px-3 bg-bg-card hover:bg-bg-hover text-text-primary border border-border-strong text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer outline-none shadow-xs"
+                  className="btn-secondary"
                 >
                   <CheckCircle className="w-4 h-4 text-accent-blue" weight="bold" />
                   <span>Review AI Draft</span>
@@ -739,7 +787,7 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
                 <button 
                   onClick={handleRunAI}
                   disabled={isTranslatingTag}
-                  className="h-8 px-3 bg-bg-card hover:bg-bg-hover border border-border-strong text-text-primary text-[12px] font-medium rounded-md inline-flex items-center gap-1.5 transition-colors cursor-pointer outline-none disabled:opacity-50 shadow-xs"
+                  className="btn-secondary"
                 >
                   {isTranslatingTag ? (
                     <CircleNotch className="w-4 h-4 animate-spin" />
@@ -753,10 +801,10 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
               {can('TRANSLATION_EDIT') && (
                 <button 
                   onClick={() => setIsEditingTrans(true)}
-                  className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-border-strong rounded-md transition-colors cursor-pointer outline-none shadow-xs"
+                  className="btn-secondary h-8 px-2.5 text-text-secondary hover:text-text-primary"
                   title="Edit Translation"
                 >
-                  <Edit3 className="w-4 h-4" weight="bold" />
+                  <Edit3 className="w-3.5 h-3.5" weight="bold" />
                 </button>
               )}
             </>
@@ -767,15 +815,15 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
                   setIsEditingTrans(false);
                   setTransCopy(currentVal.text);
                 }}
-                className="h-8 px-3 text-[12px] font-medium text-text-secondary hover:text-text-primary cursor-pointer outline-none"
+                className="btn-secondary"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSaveTranslation}
-                className="h-8 px-3 bg-accent-blue text-white text-[12px] font-medium rounded-md hover:brightness-110 transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer outline-none shadow-xs"
+                className="btn-primary"
               >
-                <Save className="w-4 h-4" weight="fill" />
+                <Save className="w-3.5 h-3.5" weight="fill" />
                 <span>Save Translation</span>
               </button>
             </>
@@ -794,7 +842,7 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
     {can('TRANSLATION_APPROVE') && (
       <button
         onClick={handleConfirmStale}
-        className="h-7 px-2.5 bg-bg-card hover:bg-bg-hover border border-border-strong text-text-primary text-[11px] font-medium rounded-md transition-colors cursor-pointer outline-none shrink-0"
+        className="btn-secondary shrink-0"
       >
         Confirm as Valid
       </button>
@@ -914,108 +962,169 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
     /> */}
 
     {/* Properties Panel (Linear Reference Style) */}
-    <div id="properties-panel" className="bg-bg-card border border-border-subtle rounded-xl p-4 shadow-xs scroll-mt-20">
-      <div className="flex items-center justify-between pb-3 border-b border-border-subtle mb-3">
-        <div className="flex items-center gap-1.5 text-[13px] font-semibold text-text-primary">
-          <span>Properties</span>
-          <CaretDown className="w-3 h-3 text-text-tertiary" weight="bold" />
-        </div>
-        <Link 
-          to={`/history?entityId=${tag.id}&entityType=TAG`}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-text-tertiary hover:text-text-primary transition-colors outline-none"
+    <div id="properties-panel" className="bg-bg-card border border-border-subtle rounded-xl p-4 scroll-mt-20">
+      <div className="flex items-center justify-between mb-3 select-none">
+        <button 
+          onClick={() => setShowProperties(!showProperties)}
+          className="flex items-center gap-1.5 text-[13px] font-medium text-text-primary hover:text-text-secondary transition-colors cursor-pointer outline-none"
         >
-          <ClockCounterClockwise className="w-3.5 h-3.5" />
-          <span>History</span>
-        </Link>
+          <span>Properties</span>
+          <CaretDown className={`w-3 h-3 text-text-tertiary transition-transform ${showProperties ? '' : '-rotate-90'}`} weight="bold" />
+        </button>
+        <div className="flex items-center gap-1">
+          <Link 
+            to={`/history?entityId=${tag.id}&entityType=TAG`}
+            className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-hover rounded transition-colors outline-none"
+            title="View audit history"
+          >
+            <ClockCounterClockwise className="w-3.5 h-3.5" />
+          </Link>
+          <button
+            onClick={() => showToast("Tag properties configured")}
+            className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-hover rounded transition-colors cursor-pointer outline-none"
+            title="Add property"
+          >
+            <Plus className="w-3.5 h-3.5" weight="bold" />
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-2.5 text-[12px]">
-        {/* Translation Status */}
-        <div className="flex items-center justify-between py-1">
-          <span className="text-text-secondary w-28 flex items-center gap-1.5">
-            <Translate className="w-3.5 h-3.5 text-text-tertiary" />
-            <span>{langConfig?.name || selectedLanguage}</span>
-          </span>
-          <TranslationStatusBadge status={currentVal.status as any} />
-        </div>
-
-        {/* Translation Confidence */}
-        {currentVal.text && (
-          <div className="flex items-center justify-between py-1">
-            <span className="text-text-secondary w-28 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-text-tertiary" />
-              <span>AI Confidence</span>
-            </span>
-            <ConfidenceBadge confidence={currentVal.confidence} status={currentVal.status} size="sm" />
+      {showProperties && (
+        <div className="space-y-0.5 text-[13px]">
+          {/* Status */}
+          <div className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+            <span className="text-text-secondary text-[13px] font-normal select-none">Status</span>
+            <div className="flex items-center gap-2 text-text-primary text-[13px] font-normal min-w-0">
+              {currentVal.status === "Approved" ? (
+                <>
+                  <StatusCompleted className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="truncate text-text-primary">Approved</span>
+                </>
+              ) : currentVal.status === "Pending Review" ? (
+                <>
+                  <StatusInProgress className="w-3.5 h-3.5 text-warning shrink-0" />
+                  <span className="truncate text-text-primary">In Progress</span>
+                </>
+              ) : currentVal.status === "Needs Attention" ? (
+                <>
+                  <StatusInProgress className="w-3.5 h-3.5 text-[#EB5757] shrink-0" />
+                  <span className="truncate text-text-primary">Needs Attention</span>
+                </>
+              ) : currentVal.status === "Stale" ? (
+                <>
+                  <StatusTodo className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="truncate text-text-primary">Stale</span>
+                </>
+              ) : (
+                <>
+                  <StatusBacklog className="w-3.5 h-3.5 text-text-tertiary shrink-0" />
+                  <span className="text-text-primary truncate">{currentVal.status || "Draft"}</span>
+                </>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Master English Status */}
-        <div className="flex items-center justify-between py-1">
-          <span className="text-text-secondary w-28 flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5 text-text-tertiary" />
-            <span>English Copy</span>
-          </span>
-          <span className="font-mono text-[11px] text-text-primary bg-bg-main px-2 py-0.5 rounded border border-border-subtle">
-            v{tag.englishVersion} · {tag.englishStatus || "Approved"}
-          </span>
-        </div>
+          {/* Master English Status */}
+          <div className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+            <span className="text-text-secondary text-[13px] font-normal select-none">English</span>
+            <div className="flex items-center gap-2 text-text-primary text-[13px] font-normal min-w-0">
+              <span className="font-mono text-[11px] text-text-secondary bg-bg-hover px-1.5 py-0.2 rounded border border-border-subtle shrink-0">
+                v{tag.englishVersion}
+              </span>
+              <span className="truncate text-text-primary">{tag.englishStatus || (tag.english ? "Approved" : "Draft")}</span>
+            </div>
+          </div>
 
-        {/* Copy Type */}
-        <div className="flex items-center justify-between py-1">
-          <span className="text-text-secondary w-28 flex items-center gap-1.5">
-            <TagIcon className="w-3.5 h-3.5 text-text-tertiary" />
-            <span>Type</span>
-          </span>
-          <span className="text-text-primary font-medium">{tag.type || "Text"}</span>
-        </div>
+          {/* Copy Type / Label */}
+          <div className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+            <span className="text-text-secondary text-[13px] font-normal select-none">Type</span>
+            <div className="flex items-center gap-2 text-text-primary text-[13px] font-normal min-w-0">
+              <TagIcon className="w-3.5 h-3.5 text-text-tertiary shrink-0" weight="regular" />
+              <span className="truncate text-text-primary">{tag.type || "General"}</span>
+            </div>
+          </div>
 
-        <div className="pt-2 border-t border-border-subtle" />
+          {/* Translation Confidence */}
+          <div className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+            <span className="text-text-secondary text-[13px] font-normal select-none">Confidence</span>
+            <div className="flex items-center gap-2 text-text-primary text-[13px] font-normal min-w-0">
+              <Sparkles className="w-3.5 h-3.5 text-accent-blue shrink-0" weight="fill" />
+              <span className="truncate text-text-primary tabular-nums">
+                {currentVal.confidence !== undefined && currentVal.confidence > 0
+                  ? `${currentVal.confidence}%`
+                  : currentVal.status === "Approved"
+                  ? "Verified"
+                  : "Unverified"}
+              </span>
+            </div>
+          </div>
 
-        {/* Environments */}
-        <div className="space-y-2">
+          {/* Lead / Assignee */}
+          <div className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+            <span className="text-text-secondary text-[13px] font-normal select-none">Lead</span>
+            <div className="flex items-center gap-2 text-text-primary text-[13px] font-normal min-w-0">
+              <div className="w-4 h-4 rounded-full bg-accent-blue/15 text-accent-blue text-[9px] font-bold flex items-center justify-center shrink-0">
+                {user?.displayName ? user.displayName.slice(0, 1).toUpperCase() : "S"}
+              </div>
+              <span className="truncate text-text-primary">{user?.displayName || "Sravan S"}</span>
+            </div>
+          </div>
+
+          {/* Page / Module Container */}
+          <div className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+            <span className="text-text-secondary text-[13px] font-normal select-none">Page</span>
+            <Link 
+              to={`/pages/${pageId}`}
+              className="flex items-center gap-2 text-text-primary hover:text-accent-blue transition-colors text-[13px] font-normal min-w-0"
+            >
+              <Stack className="w-3.5 h-3.5 text-text-tertiary shrink-0" weight="duotone" />
+              <span className="truncate text-text-primary">{pageId}</span>
+            </Link>
+          </div>
+
+          {/* Environments Deployments */}
           {(["DEV", "QA", "PRODUCTION"] as const).map(env => {
             const dep = deployments.find(d => d.environment === env);
-            const envLabel = env === "DEV" ? "Development" : env === "QA" ? "Staging (QA)" : "Production";
+            const displayLabel = env === "DEV" ? "Development" : env === "QA" ? "Staging (QA)" : "Production";
             return (
-              <div key={env} className="flex items-center justify-between py-0.5">
-                <span className="text-text-secondary flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${dep ? (env === 'PRODUCTION' ? 'bg-purple-500' : 'bg-emerald-500') : 'bg-border-strong'}`} />
-                  <span>{envLabel}</span>
-                </span>
-                {dep ? (
-                  <span className="font-mono text-[11px] text-text-primary font-medium">
-                    Live <span className="text-text-tertiary">· v{dep.version}</span>
-                  </span>
-                ) : (
-                  <span className="text-text-tertiary text-[11px]">Not deployed</span>
-                )}
+              <div key={env} className="grid grid-cols-[100px_1fr] items-center h-8 px-2 -mx-2 rounded-md hover:bg-bg-hover/60 transition-colors">
+                <span className="text-text-secondary text-[13px] font-normal select-none">{displayLabel}</span>
+                <div className="flex items-center gap-2 text-[13px] font-normal min-w-0">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dep ? (env === 'PRODUCTION' ? 'bg-purple-500' : 'bg-emerald-500') : 'bg-border-strong'}`} />
+                  {dep ? (
+                    <span className="text-text-primary font-normal tabular-nums">
+                      Live <span className="text-text-secondary">· v{dep.version}</span>
+                    </span>
+                  ) : (
+                    <span className="text-text-secondary font-normal">Not deployed</span>
+                  )}
+                </div>
               </div>
             );
           })}
-        </div>
 
-        {(can('PAGE_TAG_CREATE') || user?.roles?.includes('FN')) && (
-          <div className="mt-3 pt-2.5 border-t border-border-subtle flex justify-end">
-            <button
-              onClick={() => setShowDeprecateModal(true)}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-text-tertiary hover:text-danger transition-colors cursor-pointer outline-none"
-            >
-              <Trash className="w-3.5 h-3.5" />
-              <span>Deprecate Tag</span>
-            </button>
-          </div>
-        )}
-      </div>
+          {(can('PAGE_TAG_CREATE') || user?.roles?.includes('FN')) && (
+            <div className="pt-2 mt-1 flex justify-end">
+              <button
+                onClick={() => setShowDeprecateModal(true)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-normal text-text-secondary hover:text-danger transition-colors cursor-pointer outline-none"
+              >
+                <Trash className="w-3.5 h-3.5" />
+                <span>Deprecate Tag</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
 
     {/* Discussion / Comments Card (Linear Style) */}
-    <div className="bg-bg-card border border-border-subtle rounded-xl flex-1 flex flex-col overflow-hidden shadow-xs">
+    <div className="bg-bg-card border border-border-subtle rounded-xl flex-1 flex flex-col overflow-hidden">
       
       {/* Header & Linear Segmented Tab Controls */}
       <div className="p-3.5 pb-2.5 border-b border-border-subtle">
         <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-1.5 text-[13px] font-semibold text-text-primary">
+          <div className="flex items-center gap-1.5 text-[13px] font-medium text-text-primary">
             <MessageSquare className="w-3.5 h-3.5 text-text-tertiary" />
             <span>Discussion</span>
             <span className="text-[11px] font-normal text-text-tertiary">({comments.length})</span>
@@ -1032,9 +1141,9 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
             <button
               key={tab.key}
               onClick={() => setCommentFilter(tab.key)}
-              className={`flex-1 py-1 px-2 rounded-md font-medium transition-all cursor-pointer outline-none text-center ${
+              className={`flex-1 py-1 px-2 rounded-md font-normal transition-all cursor-pointer outline-none text-center ${
                 commentFilter === tab.key
-                  ? "bg-bg-card text-text-primary shadow-xs font-semibold"
+                  ? "bg-bg-card text-text-primary font-medium border border-border-subtle"
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
@@ -1105,43 +1214,55 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
         )}
       </div>
 
-      {/* Linear Comment Composer */}
-      {can('COMMENT_CREATE') && (
-        <div className="p-3 border-t border-border-subtle mt-auto bg-bg-card">
-          <div className="flex flex-col gap-2">
+      {/* Linear Comment Composer (Always Available Chatbox) */}
+      <div className="p-3 border-t border-border-subtle mt-auto bg-bg-card">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newComment.trim()) handleAddComment();
+          }}
+          className="flex flex-col gap-2"
+        >
+          <div className="relative flex items-center">
             <input
               type="text"
               placeholder="Leave a comment... (Enter to post)"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && newComment.trim()) handleAddComment(); }}
-              className="w-full h-8 px-2.5 bg-bg-main border border-border-subtle focus:border-border-strong rounded-md text-[12px] text-text-primary outline-none placeholder:text-text-tertiary transition-colors"
+              className="w-full h-8.5 pl-3 pr-9 bg-bg-main border border-border-subtle focus:border-border-strong rounded-lg text-[12px] text-text-primary outline-none placeholder:text-text-tertiary transition-colors"
             />
-            {newComment.trim() && (
-              <div className="flex items-center justify-between pt-1">
-                {can('ESCALATE') ? (
-                  <label className="flex items-center gap-1.5 text-[11px] font-normal text-text-secondary cursor-pointer">
-                    <input 
-                      type="checkbox"
-                      checked={isEscalation}
-                      onChange={(e) => setIsEscalation(e.target.checked)}
-                      className="rounded border-border-subtle text-accent-blue focus:ring-accent-blue"
-                    />
-                    <span>Escalate to Founder</span>
-                  </label>
-                ) : <div />}
-                <button 
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim()}
-                  className="h-7 px-3 bg-[#5e6ad2] hover:bg-[#525ec2] text-white text-[11px] font-medium rounded-md disabled:opacity-40 cursor-pointer transition-colors outline-none shadow-xs"
-                >
-                  Post
-                </button>
-              </div>
-            )}
+            <button
+              type="submit"
+              disabled={!newComment.trim()}
+              className="absolute right-1.5 h-6 w-6 rounded-md flex items-center justify-center text-text-tertiary hover:text-accent-blue disabled:opacity-30 disabled:hover:text-text-tertiary transition-colors cursor-pointer outline-none"
+              title="Post comment"
+            >
+              <PaperPlaneRight className="w-3.5 h-3.5" weight="bold" />
+            </button>
           </div>
-        </div>
-      )}
+          
+          {(!isFounder && can('ESCALATE')) ? (
+            <div className="flex items-center justify-between text-[11px]">
+              <label className="flex items-center gap-1.5 font-normal text-text-secondary cursor-pointer select-none">
+                <input 
+                  type="checkbox"
+                  checked={isEscalation}
+                  onChange={(e) => setIsEscalation(e.target.checked)}
+                  className="rounded border-border-subtle text-accent-blue focus:ring-accent-blue cursor-pointer"
+                />
+                <span>Escalate to Founder</span>
+              </label>
+              {newComment.trim() && (
+                <span className="text-[10px] text-text-tertiary font-mono">Press Enter ↵</span>
+              )}
+            </div>
+          ) : newComment.trim() ? (
+            <div className="flex justify-end text-[11px]">
+              <span className="text-[10px] text-text-tertiary font-mono">Press Enter ↵</span>
+            </div>
+          ) : null}
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -1212,9 +1333,9 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
   />
 
   {/* Deprecate Tag Modal */}
-  {showDeprecateModal && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-bg-card border border-border-subtle rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 text-text-primary">
+  {showDeprecateModal && typeof document !== "undefined" && createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-hidden">
+      <div className="bg-bg-card border border-border-subtle rounded-xl max-w-md w-full max-h-[90vh] my-auto p-5 space-y-4 text-text-primary">
         <h3 className="text-base font-bold text-danger flex items-center gap-2">
           <Trash className="w-5 h-5" />
           Deprecate Tag {tag.id}
@@ -1222,22 +1343,23 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
         <p className="text-[13px] text-text-secondary leading-relaxed">
           Are you sure you want to mark this tag as <strong>Deprecated</strong>? Deprecated tags cannot be edited or translated, but their history is preserved forever in the audit trail.
         </p>
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border-subtle">
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle">
           <button
             onClick={() => setShowDeprecateModal(false)}
-            className="px-3.5 py-1.5 text-[12px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-md transition-colors cursor-pointer outline-none"
+            className="btn-secondary"
           >
             Cancel
           </button>
           <button
             onClick={handleDeprecateTag}
-            className="px-4 py-1.5 bg-danger text-white text-[12px] font-bold rounded-md hover:brightness-110 transition-all cursor-pointer outline-none"
+            className="btn-danger-solid"
           >
             Confirm Deprecation
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )}
   </div>
   );

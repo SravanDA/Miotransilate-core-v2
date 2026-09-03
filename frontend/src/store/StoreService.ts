@@ -1,133 +1,11 @@
-import type { Page, Tag, LanguageConfig, DeploymentRecord, TranslationValue, Environment } from "../types";
+import type { Page, Tag, LanguageConfig, DeploymentRecord, TranslationValue, Environment, UnpublishedPageSummary, PageLanguageReadiness, PageReleasePipelineItem, EnvironmentReleaseStatus } from "../types";
 import { ApiService } from "../services/ApiService";
-
-// ── localStorage key for persisting translations across refreshes ──
-const TRANSLATIONS_STORAGE_KEY = "miotranslate_translations_v1";
-
-const TAGS_STORAGE_KEY = "miotranslate_local_tags_v1";
-const PAGE_NAMES_STORAGE_KEY = "miotranslate_custom_page_names_v1";
-
-type PersistedTranslations = Record<string, Record<string, Record<string, TranslationValue>>>;
-// Shape: { [pageId]: { [tagId]: { [langCode]: TranslationValue } } }
-
-function loadCustomPageNames(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(PAGE_NAMES_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveCustomPageName(pageId: string, name: string) {
-  try {
-    const all = loadCustomPageNames();
-    all[pageId] = name;
-    localStorage.setItem(PAGE_NAMES_STORAGE_KEY, JSON.stringify(all));
-  } catch (e) {
-    console.warn("Failed to persist custom page name:", e);
-  }
-}
-
-function loadPersistedTranslations(): PersistedTranslations {
-  try {
-    const raw = localStorage.getItem(TRANSLATIONS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function savePersistedTranslations(data: PersistedTranslations) {
-  try {
-    localStorage.setItem(TRANSLATIONS_STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {
-    console.warn("Failed to persist translations to localStorage:", e);
-  }
-}
-
-function loadPersistedTags(pageId: string): Tag[] {
-  try {
-    const raw = localStorage.getItem(`${TAGS_STORAGE_KEY}_${pageId}`);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function savePersistedTags(pageId: string, tags: Tag[]) {
-  try {
-    localStorage.setItem(`${TAGS_STORAGE_KEY}_${pageId}`, JSON.stringify(tags));
-  } catch (e) {
-    console.warn("Failed to persist tags to localStorage:", e);
-  }
-}
-
-function persistTranslation(pageId: string, tagId: string, langCode: string, value: TranslationValue) {
-  const all = loadPersistedTranslations();
-  if (!all[pageId]) all[pageId] = {};
-  if (!all[pageId][tagId]) all[pageId][tagId] = {};
-  all[pageId][tagId][langCode] = value;
-  savePersistedTranslations(all);
-}
-
-function mergePersistedTranslationsIntoTags(pageId: string, apiTags: Tag[]): Tag[] {
-  const localTags = loadPersistedTags(pageId);
-  const persistedTrans = loadPersistedTranslations()[pageId] || {};
-
-  const map = new Map<string, Tag>();
-
-  // 1. Seed from local persisted tags
-  for (const lt of localTags) {
-    map.set(lt.id, { ...lt });
-  }
-
-  // 2. Overlay API tags
-  for (const at of apiTags) {
-    if (map.has(at.id)) {
-      const existing = map.get(at.id)!;
-      map.set(at.id, {
-        ...existing,
-        ...at,
-        // Only overwrite English if API has non-empty English copy
-        english: at.english && at.english.trim() ? at.english : existing.english,
-        type: at.type || existing.type || "General",
-        englishStatus: (at.english && at.english.trim()) || existing.english ? "Approved" : (existing.englishStatus || "Draft"),
-        values: { ...existing.values, ...at.values }
-      });
-    } else {
-      map.set(at.id, at);
-    }
-  }
-
-  // 3. Overlay translations from translation store
-  return Array.from(map.values()).map(tag => {
-    const tagPersisted = persistedTrans[tag.id];
-    if (!tagPersisted) return tag;
-
-    const mergedValues = { ...tag.values };
-    for (const [langCode, persistedVal] of Object.entries(tagPersisted)) {
-      const existing = mergedValues[langCode];
-      if (
-        !existing ||
-        !existing.text ||
-        existing.status === "No Trans" ||
-        existing.status === "No Eng" ||
-        !existing.lastUpdated ||
-        !persistedVal.lastUpdated ||
-        persistedVal.lastUpdated >= existing.lastUpdated
-      ) {
-        mergedValues[langCode] = { ...(existing || {}), ...persistedVal };
-      }
-    }
-    return { ...tag, values: mergedValues };
-  });
-}
+import { formatPageName } from "../utils/fileParser";
 
 // ─────────────────────────────────────────────────
-// Default empty initial state for a fresh environment
-const DEFAULT_PAGES: Page[] = [];
-const DEFAULT_TAGS: Record<string, Tag[]> = {};
+// Pure API-first StoreService — no localStorage for data.
+// In-memory cache only for performance within a session.
+// ─────────────────────────────────────────────────
 
 export interface LengthConflictConfig {
   enabled: boolean;
@@ -145,22 +23,33 @@ export const DEFAULT_LENGTH_CONFLICT_CONFIG: LengthConflictConfig = {
   preventAutoApprove: false,
 };
 
-export class StoreService {
-  private static readonly STORAGE_KEYS = {
-    LANGUAGES: "miotranslate_languages_v2",
-    DEPLOYMENTS: "miotranslate_deployments_v2",
-    APPROVAL_REQUESTS: "miotranslate_approval_requests_v1",
-    BOOKMARKS: "miotranslate_bookmarks_v1",
-    CONFIDENCE_THRESHOLD: "AI_CONFIDENCE_THRESHOLD",
-    LENGTH_CONFLICT_CONFIG: "miotranslate_length_conflict_config_v1"
-  };
+const LENGTH_CONFLICT_STORAGE_KEY = "miotranslate_length_conflict_config";
 
+function getStoredLengthConflictConfig(): LengthConflictConfig {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const saved = localStorage.getItem(LENGTH_CONFLICT_STORAGE_KEY);
+      if (saved) {
+        return { ...DEFAULT_LENGTH_CONFLICT_CONFIG, ...JSON.parse(saved) };
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load length conflict config from localStorage", e);
+  }
+  return { ...DEFAULT_LENGTH_CONFLICT_CONFIG };
+}
+
+export class StoreService {
   private static listeners = new Set<() => void>();
   
   private static cache = {
-    pages: [...DEFAULT_PAGES] as Page[],
-    tags: { ...DEFAULT_TAGS } as Record<string, Tag[]>,
-    pageDetails: {} as Record<string, { page: Page; tags: Tag[] }>
+    pages: [] as Page[],
+    tags: {} as Record<string, Tag[]>,
+    pageDetails: {} as Record<string, { page: Page; tags: Tag[] }>,
+    deployments: [] as DeploymentRecord[],
+    approvalRequests: [] as import("../types").PublishApprovalRequest[],
+    confidenceThreshold: 95,
+    lengthConflictConfig: getStoredLengthConflictConfig(),
   };
 
   static subscribe(listener: () => void) {
@@ -176,73 +65,59 @@ export class StoreService {
   static async refreshPages() {
     try {
       const res = await ApiService.getPages();
-      if (res && res.length > 0) {
-        this.cache.pages = res;
-      }
+      this.cache.pages = res || [];
       this.emit();
       // Fetch details in background for each page to populate tags & coverage cache
       Promise.all(this.cache.pages.map(p => this.refreshPageDetail(p.pageId))).then(() => {
         this.emit();
       });
     } catch (e) {
-      if (this.cache.pages.length === 0) {
-        this.cache.pages = [...DEFAULT_PAGES];
-      }
-      this.emit();
-      console.warn("ApiService.getPages offline, using local cache");
+      console.warn("ApiService.getPages failed:", e);
     }
   }
 
   static getPages(): Page[] {
-    const customNames = loadCustomPageNames();
-    const pages = this.cache.pages.length > 0 ? this.cache.pages : [...DEFAULT_PAGES];
-    return pages.map(p => ({
-      ...p,
-      name: customNames[p.pageId] || p.name
-    }));
+    return this.cache.pages;
   }
 
   static getPage(pageId: string): Page | undefined {
-    const customNames = loadCustomPageNames();
-    const found = this.getPages().find(p => p.pageId === pageId) || this.cache.pageDetails[pageId]?.page || DEFAULT_PAGES.find(p => p.pageId === pageId);
-    if (found) {
-      return {
-        ...found,
-        name: customNames[pageId] || found.name
-      };
-    }
-    return undefined;
+    return this.cache.pages.find(p => p.pageId === pageId)
+      || this.cache.pageDetails[pageId]?.page;
   }
 
   static async updatePageName(pageId: string, newName: string) {
     const cleanName = newName.trim();
     if (!cleanName) return;
 
-    saveCustomPageName(pageId, cleanName);
-
+    // Optimistic update
     this.cache.pages = this.cache.pages.map(p => 
       p.pageId === pageId ? { ...p, name: cleanName } : p
     );
-
     if (this.cache.pageDetails[pageId]) {
       this.cache.pageDetails[pageId].page = {
         ...this.cache.pageDetails[pageId].page,
         name: cleanName
       };
     }
-
     this.emit();
 
     try {
       await ApiService.updatePage(pageId, cleanName);
     } catch (e) {
-      console.warn("Backend update page name error (kept local update):", e);
+      console.warn("Backend update page name error:", e);
     }
   }
 
   static async createPage(page: Page) {
-    this.cache.pages = [...this.cache.pages, page];
+    // Optimistic update
+    const existingIdx = this.cache.pages.findIndex(p => p.pageId === page.pageId);
+    if (existingIdx >= 0) {
+      this.cache.pages[existingIdx] = { ...this.cache.pages[existingIdx], ...page };
+    } else {
+      this.cache.pages = [...this.cache.pages, page];
+    }
     this.emit();
+
     try {
       await ApiService.createPage({
         pageId: page.pageId,
@@ -251,37 +126,104 @@ export class StoreService {
       });
       await this.refreshPages();
     } catch (e) {
-      console.warn("Backend create page error (kept local update):", e);
+      console.warn("Backend create page error:", e);
     }
+  }
+
+  static async bulkImportPages(pagesToUpload: Array<{
+    pageId: string;
+    name: string;
+    module: string;
+    status?: string;
+    tags: Array<{
+      id: string;
+      type?: string;
+      english: string;
+      values?: Record<string, { text: string; status?: string; confidence?: number }>;
+    }>;
+  }>): Promise<{ totalPages: number; totalTags: number }> {
+    let totalTagsCount = 0;
+
+    // Sync with backend API
+    for (const p of pagesToUpload) {
+      const pageId = p.pageId.trim().toUpperCase();
+      const pageName = p.name?.trim() || formatPageName(pageId);
+      const pageModule = p.module?.trim() || "General";
+
+      try {
+        await ApiService.createPage({
+          pageId,
+          pageName,
+          module: pageModule
+        });
+      } catch (e) {
+        // Page may already exist, continue
+      }
+
+      if (p.tags && p.tags.length > 0) {
+        // Sync tags in small batches
+        const chunks = [];
+        for (let i = 0; i < p.tags.length; i += 10) {
+          chunks.push(p.tags.slice(i, i + 10));
+        }
+        for (const chunk of chunks) {
+          await Promise.allSettled(
+            chunk.map(t => {
+              totalTagsCount++;
+              return ApiService.createTag(pageId, {
+                id: t.id,
+                type: t.type || "General",
+                english: t.english
+              });
+            })
+          );
+        }
+
+        // Sync translations for tags that have translation values
+        for (const t of p.tags) {
+          if (t.values) {
+            for (const [lang, val] of Object.entries(t.values)) {
+              if (val && val.text) {
+                try {
+                  const targetStatus = (val.status === "Approved" || !val.status) ? "Approved" : 
+                                       val.status === "Draft" ? "Draft" : "Pending Review";
+                  await ApiService.updateTranslation(t.id, lang, val.text, targetStatus as any);
+                } catch {
+                  // Safe to ignore per-translation errors
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Refresh everything from DB
+    await this.refreshPages();
+
+    return {
+      totalPages: pagesToUpload.length,
+      totalTags: totalTagsCount
+    };
   }
 
   // --- PAGE DETAILS & TAGS ---
   static async refreshPageDetail(pageId: string) {
     try {
       const detail = await ApiService.getPageDetail(pageId);
-      // Merge persisted translations on top of API data
-      detail.tags = mergePersistedTranslationsIntoTags(pageId, detail.tags);
       this.cache.pageDetails[pageId] = detail;
       this.cache.tags[pageId] = detail.tags;
       this.emit();
-    } catch (e) {
+    } catch {
       if (!this.cache.tags[pageId]) {
-        this.cache.tags[pageId] = DEFAULT_TAGS[pageId] || [];
+        this.cache.tags[pageId] = [];
       }
-      this.cache.tags[pageId] = mergePersistedTranslationsIntoTags(pageId, this.cache.tags[pageId]);
-      this.emit();
-      console.warn(`ApiService.getPageDetail(${pageId}) offline, using local cache`);
+      console.warn(`ApiService.getPageDetail(${pageId}) failed`);
     }
   }
 
   static getTags(pageId: string): Tag[] {
-    if (!this.cache.tags[pageId] || this.cache.tags[pageId].length === 0) {
-      const localTags = loadPersistedTags(pageId);
-      if (localTags.length > 0) {
-        this.cache.tags[pageId] = localTags;
-      }
-    }
-    return this.cache.tags[pageId] || DEFAULT_TAGS[pageId] || [];
+    return this.cache.tags[pageId] || [];
   }
 
   static getTag(pageId: string, tagId: string): Tag | undefined {
@@ -289,6 +231,7 @@ export class StoreService {
   }
 
   static async createTag(pageId: string, tag: Tag) {
+    // Optimistic update
     const tags = this.getTags(pageId);
     const existingIdx = tags.findIndex(t => t.id === tag.id);
     let updatedTags: Tag[];
@@ -310,7 +253,6 @@ export class StoreService {
     }
 
     this.cache.tags[pageId] = updatedTags;
-    savePersistedTags(pageId, updatedTags);
     this.emit();
 
     try {
@@ -319,55 +261,10 @@ export class StoreService {
         type: tag.type || "General",
         english: tag.english
       });
+      await this.refreshPageDetail(pageId);
     } catch (e) {
-      console.warn("Backend create tag error (kept local update):", e);
+      console.warn("Backend create tag error:", e);
     }
-  }
-
-  static async seedEnglishCopiesForPage(pageId: string) {
-    const tags = this.getTags(pageId);
-    const updatedTags: Tag[] = tags.map((t, idx) => {
-      if (t.english && t.english.trim().length > 0) return t;
-
-      let generatedEnglish = "";
-      const idClean = t.id.replace(/^[A-Z0-9]+_/, "").replace(/_/g, " ");
-
-      if (t.id.includes("37") || t.id.toLowerCase().includes("client")) {
-        generatedEnglish = `Confirm appointment for {client_name} at {time}`;
-      } else if (t.id.toLowerCase().includes("churn")) {
-        generatedEnglish = "Predictive client churn risk analysis & retention alerts";
-      } else if (t.id.toLowerCase().includes("total") || t.id.toLowerCase().includes("revenue")) {
-        generatedEnglish = "Total salon revenue & appointment analytics breakdown";
-      } else if (t.id.toLowerCase().includes("service")) {
-        generatedEnglish = "Manage salon & spa service categories and pricing";
-      } else if (t.id.toLowerCase().includes("staff") || t.id.toLowerCase().includes("stylist")) {
-        generatedEnglish = "Stylist schedule, commissions, and staff roster";
-      } else if (t.id.toLowerCase().includes("book") || t.id.toLowerCase().includes("appt")) {
-        generatedEnglish = "Book new salon appointment for {client_name}";
-      } else if (t.id.toLowerCase().includes("discount") || t.id.toLowerCase().includes("reward")) {
-        generatedEnglish = "Apply loyalty reward discount {discount_percent}%";
-      } else if (t.id.toLowerCase().includes("cancel")) {
-        generatedEnglish = "Cancel scheduled booking and notify client";
-      } else if (t.id.toLowerCase().includes("save") || t.id.toLowerCase().includes("submit")) {
-        generatedEnglish = "Save changes and update client profile";
-      } else {
-        generatedEnglish = idClean.length > 2
-          ? idClean.charAt(0).toUpperCase() + idClean.slice(1)
-          : `Salon setting option ${idx + 1}`;
-      }
-
-      return {
-        ...t,
-        english: generatedEnglish,
-        englishStatus: "Approved" as const,
-        englishVersion: t.englishVersion || 1,
-        updatedAt: new Date().toISOString()
-      };
-    });
-
-    this.cache.tags[pageId] = updatedTags;
-    savePersistedTags(pageId, updatedTags);
-    this.emit();
   }
 
   static async updateTagType(pageId: string, tagId: string, newType: string) {
@@ -382,7 +279,7 @@ export class StoreService {
       await ApiService.updateTagType(tagId, newType || "General");
       await this.refreshPageDetail(pageId);
     } catch (e) {
-      console.warn("Backend update tag type error (kept local update):", e);
+      console.warn("Backend update tag type error:", e);
     }
   }
 
@@ -402,7 +299,7 @@ export class StoreService {
       try {
         await ApiService.saveEnglishCopyDraft(tagId, newEnglish, changeReason);
       } catch (e) {
-        console.warn("Backend update english error (kept local update):", e);
+        console.warn("Backend update english error:", e);
       }
     }
   }
@@ -416,24 +313,23 @@ export class StoreService {
     tag.englishVersion = (tag.englishVersion || 1) + 1;
     tag.updatedAt = new Date().toISOString();
 
-    // Mark existing approved & pending translations as stale
+    // Mark existing translations with text as stale
     if (tag.values) {
       Object.keys(tag.values).forEach(lang => {
-        if (tag.values[lang].status === "Approved" || tag.values[lang].status === "Pending Review") {
-          tag.values[lang].status = "Stale";
-          tag.values[lang].lastUpdated = new Date().toISOString();
-          persistTranslation(pageId, tagId, lang, tag.values[lang]);
+        const v = tag.values[lang];
+        if (v && (v.status === "Approved" || v.status === "Pending Review" || v.status === "Draft" || (v.text && v.text.trim().length > 0))) {
+          v.status = "Stale";
+          v.lastUpdated = new Date().toISOString();
         }
       });
     }
-    savePersistedTags(pageId, tags);
     this.emit();
 
     try {
       await ApiService.approveEnglishCopy(tagId);
       await this.refreshPageDetail(pageId);
     } catch (e) {
-      console.warn("Backend approve english error (kept local update):", e);
+      console.warn("Backend approve english error:", e);
     }
   }
 
@@ -454,11 +350,6 @@ export class StoreService {
       };
       tag.values[langCode] = merged;
       tag.updatedAt = new Date().toISOString();
-
-      // Persist to localStorage so translations survive page refresh
-      persistTranslation(pageId, tagId, langCode, merged);
-      savePersistedTags(pageId, tags);
-
       this.emit();
     }
 
@@ -466,9 +357,10 @@ export class StoreService {
       try {
         const text = newValue.text !== undefined ? newValue.text : tag?.values[langCode]?.text || "";
         const status = newValue.status === "Approved" ? "Approved" : newValue.status === "Draft" ? "Draft" : "Pending Review";
-        await ApiService.updateTranslation(tagId, langCode, text, status);
+        const confidence = newValue.confidence !== undefined ? newValue.confidence : tag?.values[langCode]?.confidence;
+        await ApiService.updateTranslation(tagId, langCode, text, status, confidence);
       } catch (e) {
-        console.warn("Backend translation update error (kept local update):", e);
+        console.warn("Backend translation update error:", e);
       }
     }
   }
@@ -486,16 +378,13 @@ export class StoreService {
       };
       tag.values[langCode] = merged;
       tag.updatedAt = new Date().toISOString();
-
-      persistTranslation(pageId, tagId, langCode, merged);
-      savePersistedTags(pageId, tags);
       this.emit();
     }
 
     try {
       await ApiService.approveTranslation(tagId, langCode);
     } catch (e) {
-      console.warn("Backend approve translation error (kept local update):", e);
+      console.warn("Backend approve translation error:", e);
     }
   }
 
@@ -505,10 +394,9 @@ export class StoreService {
     updates: { tagId: string; value: Partial<TranslationValue> }[]
   ) {
     const tags = this.getTags(pageId);
-    const allPersisted = loadPersistedTranslations();
-    if (!allPersisted[pageId]) allPersisted[pageId] = {};
-
     const now = new Date().toISOString();
+    
+    // 1. Optimistic in-memory update
     updates.forEach(({ tagId, value }) => {
       const tag = tags.find(t => t.id === tagId);
       if (tag) {
@@ -520,14 +408,38 @@ export class StoreService {
         };
         tag.values[langCode] = merged;
         tag.updatedAt = now;
-
-        if (!allPersisted[pageId][tagId]) allPersisted[pageId][tagId] = {};
-        allPersisted[pageId][tagId][langCode] = merged;
       }
     });
 
-    savePersistedTranslations(allPersisted);
     this.emit();
+
+    // 2. Persist to backend database in parallel chunks
+    const chunks = [];
+    for (let i = 0; i < updates.length; i += 10) {
+      chunks.push(updates.slice(i, i + 10));
+    }
+
+    for (const chunk of chunks) {
+      await Promise.allSettled(
+        chunk.map(async ({ tagId, value }) => {
+          if (value.text !== undefined && value.text.trim() !== "") {
+            const targetStatus = (value.status === "Approved")
+              ? "Approved" 
+              : (value.status === "Draft")
+              ? "Draft"
+              : "Pending Review";
+            try {
+              await ApiService.updateTranslation(tagId, langCode, value.text, targetStatus as any, value.confidence);
+            } catch (err) {
+              console.warn(`Failed to persist translation for tag ${tagId} (${langCode}):`, err);
+            }
+          }
+        })
+      );
+    }
+
+    // 3. Refresh page detail from DB so store remains in sync with the database
+    await this.refreshPageDetail(pageId);
   }
 
   static async rejectTranslation(pageId: string, tagId: string, langCode: string, reason: string) {
@@ -538,7 +450,7 @@ export class StoreService {
     try {
       await ApiService.rejectTranslation(tagId, langCode, reason);
     } catch (e) {
-      console.warn("Backend reject translation error (kept local update):", e);
+      console.warn("Backend reject translation error:", e);
     }
   }
 
@@ -550,7 +462,7 @@ export class StoreService {
     try {
       await ApiService.returnTranslationForRevision(tagId, langCode, comment);
     } catch (e) {
-      console.warn("Backend return for revision error (kept local update):", e);
+      console.warn("Backend return for revision error:", e);
     }
   }
 
@@ -558,14 +470,20 @@ export class StoreService {
     const tag = this.getTag(pageId, tagId);
     const currentVal = tag?.values?.[langCode];
     if (tag && currentVal) {
-      await this.updateTranslation(pageId, tagId, langCode, {
+      tag.values[langCode] = {
+        ...currentVal,
         status: "Approved",
-        translatedAtEnglishVersion: tag.englishVersion
-      });
+        translatedAtEnglishVersion: tag.englishVersion || 1,
+        lastUpdated: new Date().toISOString()
+      };
+      tag.updatedAt = new Date().toISOString();
+      this.emit();
+
       try {
         await ApiService.confirmStaleTranslation(tagId, langCode);
+        await this.refreshPageDetail(pageId);
       } catch (e) {
-        console.warn("Backend confirm stale error (kept local update):", e);
+        console.warn("Backend confirm stale error:", e);
       }
     }
   }
@@ -589,23 +507,6 @@ export class StoreService {
 
   // --- LANGUAGES ---
   static getLanguages(): LanguageConfig[] {
-    try {
-      const data = localStorage.getItem(this.STORAGE_KEYS.LANGUAGES);
-      if (data) {
-        const parsed: LanguageConfig[] = JSON.parse(data);
-        return parsed.map(l => {
-          if (l.code === "fr" || l.code === "fr-CA" || l.code === "fr-ca") {
-            return {
-              ...l,
-              name: "French (Canada)",
-              nativeName: l.nativeName.includes("Canada") ? l.nativeName : "Français (Canada)"
-            };
-          }
-          return l;
-        });
-      }
-    } catch {}
-
     return [
       { code: "ar", name: "Arabic", nativeName: "العربية", direction: "RTL", active: true, langServiceCode: "arabic" },
       { code: "es", name: "Spanish", nativeName: "Español", direction: "LTR", active: true, langServiceCode: "spanish" },
@@ -621,8 +522,8 @@ export class StoreService {
     return this.getLanguages().filter(l => l.active);
   }
 
-  static saveLanguages(languages: LanguageConfig[]) {
-    localStorage.setItem(this.STORAGE_KEYS.LANGUAGES, JSON.stringify(languages));
+  static saveLanguages(_languages: LanguageConfig[]) {
+    // No-op — languages are managed via admin API, not client storage
     this.emit();
   }
 
@@ -694,7 +595,8 @@ export class StoreService {
       const tags = this.getTags(page.pageId);
       for (const tag of tags) {
         for (const [code, val] of Object.entries(tag.values)) {
-          if ((!langCode || code === langCode) && val.status === "Stale") {
+          const isStale = val.status === "Stale" || (Boolean(val.text) && (tag.englishVersion || 1) > 1 && (val.translatedAtEnglishVersion || 0) > 0 && (val.translatedAtEnglishVersion || 0) < (tag.englishVersion || 1) && val.status !== "Approved");
+          if ((!langCode || code === langCode) && isStale) {
             const langName = this.getLanguages().find(l => l.code === code)?.name || code;
             const diffDays = val.lastUpdated 
               ? Math.max(1, Math.floor((new Date().getTime() - new Date(val.lastUpdated).getTime()) / (1000 * 3600 * 24)))
@@ -719,32 +621,27 @@ export class StoreService {
   }
 
   static getConfidenceThreshold(): number {
-    try {
-      const val = localStorage.getItem(this.STORAGE_KEYS.CONFIDENCE_THRESHOLD);
-      if (val) return parseInt(val, 10);
-    } catch {}
-    return 95;
+    return this.cache.confidenceThreshold;
   }
 
   static setConfidenceThreshold(threshold: number) {
-    localStorage.setItem(this.STORAGE_KEYS.CONFIDENCE_THRESHOLD, threshold.toString());
+    this.cache.confidenceThreshold = threshold;
     this.emit();
   }
 
   static getLengthConflictConfig(): LengthConflictConfig {
-    try {
-      const val = localStorage.getItem(this.STORAGE_KEYS.LENGTH_CONFLICT_CONFIG);
-      if (val) {
-        return { ...DEFAULT_LENGTH_CONFLICT_CONFIG, ...JSON.parse(val) };
-      }
-    } catch {}
-    return { ...DEFAULT_LENGTH_CONFLICT_CONFIG };
+    return { ...this.cache.lengthConflictConfig };
   }
 
   static setLengthConflictConfig(config: Partial<LengthConflictConfig>) {
-    const current = this.getLengthConflictConfig();
-    const updated = { ...current, ...config };
-    localStorage.setItem(this.STORAGE_KEYS.LENGTH_CONFLICT_CONFIG, JSON.stringify(updated));
+    this.cache.lengthConflictConfig = { ...this.cache.lengthConflictConfig, ...config };
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem(LENGTH_CONFLICT_STORAGE_KEY, JSON.stringify(this.cache.lengthConflictConfig));
+      }
+    } catch (e) {
+      console.warn("Failed to save length conflict config to localStorage", e);
+    }
     this.emit();
   }
 
@@ -804,24 +701,29 @@ export class StoreService {
     return result;
   }
 
+  static getLengthConflictTagIds(pageId: string, langCode?: string): Set<string> {
+    const config = this.getLengthConflictConfig();
+    if (!config.enabled) {
+      return new Set();
+    }
+    const conflicts = this.getLengthConflicts();
+    const matching = conflicts.filter(c => c.pageId === pageId && (!langCode || c.languageCode === langCode));
+    return new Set(matching.map(c => c.tagId));
+  }
+
   // --- DEPLOYMENTS & RELEASES ---
   static getDeployments(): DeploymentRecord[] {
-    try {
-      const data = localStorage.getItem(this.STORAGE_KEYS.DEPLOYMENTS);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+    return this.cache.deployments;
   }
 
   static saveDeployments(records: DeploymentRecord[]) {
-    localStorage.setItem(this.STORAGE_KEYS.DEPLOYMENTS, JSON.stringify(records));
+    this.cache.deployments = records;
     this.emit();
   }
 
   static recordDeployment(record: DeploymentRecord) {
-    const existing = this.getDeployments();
-    this.saveDeployments([record, ...existing]);
+    this.cache.deployments = [record, ...this.cache.deployments];
+    this.emit();
   }
 
   static getNextVersion(pageId: string, language: string, environment: Environment): number {
@@ -848,11 +750,96 @@ export class StoreService {
     const newCount = Math.max(0, approvedTags.length - prevCount);
     const updatedCount = latest ? Math.min(approvedTags.length, prevCount) : approvedTags.length;
 
+    // Check variable placeholder integrity
+    const varRegex = /(?:\{[^}]+\}|%[0-9]*\$?[a-zA-Z])/g;
+    let variableErrorsCount = 0;
+    if (!isEng) {
+      approvedTags.forEach(tag => {
+        const engVars: string[] = Array.from((tag.english || "").match(varRegex) || []);
+        const transText = tag.values?.[language]?.text || "";
+        const transVars: string[] = Array.from(transText.match(varRegex) || []);
+        if (engVars.length > 0) {
+          const hasAll = engVars.every(v => transVars.includes(v));
+          if (!hasAll) variableErrorsCount++;
+        }
+      });
+    }
+
+    const lastPubDate = latest ? new Date(latest.publishedAt).getTime() : 0;
+    const hasRecentUpdates = Boolean(
+      latest &&
+      approvedTags.length > 0 &&
+      tags.some(t => {
+        if (isEng) {
+          const engTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
+          return engTime > lastPubDate + 2000;
+        }
+        const val = t.values?.[language];
+        if (!val || val.status !== "Approved") return false;
+        const valTime = val.lastUpdated ? new Date(val.lastUpdated).getTime() : 0;
+        return valTime > lastPubDate + 2000;
+      })
+    );
+    const isDuplicate = Boolean(latest && latest.tagCount === approvedTags.length && approvedTags.length > 0 && !hasRecentUpdates);
+
     return {
       totalCount: approvedTags.length,
+      totalTagsCount: tags.length,
       newCount,
       updatedCount,
-      previousVersion: latest ? latest.version : null
+      previousVersion: latest ? latest.version : null,
+      nextVersion: this.getNextVersion(pageId, language, environment),
+      isDuplicate,
+      variableErrorsCount,
+      approvedTags
+    };
+  }
+
+  static getMultiLanguagePublishSummary(pageId: string, environment: Environment) {
+    const activeLangs = this.getActiveLanguages();
+    const tags = this.getTags(pageId);
+    const totalTags = tags.length;
+
+    const summaries = activeLangs.map(lang => {
+      const diff = this.getPublishDiffSummary(pageId, lang.code, environment);
+      const approvedCount = diff.totalCount;
+      const excludedCount = Math.max(0, totalTags - approvedCount);
+      const coveragePercent = totalTags > 0 ? Math.round((approvedCount / totalTags) * 100) : 0;
+
+      return {
+        code: lang.code,
+        name: lang.name,
+        nativeName: lang.nativeName,
+        totalTags,
+        approvedCount,
+        excludedCount,
+        coveragePercent,
+        isReady: approvedCount > 0 && coveragePercent === 100,
+        newCount: diff.newCount,
+        updatedCount: diff.updatedCount,
+        previousVersion: diff.previousVersion,
+        nextVersion: diff.nextVersion,
+        isDuplicate: diff.isDuplicate,
+        variableErrorsCount: diff.variableErrorsCount,
+        approvedTags: diff.approvedTags
+      };
+    });
+
+    const totalApprovedAcrossAll = summaries.reduce((acc, s) => acc + s.approvedCount, 0);
+    const totalExcludedAcrossAll = summaries.reduce((acc, s) => acc + s.excludedCount, 0);
+    const totalVariableErrors = summaries.reduce((acc, s) => acc + s.variableErrorsCount, 0);
+    const fullyReadyLanguagesCount = summaries.filter(s => s.isReady).length;
+    const incompleteLanguages = summaries.filter(s => s.approvedCount < s.totalTags && s.totalTags > 0);
+
+    return {
+      summaries,
+      totalTags,
+      totalApprovedAcrossAll,
+      totalExcludedAcrossAll,
+      totalVariableErrors,
+      fullyReadyLanguagesCount,
+      totalLanguagesCount: activeLangs.length,
+      incompleteLanguages
     };
   }
 
@@ -870,12 +857,21 @@ export class StoreService {
 
     const latest = existingDeps.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
 
-    // Duplicate publish guard: if approved count is identical to last release on that environment
+    // Duplicate publish guard
     if (latest && latest.tagCount === approvedCount && approvedCount > 0) {
-      // Check if any tag updated since last publish
       const lastPubDate = new Date(latest.publishedAt).getTime();
       const tags = this.getTags(pageId);
-      const hasRecentUpdates = tags.some(t => new Date(t.updatedAt).getTime() > lastPubDate);
+      const isEng = language === "eng" || language === "en";
+      const hasRecentUpdates = tags.some(t => {
+        if (isEng) {
+          const engTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
+          return engTime > lastPubDate + 2000;
+        }
+        const val = t.values?.[language];
+        if (!val || val.status !== "Approved") return false;
+        const valTime = val.lastUpdated ? new Date(val.lastUpdated).getTime() : 0;
+        return valTime > lastPubDate + 2000;
+      });
 
       if (!hasRecentUpdates) {
         return {
@@ -890,7 +886,7 @@ export class StoreService {
     const nextVer = this.getNextVersion(pageId, language, environment);
 
     const record: DeploymentRecord = {
-      id: `dep-${Date.now()}`,
+      id: `dep-${Date.now()}-${language}`,
       pageId,
       pageName,
       language,
@@ -918,18 +914,56 @@ export class StoreService {
     };
   }
 
+  static async publishMultiLanguage(
+    pageId: string,
+    pageName: string,
+    languages: string[],
+    environment: Environment,
+    publishedBy: string = "System User"
+  ): Promise<{
+    success: boolean;
+    results: { language: string; version: number; count: number; isDuplicate: boolean }[];
+    totalStringsDeployed: number;
+    timestamp: string;
+  }> {
+    const results: { language: string; version: number; count: number; isDuplicate: boolean }[] = [];
+    let totalStringsDeployed = 0;
+    const langsToProcess = languages.includes("eng") ? [...languages] : ["eng", ...languages];
+
+    for (const langCode of langsToProcess) {
+      const isEng = langCode === "eng" || langCode === "en";
+      const tags = this.getTags(pageId);
+      const approvedCount = isEng 
+        ? tags.filter(t => t.english && t.english.trim().length > 0).length
+        : tags.filter(t => t.values?.[langCode]?.status === "Approved").length;
+
+      if (approvedCount === 0) continue;
+
+      const res = await this.publish(pageId, pageName, langCode, environment, approvedCount, publishedBy);
+      results.push({
+        language: langCode,
+        version: res.version,
+        count: approvedCount,
+        isDuplicate: res.isDuplicate
+      });
+      totalStringsDeployed += approvedCount;
+    }
+
+    return {
+      success: true,
+      results,
+      totalStringsDeployed,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   // --- PUBLISH APPROVAL REQUESTS ---
   static getPublishApprovalRequests(): import("../types").PublishApprovalRequest[] {
-    try {
-      const data = localStorage.getItem(this.STORAGE_KEYS.APPROVAL_REQUESTS);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+    return this.cache.approvalRequests;
   }
 
   static savePublishApprovalRequests(requests: import("../types").PublishApprovalRequest[]) {
-    localStorage.setItem(this.STORAGE_KEYS.APPROVAL_REQUESTS, JSON.stringify(requests));
+    this.cache.approvalRequests = requests;
     this.emit();
   }
 
@@ -953,8 +987,8 @@ export class StoreService {
       status: "PENDING"
     };
 
-    const requests = this.getPublishApprovalRequests();
-    this.savePublishApprovalRequests([newReq, ...requests]);
+    this.cache.approvalRequests = [newReq, ...this.cache.approvalRequests];
+    this.emit();
 
     try {
       await ApiService.requestPublishingApproval(pageId, language, environment);
@@ -977,7 +1011,8 @@ export class StoreService {
     req.status = action === "APPROVE" ? "APPROVED" : "REJECTED";
     req.reviewedBy = reviewedBy;
     req.reviewedAt = new Date().toISOString();
-    this.savePublishApprovalRequests([...requests]);
+    this.cache.approvalRequests = [...requests];
+    this.emit();
 
     if (action === "APPROVE") {
       await this.publish(
@@ -1043,36 +1078,202 @@ export class StoreService {
     return coverage;
   }
 
-  /**
-   * Completely resets all local storage caches, translations, deployments, approvals, and in-memory data.
-   */
-  static async resetAll(): Promise<void> {
-    try {
-      localStorage.removeItem(this.STORAGE_KEYS.LANGUAGES);
-      localStorage.removeItem(this.STORAGE_KEYS.DEPLOYMENTS);
-      localStorage.removeItem(this.STORAGE_KEYS.APPROVAL_REQUESTS);
-      localStorage.removeItem(this.STORAGE_KEYS.BOOKMARKS);
-      localStorage.removeItem(this.STORAGE_KEYS.LENGTH_CONFLICT_CONFIG);
-      localStorage.removeItem(TRANSLATIONS_STORAGE_KEY);
-      localStorage.removeItem("miotranslate_recent_edits");
-      localStorage.removeItem("miotranslate_pages_cache");
-      localStorage.removeItem("miotranslate_user_v1");
+  static getRecentPublishHistory(limit: number = 10): DeploymentRecord[] {
+    return [...this.getDeployments()]
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+      .slice(0, limit);
+  }
 
-      const allKeys = Object.keys(localStorage);
-      for (const k of allKeys) {
-        if (k.startsWith(TAGS_STORAGE_KEY) || k.startsWith("miotranslate_")) {
-          localStorage.removeItem(k);
+  static getUnpublishedPages(environment: Environment = "PRODUCTION"): UnpublishedPageSummary[] {
+    const pages = this.getPages().filter(p => p.status !== "Deprecated");
+    const activeLangs = this.getActiveLanguages();
+    const deployments = this.getDeployments();
+    const pendingApprovals = this.getPublishApprovalRequests().filter(r => r.status === "PENDING" && r.environment === environment);
+
+    return pages.map(page => {
+      const tags = this.getTags(page.pageId);
+      const totalTags = tags.length;
+
+      const languages: PageLanguageReadiness[] = activeLangs.map(lang => {
+        const isEng = lang.code === "eng" || lang.code === "en";
+        const approvedTags = isEng 
+          ? tags.filter(t => t.english && t.english.trim().length > 0)
+          : tags.filter(t => t.values?.[lang.code]?.status === "Approved");
+        
+        const approvedCount = approvedTags.length;
+        const coveragePercent = totalTags > 0 ? Math.round((approvedCount / totalTags) * 100) : 0;
+        
+        const envDeps = deployments.filter(d => d.pageId === page.pageId && d.language === lang.code && d.environment === environment);
+        const latest = envDeps.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
+
+        const lastPubDate = latest ? new Date(latest.publishedAt).getTime() : 0;
+        const hasRecentUpdates = Boolean(
+          latest &&
+          approvedCount > 0 &&
+          tags.some(t => {
+            if (isEng) {
+              const engTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
+              return engTime > lastPubDate + 2000;
+            }
+            const val = t.values?.[lang.code];
+            if (!val || val.status !== "Approved") return false;
+            const valTime = val.lastUpdated ? new Date(val.lastUpdated).getTime() : 0;
+            return valTime > lastPubDate + 2000;
+          })
+        );
+        
+        const hasChanges = latest 
+          ? (latest.tagCount !== approvedCount || hasRecentUpdates)
+          : (approvedCount > 0);
+
+        const staleCount = tags.filter(t => t.values?.[lang.code]?.status === "Stale").length;
+        const isPending = pendingApprovals.some(r => r.pageId === page.pageId && r.language === lang.code);
+
+        // Variable check
+        const varRegex = /(?:\{[^}]+\}|%[0-9]*\$?[a-zA-Z])/g;
+        let variableErrorsCount = 0;
+        if (!isEng) {
+          approvedTags.forEach(tag => {
+            const engVars = Array.from((tag.english || "").match(varRegex) || []);
+            const transText = tag.values?.[lang.code]?.text || "";
+            const transVars = Array.from(transText.match(varRegex) || []);
+            if (engVars.length > 0 && !engVars.every(v => transVars.includes(v))) {
+              variableErrorsCount++;
+            }
+          });
         }
+
+        return {
+          code: lang.code,
+          name: lang.name,
+          nativeName: lang.nativeName,
+          approvedCount,
+          totalTags,
+          coveragePercent,
+          lastPublishedVersion: latest ? latest.version : null,
+          lastPublishedAt: latest ? latest.publishedAt : null,
+          hasChanges,
+          staleCount,
+          isPending,
+          variableErrorsCount
+        };
+      });
+
+      const hasUnpublishedChanges = languages.some(l => l.hasChanges);
+      const totalVarErrors = languages.reduce((acc, l) => acc + l.variableErrorsCount, 0);
+
+      let overallReadiness: "ready" | "partial" | "blocked" | "up-to-date" = "up-to-date";
+      if (totalVarErrors > 0) {
+        overallReadiness = "blocked";
+      } else if (hasUnpublishedChanges) {
+        const allReady = languages.length > 0 && languages.every(l => l.coveragePercent === 100);
+        overallReadiness = allReady ? "ready" : "partial";
+      } else {
+        overallReadiness = "up-to-date";
       }
-    } catch (e) {
-      console.warn("Error clearing localStorage:", e);
-    }
 
-    this.cache.pages = [];
-    this.cache.tags = {};
-    this.cache.pageDetails = {};
+      return {
+        pageId: page.pageId,
+        pageName: page.name,
+        module: page.module,
+        totalTags,
+        languages,
+        hasUnpublishedChanges,
+        overallReadiness
+      };
+    });
+  }
 
-    await this.refreshPages();
-    this.emit();
+  static getUnpublishedCount(environment: Environment = "PRODUCTION"): number {
+    return this.getUnpublishedPages(environment).filter(p => p.hasUnpublishedChanges).length;
+  }
+
+  static getPageReleasePipeline(): PageReleasePipelineItem[] {
+    const pages = this.getPages().filter(p => p.status !== "Deprecated");
+    const deployments = this.getDeployments();
+    const pendingApprovals = this.getPublishApprovalRequests().filter(r => r.status === "PENDING");
+
+    const unpublishedDev = this.getUnpublishedPages("DEV");
+    const unpublishedQa = this.getUnpublishedPages("QA");
+    const unpublishedProd = this.getUnpublishedPages("PRODUCTION");
+
+    return pages.map(page => {
+      const pDev = unpublishedDev.find(p => p.pageId === page.pageId);
+      const pQa = unpublishedQa.find(p => p.pageId === page.pageId);
+      const pProd = unpublishedProd.find(p => p.pageId === page.pageId);
+
+      const devDeps = deployments.filter(d => d.pageId === page.pageId && d.environment === "DEV");
+      const qaDeps = deployments.filter(d => d.pageId === page.pageId && d.environment === "QA");
+      const prodDeps = deployments.filter(d => d.pageId === page.pageId && d.environment === "PRODUCTION");
+
+      const latestDev = devDeps.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
+      const latestQa = qaDeps.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
+      const latestProd = prodDeps.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
+
+      const devStatus: EnvironmentReleaseStatus = {
+        version: latestDev?.version ?? null,
+        lastPublishedAt: latestDev?.publishedAt ?? null,
+        hasUnpublishedChanges: pDev?.hasUnpublishedChanges ?? false,
+        deployedLanguagesCount: new Set(devDeps.map(d => d.language)).size
+      };
+
+      const qaStatus: EnvironmentReleaseStatus = {
+        version: latestQa?.version ?? null,
+        lastPublishedAt: latestQa?.publishedAt ?? null,
+        hasUnpublishedChanges: pQa?.hasUnpublishedChanges ?? false,
+        deployedLanguagesCount: new Set(qaDeps.map(d => d.language)).size
+      };
+
+      const prodStatus: EnvironmentReleaseStatus = {
+        version: latestProd?.version ?? null,
+        lastPublishedAt: latestProd?.publishedAt ?? null,
+        hasUnpublishedChanges: pProd?.hasUnpublishedChanges ?? false,
+        deployedLanguagesCount: new Set(prodDeps.map(d => d.language)).size
+      };
+
+      const hasGate = pendingApprovals.some(r => r.pageId === page.pageId);
+      const totalTags = this.getTags(page.pageId).length || (pProd?.totalTags ?? 0);
+
+      let pipelineState: "IN_SYNC" | "NEEDS_RELEASE" | "NEEDS_QA" | "APPROVAL_PENDING" | "UNRELEASED" = "UNRELEASED";
+      let pendingChangesSummary = "Draft";
+
+      if (hasGate) {
+        pipelineState = "APPROVAL_PENDING";
+        pendingChangesSummary = "Production gate awaiting sign-off";
+      } else if (prodStatus.version !== null && !prodStatus.hasUnpublishedChanges) {
+        pipelineState = "IN_SYNC";
+        pendingChangesSummary = "All copy live and synced on Production";
+      } else if (prodStatus.hasUnpublishedChanges) {
+        pipelineState = "NEEDS_RELEASE";
+        const changedLangs = pProd?.languages.filter(l => l.hasChanges).length || 0;
+        pendingChangesSummary = prodStatus.version 
+          ? `${changedLangs} language${changedLangs === 1 ? '' : 's'} updated since v${prodStatus.version}`
+          : `${changedLangs} language${changedLangs === 1 ? '' : 's'} pending release to Production`;
+      } else if (qaStatus.version !== null && prodStatus.version === null) {
+        pipelineState = "NEEDS_RELEASE";
+        pendingChangesSummary = `On QA (v${qaStatus.version}), ready for Production`;
+      } else if (devStatus.version !== null && qaStatus.version === null) {
+        pipelineState = "NEEDS_QA";
+        pendingChangesSummary = `On Dev (v${devStatus.version}), needs QA promotion`;
+      } else {
+        pipelineState = "UNRELEASED";
+        pendingChangesSummary = "Unreleased draft";
+      }
+
+      return {
+        pageId: page.pageId,
+        pageName: page.name,
+        module: page.module,
+        totalTags,
+        dev: devStatus,
+        qa: qaStatus,
+        production: prodStatus,
+        pipelineState,
+        pendingChangesSummary,
+        hasProductionChanges: prodStatus.hasUnpublishedChanges,
+        languages: pProd?.languages || []
+      };
+    });
   }
 }
+

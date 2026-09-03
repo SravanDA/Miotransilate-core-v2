@@ -18,21 +18,25 @@ export function TranslationStatusBadge({ status, className, showIconOnly }: Prop
   const getBadgeConfig = (s: TranslationStatus) => {
     switch (s) {
       case 'Approved':
-        return { icon: StatusCompleted, label: 'Approved' };
+        return { icon: StatusCompleted, label: 'Approved', iconClass: '' };
       case 'Pending Review':
-        return { icon: StatusInProgress, label: 'Pending Review' };
+        return { icon: StatusInProgress, label: 'Pending Review', iconClass: '' };
       case 'Stale':
-        return { icon: StatusInProgress, label: 'Stale' };
+        return { icon: StatusInProgress, label: 'Stale', iconClass: 'text-amber-500' };
       case 'Draft':
-        return { icon: StatusPlanned, label: 'Draft' };
+        return { icon: StatusPlanned, label: 'Draft', iconClass: '' };
       case 'No Trans':
-        return { icon: StatusBacklog, label: 'No Trans' };
+        return { icon: StatusBacklog, label: 'No Trans', iconClass: '' };
       case 'No Eng':
-        return { icon: StatusBacklog, label: 'No Eng' };
+        return { icon: StatusBacklog, label: 'No Eng', iconClass: '' };
+      case 'Needs Attention':
+        return { icon: StatusInProgress, label: 'Needs Attention', iconClass: 'text-[#EB5757]' };
+      case 'Blocked':
+        return { icon: StatusCanceled, label: 'Blocked', iconClass: '' };
       case 'Deprecated':
-        return { icon: StatusCanceled, label: 'Deprecated' };
+        return { icon: StatusCanceled, label: 'Deprecated', iconClass: '' };
       default:
-        return { icon: StatusPlanned, label: status || 'Unknown' };
+        return { icon: StatusPlanned, label: status || 'Unknown', iconClass: '' };
     }
   };
 
@@ -47,7 +51,7 @@ export function TranslationStatusBadge({ status, className, showIconOnly }: Prop
       )}
       title={config.label}
     >
-      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <Icon className={cn("w-3.5 h-3.5 shrink-0", config.iconClass)} />
       {!showIconOnly && <span className="truncate">{config.label}</span>}
     </div>
   );

@@ -189,7 +189,7 @@ export function CoverageDashboard() {
  <table className="w-full min-w-[800px] text-left border-collapse">
  <thead className="bg-bg-main border-b border-border-subtle sticky top-0 z-20">
  <tr>
- <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[240px] max-w-[240px] shrink-0 sticky left-0 z-30 bg-bg-main shadow-[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border-subtle/40">Page Location</th>
+ <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-[240px] max-w-[240px] shrink-0 sticky left-0 z-30 bg-bg-main -[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border-subtle/40">Page Location</th>
  <th className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider w-24 text-center shrink-0">String Count</th>
  {activeLangs.map(lang => (
  <th key={lang.code} className="px-4 py-2 text-[10px] uppercase font-bold text-text-tertiary tracking-wider min-w-[160px]">{lang.name}</th>
@@ -201,7 +201,7 @@ export function CoverageDashboard() {
  <>
  {filteredPages.map((item) => (
  <tr key={item.pageId} className="group hover:bg-bg-hover transition-colors cursor-default">
- <td className="px-4 py-2 align-middle w-[240px] max-w-[240px] shrink-0 sticky left-0 z-10 bg-bg-card group-hover:bg-bg-hover shadow-[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border-subtle/40 transition-colors">
+ <td className="px-4 py-2 align-middle w-[240px] max-w-[240px] shrink-0 sticky left-0 z-10 bg-bg-card group-hover:bg-bg-hover -[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border-subtle/40 transition-colors">
  <div className="flex flex-col gap-0.5 min-w-0">
  <Link 
  to={`/pages/${item.pageId}`} 
@@ -238,7 +238,7 @@ export function CoverageDashboard() {
 
  {/* Summary Row */}
  <tr className="bg-bg-sidebar font-bold border-t-2 border-border-strong sticky bottom-0 z-20">
-   <td className="px-4 py-2.5 text-[12px] text-text-primary uppercase tracking-wider w-[240px] max-w-[240px] shrink-0 sticky left-0 z-30 bg-bg-sidebar shadow-[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border-subtle/40">
+   <td className="px-4 py-2.5 text-[12px] text-text-primary uppercase tracking-wider w-[240px] max-w-[240px] shrink-0 sticky left-0 z-30 bg-bg-sidebar -[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border-subtle/40">
      Global Average / Total
    </td>
    <td className="px-4 py-2.5 text-[13px] font-mono text-text-primary text-center shrink-0">
@@ -277,7 +277,7 @@ export function CoverageDashboard() {
         {registeredPages.length === 0 ? (
           <Link
             to="/pages"
-            className="mt-4 inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#5e6ad2] hover:bg-[#525ec2] text-white text-[12px] font-medium rounded-md transition-all active:scale-[0.98] outline-none shadow-xs"
+            className="mt-4 inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-[#5e6ad2] hover:bg-[#525ec2] text-white text-[12px] font-medium rounded-md transition-all active:scale-[0.98] outline-none "
           >
             <Plus className="w-3.5 h-3.5" weight="bold" />
             <span>Go to Pages</span>
@@ -285,7 +285,7 @@ export function CoverageDashboard() {
         ) : (
           <button
             onClick={() => { setSearchQuery(""); setSelectedModule("All"); }}
-            className="mt-4 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-bg-card hover:bg-bg-hover text-text-secondary hover:text-text-primary border border-border-subtle text-[12px] font-medium rounded-md transition-colors outline-none cursor-pointer shadow-xs"
+            className="mt-4 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-bg-card hover:bg-bg-hover text-text-secondary hover:text-text-primary border border-border-subtle text-[12px] font-medium rounded-md transition-colors outline-none cursor-pointer "
           >
             <X className="w-3.5 h-3.5" />
             <span>Reset Filters</span>

@@ -1,12 +1,5 @@
 import { apiClient } from '../client';
 
-export interface MockLsSyncStatus {
-  hasMigrated: boolean;
-  lastMigrationAt: string | null;
-  pagesMigrated: number;
-  tagsMigrated: number;
-}
-
 export interface ImportValidationRow {
   rowNumber: number;
   pageId: string;
@@ -36,16 +29,6 @@ export interface ImportEvent {
 }
 
 export const MigrationService = {
-  getMockLsStatus: async (): Promise<MockLsSyncStatus> => {
-    const response = await apiClient.get('/v1/migrations/mock-ls/status');
-    return response.data;
-  },
-
-  syncFromMockLs: async (): Promise<any> => {
-    const response = await apiClient.get('/v1/migrations/sync-from-mock-ls');
-    return response.data;
-  },
-
   resetMigratedData: async (): Promise<any> => {
     const response = await apiClient.delete('/v1/migrations/reset');
     return response.data;

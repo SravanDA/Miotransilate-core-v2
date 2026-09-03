@@ -43,10 +43,10 @@ export function EmptyStateGraphic({ className, ...props }: Props) {
         <path
           d="M30 40 L50 50 L70 40 L50 30 Z"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="1.5"
           strokeLinejoin="round"
-          className="text-text-primary drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
-          fill="#1c1c1e"
+          className="text-border-strong"
+          fill="var(--bg-card)"
         />
         {/* Inner edge detail on the top layer */}
         <path
@@ -57,8 +57,6 @@ export function EmptyStateGraphic({ className, ...props }: Props) {
           className="text-text-tertiary opacity-50"
         />
       </svg>
-      {/* Subtle glow behind the graphic */}
-      <div className="absolute inset-0 bg-accent-blue/5 blur-xl rounded-full -z-10 mix-blend-screen" />
     </div>
   );
 }

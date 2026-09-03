@@ -55,9 +55,9 @@ export const LoginView: React.FC = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg-main p-4">
-      <div className="w-full max-w-sm p-8 bg-bg-card rounded-xl border border-border-subtle shadow-xl">
+      <div className="w-full max-w-sm p-8 bg-bg-card rounded-xl border border-border-subtle ">
         <div className="text-center mb-8 flex flex-col items-center gap-3">
-          <div className="w-14 h-14 bg-bg-hover/70 rounded-2xl border border-border-strong flex items-center justify-center shadow-inner">
+          <div className="w-14 h-14 bg-bg-hover/70 rounded-2xl border border-border-strong flex items-center justify-center -inner">
             <MioSalonLogo size={36} />
           </div>
           <div>

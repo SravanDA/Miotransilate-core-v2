@@ -97,7 +97,7 @@ VALUES (
   'Founder',
   'founder@miosalonsoftware.com',
   -- Hash for 'ChangeMe123!'
-  '$2b$12$Ml4YAzFM2zA2Q15NR4SvWua.7Nps5XdbcnANvyIzp3jgc4fBDR1VK',
+  '$2a$12$w1b3uW7CTAswxqXj4AFUieqbU8OVL0Vj56/XFceKv2hWiVYgs9fNu',
   true,
   true
 );
@@ -115,7 +115,7 @@ VALUES (
   'b0000000-0000-0000-0000-000000000002',
   'Developer',
   'dev@miosalonsoftware.com',
-  '$2b$12$Ml4YAzFM2zA2Q15NR4SvWua.7Nps5XdbcnANvyIzp3jgc4fBDR1VK',
+  '$2a$12$w1b3uW7CTAswxqXj4AFUieqbU8OVL0Vj56/XFceKv2hWiVYgs9fNu',
   true,
   true
 );
@@ -131,7 +131,7 @@ VALUES (
   'c0000000-0000-0000-0000-000000000003',
   'Product Manager',
   'pm@miosalonsoftware.com',
-  '$2b$12$Ml4YAzFM2zA2Q15NR4SvWua.7Nps5XdbcnANvyIzp3jgc4fBDR1VK',
+  '$2a$12$w1b3uW7CTAswxqXj4AFUieqbU8OVL0Vj56/XFceKv2hWiVYgs9fNu',
   true,
   true
 );

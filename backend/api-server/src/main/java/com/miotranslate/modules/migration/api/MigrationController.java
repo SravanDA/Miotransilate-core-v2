@@ -62,23 +62,6 @@ public class MigrationController {
         return ResponseEntity.ok(migrationRowEventRepository.findByImportEventIdOrderBySourceRowNumberAsc(id));
     }
 
-    @GetMapping("/sync-from-mock-ls")
-    public ResponseEntity<Map<String, Object>> syncFromMockLsGet() {
-        Map<String, Object> result = migrationService.syncFromMockLs();
-        return ResponseEntity.ok(result);
-    }
-
-    @PostMapping("/sync-from-mock-ls")
-    public ResponseEntity<Map<String, Object>> syncFromMockLsPost() {
-        Map<String, Object> result = migrationService.syncFromMockLs();
-        return ResponseEntity.ok(result);
-    }
-
-    @GetMapping("/mock-ls/status")
-    public ResponseEntity<Map<String, Object>> getMockLsStatus() {
-        return ResponseEntity.ok(migrationService.getMockLsSyncStatus());
-    }
-
     @DeleteMapping("/reset")
     public ResponseEntity<Map<String, Object>> resetDataDelete() {
         return ResponseEntity.ok(migrationService.deleteAllMigratedData());

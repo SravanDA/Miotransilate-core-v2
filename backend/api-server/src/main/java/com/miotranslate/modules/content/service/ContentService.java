@@ -14,20 +14,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import com.miotranslate.modules.translation.model.Translation;
+import com.miotranslate.modules.translation.repository.TranslationRepository;
+import java.util.List;
+
 @Service
 public class ContentService {
 
     private final EnglishCopyRepository englishCopyRepository;
     private final EnglishCopyVersionRepository versionRepository;
+    private final TranslationRepository translationRepository;
     private final AuditService auditService;
     private final JobDispatcher jobDispatcher;
 
     public ContentService(EnglishCopyRepository englishCopyRepository, 
                           EnglishCopyVersionRepository versionRepository,
+                          TranslationRepository translationRepository,
                           AuditService auditService, 
                           JobDispatcher jobDispatcher) {
         this.englishCopyRepository = englishCopyRepository;
         this.versionRepository = versionRepository;
+        this.translationRepository = translationRepository;
         this.auditService = auditService;
         this.jobDispatcher = jobDispatcher;
     }
@@ -112,6 +119,16 @@ public class ContentService {
         auditService.record("ENGLISH_COPY_APPROVED", "ENGLISH_COPY", tagId, "Approved version " + latest.getVersionNumber());
         
         if (textChanged) {
+            List<Translation> translations = translationRepository.findByTagId(tagId);
+            for (Translation t : translations) {
+                if (!"NO_TRANSLATION".equals(t.getStatus()) && !"DEPRECATED".equals(t.getStatus())) {
+                    t.setStatus("STALE");
+                    t.setStaleTriggeredAt(OffsetDateTime.now());
+                    t.setEtagVersion(t.getEtagVersion() + 1);
+                    translationRepository.save(t);
+                    auditService.record("TRANSLATION_MARKED_STALE", "TRANSLATION", t.getTagId() + "/" + t.getLanguageCode(), "Cascade from EC approval");
+                }
+            }
             jobDispatcher.dispatch("STALE_CASCADE", tagId);
             jobDispatcher.dispatch("IMPLICIT_DEV_PUBLISH", tagId);
         }
@@ -149,7 +166,6 @@ public class ContentService {
 
     @Transactional(readOnly = true)
     public java.util.List<EnglishCopyVersion> getVersions(String tagId) {
-        // Dummy implementation, in reality fetch from repository
-        return java.util.Collections.emptyList();
+        return versionRepository.findByTagIdOrderByVersionNumberDesc(tagId);
     }
 }

@@ -366,7 +366,7 @@ export function Guide() {
  name="Language Reviewer"
  whoIsThis="A native speaker of the target language who ensures translation quality."
  canDo={[
- "View the review queue in My Work",
+ "View the review queue in Overview",
  "Approve, edit, or reject translations",
  "Resolve stale translation alerts",
  "Add comments and discussion on specific tags",
@@ -483,7 +483,7 @@ export function Guide() {
  title="Review Translations"
  role="LR"
  details={[
- "Language Reviewers go to My Work to see their review queue.",
+ "Language Reviewers go to Overview to see their review queue.",
  "Each item shows: the tag ID, page name, English source text, AI translation, and confidence score.",
  "The reviewer reads the English source, compares it with the AI translation, and decides:",
  "• Approve - the translation is correct and ready for publishing.",
@@ -499,7 +499,7 @@ export function Guide() {
  role="LR"
  details={[
  "When a PM updates the English copy of an existing tag, all its translations become Stale.",
- "Stale translations appear in My Work → Stale Translations queue.",
+ "Stale translations appear in Overview → Stale Translations queue.",
  "Each row shows the English change diff (old text → new text) and how long ago it became stale.",
  "The reviewer either confirms the existing translation still works, or triggers a retranslation.",
  "Stale strings must be resolved before the page can be published again.",
@@ -587,9 +587,9 @@ export function Guide() {
  ]} />
  </SubSection>
 
- <SubSection title="My Work">
+ <SubSection title="Overview">
  <P>
- Your personal task queue. Shows items that need your attention based on your role.
+ The unified governance and review queue. Shows items that need team review and approval based on your role.
  </P>
  <BulletList items={[
  "Pending Review - translations waiting for your approval (Language Reviewers).",
@@ -751,7 +751,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
  return (
  <section id={id} className="mb-8 scroll-mt-6">
  <h2 className="text-[18px] font-bold text-text-primary mb-4">{title}</h2>
- <div className="bg-bg-card rounded-xl border border-border-subtle px-6 py-6 lg:px-8 lg:py-7 shadow-xs">
+ <div className="bg-bg-card rounded-xl border border-border-subtle px-6 py-6 lg:px-8 lg:py-7 ">
  {children}
  </div>
  </section>
@@ -872,7 +872,7 @@ function RoleCard({ code, name, whoIsThis, canDo, cannotDo }: { code: string; na
 function WorkflowStep({ step, title, role, details }: { step: number; title: string; role: string; details: string[] }) {
  return (
  <div className="mt-5 first:mt-0 flex gap-4 p-4 rounded-xl bg-bg-main/40 border border-border-subtle/50">
- <div className="w-8 h-8 rounded-full bg-accent-blue text-white flex items-center justify-center text-[13px] font-bold shrink-0 mt-0.5 shadow-xs">
+ <div className="w-8 h-8 rounded-full bg-accent-blue text-white flex items-center justify-center text-[13px] font-bold shrink-0 mt-0.5 ">
  {step}
  </div>
  <div className="flex-1 min-w-0">
@@ -925,7 +925,7 @@ function DontItem({ title, description }: { title: string; description: string }
 const faqData = [
  {
  q: "What happens if I update the English copy after translations are already approved?",
- a: "All translations for that tag across every language are automatically flagged as 'Stale'. They appear in the reviewer's My Work queue. The reviewer can either confirm the existing translation still applies, or trigger a retranslation. The stale translations are excluded from new bundles until resolved.",
+ a: "All translations for that tag across every language are automatically flagged as 'Stale'. They appear in the reviewer's Overview queue. The reviewer can either confirm the existing translation still applies, or trigger a retranslation. The stale translations are excluded from new bundles until resolved.",
  },
  {
  q: "Can I edit a translation directly without using AI?",

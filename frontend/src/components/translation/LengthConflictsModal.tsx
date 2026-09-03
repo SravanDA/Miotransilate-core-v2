@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, WarningCircle as AlertCircle, CaretRight, CheckCircle } from "@phosphor-icons/react";
@@ -24,7 +25,20 @@ export function LengthConflictsModal({ isOpen, onClose }: LengthConflictsModalPr
     }
   }, [isOpen, onClose]);
 
-  return (
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -32,14 +46,14 @@ export function LengthConflictsModal({ isOpen, onClose }: LengthConflictsModalPr
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-hidden"
         >
           <motion.div
             initial={{ scale: 0.96, opacity: 0, y: 8 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 8 }}
             transition={{ type: "spring", duration: 0.25 }}
-            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden text-text-primary shadow-2xl"
+            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-3xl flex flex-col max-h-[90vh] overflow-hidden text-text-primary my-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-card shrink-0 rounded-t-xl">
@@ -77,7 +91,7 @@ export function LengthConflictsModal({ isOpen, onClose }: LengthConflictsModalPr
                     return (
                       <div
                         key={`${conflict.tagId}-${conflict.languageCode}-${idx}`}
-                        className="bg-bg-card border border-border-subtle rounded-xl p-4 transition-all hover:border-border-strong group shadow-xs"
+                        className="bg-bg-card border border-border-subtle rounded-xl p-4 transition-all hover:border-border-strong group "
                       >
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div>
@@ -107,11 +121,12 @@ export function LengthConflictsModal({ isOpen, onClose }: LengthConflictsModalPr
                           </div>
                           
                           <Link
-                            to={`/pages/${conflict.pageId}/tags/${conflict.tagId}`}
+                            to={`/pages/${conflict.pageId}?lang=${conflict.languageCode}&conflicts=true`}
                             onClick={onClose}
                             className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-bg-main hover:bg-bg-hover border border-border-subtle hover:border-border-strong rounded-md text-[12px] font-medium text-text-primary transition-colors outline-none"
+                            title="Filter page table by length conflicts in this language"
                           >
-                            Review
+                            View in Table
                             <CaretRight className="w-3 h-3 text-text-tertiary group-hover:text-text-primary transition-colors" weight="bold" />
                           </Link>
                         </div>
@@ -146,7 +161,7 @@ export function LengthConflictsModal({ isOpen, onClose }: LengthConflictsModalPr
               </div>
               <button
                 onClick={onClose}
-                className="h-8 px-4 bg-bg-card border border-border-subtle hover:border-border-strong hover:bg-bg-hover rounded-md text-[13px] font-medium text-text-primary transition-colors outline-none cursor-pointer"
+                className="btn-secondary"
               >
                 Close
               </button>
@@ -154,6 +169,7 @@ export function LengthConflictsModal({ isOpen, onClose }: LengthConflictsModalPr
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

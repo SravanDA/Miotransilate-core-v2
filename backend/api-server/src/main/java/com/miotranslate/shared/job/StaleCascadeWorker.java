@@ -29,21 +29,19 @@ public class StaleCascadeWorker {
         String tagId = (String) payload;
         log.info("Running STALE_CASCADE for tagId={}", tagId);
         
-        // Find all translations for this tag that are APPROVED or IN_REVIEW and make them STALE
-        List<Translation> translations = translationRepository.findAll().stream()
-                .filter(t -> t.getTagId().equals(tagId))
-                .filter(t -> "APPROVED".equals(t.getStatus()) || "IN_REVIEW".equals(t.getStatus()))
-                .toList();
+        List<Translation> translations = translationRepository.findByTagId(tagId);
 
         for (Translation t : translations) {
-            t.setStatus("STALE");
-            t.setStaleTriggeredAt(java.time.OffsetDateTime.now());
-            t.setEtagVersion(t.getEtagVersion() + 1);
-            translationRepository.save(t);
-            auditService.record("TRANSLATION_MARKED_STALE", "TRANSLATION", t.getTagId() + "/" + t.getLanguageCode(), "Cascade from EC approval");
-            
-            // Dispatch coverage recalc for this page+lang combo
-            jobDispatcher.dispatch("COVERAGE_RECALC", t.getLanguageCode());
+            if (!"NO_TRANSLATION".equals(t.getStatus()) && !"DEPRECATED".equals(t.getStatus())) {
+                t.setStatus("STALE");
+                t.setStaleTriggeredAt(java.time.OffsetDateTime.now());
+                t.setEtagVersion(t.getEtagVersion() + 1);
+                translationRepository.save(t);
+                auditService.record("TRANSLATION_MARKED_STALE", "TRANSLATION", t.getTagId() + "/" + t.getLanguageCode(), "Cascade from EC approval");
+                
+                // Dispatch coverage recalc for this page+lang combo
+                jobDispatcher.dispatch("COVERAGE_RECALC", t.getLanguageCode());
+            }
         }
         
         jobDispatcher.dispatch("NOTIFICATION_DISPATCH", "STALE_CASCADE_COMPLETED");

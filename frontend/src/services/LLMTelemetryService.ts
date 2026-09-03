@@ -68,10 +68,10 @@ export interface SessionMetrics {
 }
 
 export const CANDIDATE_MODELS = [
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", description: "Stable mid-size multimodal model (Recommended)" },
-  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash", description: "Next-gen experimental Flash model" },
+  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash", description: "Production high-speed multimodal model (Recommended)" },
+  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash", description: "Fast stable multilingual localization engine" },
   { id: "gemini-3.1-pro-preview", name: "Gemini 3.1 Pro Preview", description: "Deep reasoning & nuanced localization" },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", description: "Pro multimodal reasoning model" }
+  { id: "gemini-3.7-flash", name: "Gemini 3.7 Flash", description: "Flagship hybrid thinking model" }
 ];
 
 const LOCAL_STORAGE_KEY_API_KEY = "miotranslate_custom_gemini_key";
@@ -114,23 +114,110 @@ export function analyzeSemanticSense(
     ? engTags.every(tag => transTags.includes(tag))
     : true;
 
-  // Sense check heuristic on back-translation
+  // --- ROBUST back-translation sense check ---
   let backTranslationSenseCheck: SemanticSenseAnalysis["backTranslationSenseCheck"] = "UNAVAILABLE";
   if (backTranslation && backTranslation.trim()) {
     const normEng = english.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
     const normBack = backTranslation.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
+
     if (normEng === normBack) {
       backTranslationSenseCheck = "MATCHES_INTENT";
     } else {
-      // Check word overlap
+      // Synonym-aware word matching for common localization pairs
+      const SYNONYMS: Record<string, string[]> = {
+        "delete": ["remove", "erase", "clear"],
+        "remove": ["delete", "erase", "clear"],
+        "save": ["store", "keep", "persist"],
+        "edit": ["modify", "change", "update"],
+        "cancel": ["abort", "discard", "dismiss"],
+        "settings": ["preferences", "configuration", "options"],
+        "submit": ["send", "confirm"],
+        "add": ["create", "new", "insert"],
+        "appointment": ["booking", "reservation", "session"],
+        "booking": ["appointment", "reservation"],
+        "client": ["customer", "patron"],
+        "customer": ["client", "patron"],
+        "staff": ["employee", "team", "personnel"],
+        "total": ["sum", "overall", "aggregate"],
+        "purchase": ["buy", "transaction"],
+        "points": ["credits", "rewards"],
+        "discount": ["reduction", "offer", "rebate"],
+        "payment": ["transaction", "charge"],
+        "invoice": ["bill", "receipt"],
+        "revenue": ["income", "earnings"],
+        "products": ["items", "goods"],
+        "services": ["offerings"],
+        "membership": ["subscription"],
+      };
+
       const engWords = new Set<string>(normEng.split(/\s+/).filter(w => w.length > 2));
       const backWords = normBack.split(/\s+/).filter(w => w.length > 2);
+
       let matches = 0;
-      backWords.forEach(w => { if (engWords.has(w)) matches++; });
+      backWords.forEach(bw => {
+        if (engWords.has(bw)) {
+          matches++;
+        } else {
+          // Check synonyms: does this back-translation word match a synonym of any english word?
+          for (const ew of engWords) {
+            const syns = SYNONYMS[ew];
+            if (syns && syns.includes(bw)) {
+              matches++;
+              break;
+            }
+          }
+        }
+      });
+
       const overlap = engWords.size > 0 ? matches / engWords.size : 1;
-      backTranslationSenseCheck = overlap > 0.5 ? "MATCHES_INTENT" : "SLIGHT_DIVERGENCE";
+
+      if (overlap >= 0.70) {
+        backTranslationSenseCheck = "MATCHES_INTENT";
+      } else if (overlap >= 0.40) {
+        backTranslationSenseCheck = "SLIGHT_DIVERGENCE";
+      } else {
+        backTranslationSenseCheck = "MISMATCH";
+      }
     }
   }
+
+  // --- COMPUTE a real confidence from quality signals ---
+  // Start with the LLM-reported confidence, then apply penalties/bonuses
+  let computedConfidence = confidence;
+
+  // Penalty: Variable integrity failure
+  if (missingVars.length > 0) {
+    computedConfidence -= 30;  // Missing placeholders = serious issue
+  }
+
+  // Penalty: HTML tags not preserved
+  if (hasHtmlTags && !htmlTagsPreserved) {
+    computedConfidence -= 20;
+  }
+
+  // Penalty: Extreme length ratio (translation wildly different length)
+  if (Math.abs(lengthDeltaPercent) > 150) {
+    computedConfidence -= 15;  // 2.5x+ or <0.5x = suspicious
+  } else if (Math.abs(lengthDeltaPercent) > 100) {
+    computedConfidence -= 5;   // Moderate divergence
+  }
+
+  // Penalty: Back-translation divergence
+  if (backTranslationSenseCheck === "MISMATCH") {
+    computedConfidence -= 25;  // Strong signal of wrong translation
+  } else if (backTranslationSenseCheck === "SLIGHT_DIVERGENCE") {
+    computedConfidence -= 10;
+  } else if (backTranslationSenseCheck === "UNAVAILABLE") {
+    computedConfidence -= 10;  // Can't verify = less trust
+  }
+
+  // Penalty: Translation equals the original English (untranslated)
+  if (english.trim().toLowerCase() === translated.trim().toLowerCase() && english.trim().length > 2) {
+    computedConfidence = Math.min(computedConfidence, 10); // Cap at 10% for untranslated
+  }
+
+  // Floor and ceiling
+  computedConfidence = Math.max(0, Math.min(100, computedConfidence));
 
   return {
     englishLength: engLength,
@@ -145,7 +232,7 @@ export function analyzeSemanticSense(
     hasHtmlTags,
     htmlTagsPreserved,
     backTranslationSenseCheck,
-    confidenceScore: confidence
+    confidenceScore: computedConfidence
   };
 }
 
@@ -176,13 +263,22 @@ class LLMTelemetryServiceImpl {
     this.listeners.forEach(fn => fn());
   }
 
-  // API Key Access — only from user-entered key in LLM Inspector (BYO key).
-  // Never embed an API key in the client bundle via VITE_ env vars.
+  // API Key Access — prioritizes user-entered key in LLM Inspector / Settings,
+  // falling back to VITE_GEMINI_API_KEY environment variable.
   getApiKey(): string {
     try {
       const customKey = localStorage.getItem(LOCAL_STORAGE_KEY_API_KEY);
       if (customKey && customKey.trim()) return customKey.trim();
     } catch {}
+    
+    // Fallback to Vite environment variable
+    try {
+      const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      if (envKey && typeof envKey === "string" && envKey.trim()) {
+        return envKey.trim();
+      }
+    } catch {}
+    
     return "";
   }
 
@@ -205,11 +301,7 @@ class LLMTelemetryServiceImpl {
   }
 
   hasCustomApiKey(): boolean {
-    try {
-      return Boolean(localStorage.getItem(LOCAL_STORAGE_KEY_API_KEY)?.trim());
-    } catch {
-      return false;
-    }
+    return Boolean(this.getApiKey());
   }
 
   // Preferred Model Access
@@ -256,23 +348,37 @@ class LLMTelemetryServiceImpl {
       return { ok: false, message: "No API key configured. Please enter a key.", latencyMs: 0 };
     }
 
-    const start = performance.now();
-    const model = this.getPreferredModel();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    const testModels = Array.from(new Set([
+      this.getPreferredModel(),
+      "gemini-3.6-flash",
+      "gemini-3.5-flash"
+    ]));
 
-    try {
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Ping. Reply with JSON: {"status":"ok"}' }] }],
-          generationConfig: { maxOutputTokens: 20, temperature: 0.1 }
-        })
-      });
+    let lastError = "Failed to connect";
+    let lastLatency = 0;
 
-      const latencyMs = Math.round(performance.now() - start);
+    for (const model of testModels) {
+      const start = performance.now();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
 
-      if (!resp.ok) {
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Ping. Reply with JSON: {"status":"ok"}' }] }],
+            generationConfig: { maxOutputTokens: 20, temperature: 0.1 }
+          })
+        });
+
+        const latencyMs = Math.round(performance.now() - start);
+        lastLatency = latencyMs;
+
+        if (resp.ok) {
+          this.setPreferredModel(model);
+          return { ok: true, message: `Connected to ${model} successfully!`, latencyMs };
+        }
+
         const errBody = await resp.text();
         let errorMsg = `API error (${resp.status})`;
         try {
@@ -288,13 +394,13 @@ class LLMTelemetryServiceImpl {
         if (resp.status === 400 || resp.status === 403) {
           return { ok: false, message: `Authentication error (${resp.status}): Invalid API key.`, latencyMs };
         }
-        return { ok: false, message: `${errorMsg.slice(0, 120)}`, latencyMs };
+        lastError = errorMsg;
+      } catch (err: any) {
+        lastError = err.message || "Failed to reach Gemini";
       }
-
-      return { ok: true, message: `Connected to ${model} successfully!`, latencyMs };
-    } catch (err: any) {
-      return { ok: false, message: `Network error: ${err.message || "Failed to reach Gemini"}`, latencyMs: Math.round(performance.now() - start) };
     }
+
+    return { ok: false, message: `${lastError.slice(0, 120)}`, latencyMs: lastLatency };
   }
 
   // Record Call Lifecycle

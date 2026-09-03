@@ -301,7 +301,7 @@ export function Shell() {
   );
 
   return (
-    <div className="flex h-screen bg-bg-main overflow-hidden select-none font-sans text-text-primary">
+    <div className="flex h-full w-full h-[100dvh] bg-bg-main overflow-hidden select-none font-sans text-text-primary">
       {/* Search Modal */}
       <GlobalSearch 
         isOpen={isSearchOpen} 
@@ -319,7 +319,7 @@ export function Shell() {
       />
 
       {/* Desktop Left Sidebar (Visible on lg: screens and wider) */}
-      <aside className="hidden lg:flex w-52 bg-bg-sidebar border-r border-border-subtle flex-col shrink-0">
+      <aside className="hidden lg:flex w-52 h-full bg-bg-sidebar border-r border-border-subtle flex-col shrink-0">
         <NavContent />
       </aside>
 
@@ -351,7 +351,7 @@ export function Shell() {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-bg-main relative overflow-hidden">
+      <main className="flex-1 flex flex-col h-full min-w-0 bg-bg-main relative overflow-hidden">
         {/* Responsive Header Bar */}
         <header className="h-12 flex items-center justify-between px-3 sm:px-6 shrink-0 border-b border-border-subtle gap-2">
           <div className="flex items-center gap-2.5 text-[14px] min-w-0">

@@ -168,20 +168,18 @@ public class TranslationPersistenceService {
         draft.setLanguageCode(languageCode);
         draft.setVersionNumber(nextVersion);
         draft.setText(result.getRawResult().getTranslation());
-        draft.setCreationMethod("AI");
+        draft.setCreationMethod("AI_GENERATED");
         draft.setSourceEnglishVersion(ec.getCurrentVersionNumber());
         draft.setBackTranslation(result.getRawResult().getBackTranslation());
         draft.setAuthoredBySource("AI_SERVICE");
 
-        // P0-6: Blocked results are persisted with status BLOCKED so reviewers can see them
+        // P0-6: Conform to tv_status_check & tr_status_check (DRAFT, PENDING_REVIEW, APPROVED, SUPERSEDED, REJECTED)
         if (result.isBlocked()) {
             draft.setVariableIntegrityStatus("FAILED");
-            draft.setStatus("BLOCKED");
+            draft.setStatus("DRAFT");
         } else {
             draft.setVariableIntegrityStatus("PASSED");
-            // P0-3 + P0-4: Status derived from triage, not from stateCause null-ness.
-            // RiskGate.triage() result is now wired through to EngineResult.isFlagged.
-            draft.setStatus(result.isFlagged() ? "NEEDS_ATTENTION" : "DRAFT");
+            draft.setStatus(result.isFlagged() ? "PENDING_REVIEW" : "DRAFT");
         }
 
         // Persist the engine's AI signals (sense, resolvedBy, risk) from the model output.
@@ -253,7 +251,7 @@ public class TranslationPersistenceService {
         draft.setLanguageCode(languageCode);
         draft.setVersionNumber(nextVersion);
         draft.setText(aiResult.getTranslatedText());
-        draft.setCreationMethod("AI");
+        draft.setCreationMethod("AI_GENERATED");
         draft.setSourceEnglishVersion(sourceEnglishVersion);
         draft.setConfidenceScore(aiResult.getConfidenceScore());
         draft.setBackTranslation(aiResult.getBackTranslation());

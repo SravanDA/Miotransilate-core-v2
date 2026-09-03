@@ -13,9 +13,9 @@ public class EngineConfig {
     private List<String> highBlastRadiusActions = List.of(
             "Delete", "Cancel", "Reset", "Refund", "Void", "Terminate", "Remove", "Purge"
     );
-    private int maxRetries = 2;
-    private long backoffBaseMs = 1000;
+    private int maxRetries = 5;
+    private long backoffBaseMs = 5000;
     private long backoffMaxMs = 60000;
     private long requestTimeoutMs = 30000;
-    private int maxParallelism = 4; // Fix 12: Concurrent chunk translation
+    private int maxParallelism = 1; // Sequential to avoid free-tier rate limits
 }

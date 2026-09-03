@@ -17,6 +17,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -70,6 +72,9 @@ public class GeminiTranslationClient implements AiTranslationClient {
             }
             """;
 
+    private static final int MAX_RATE_LIMIT_RETRIES = 5;
+    private static final Pattern RETRY_SECONDS_PATTERN = Pattern.compile("retry in ([\\d.]+)s");
+
     @Override
     public List<ScreenTranslationResult> translateScreen(String prompt) {
         log.info("Sending prompt to Gemini model: {}", model);
@@ -79,6 +84,28 @@ public class GeminiTranslationClient implements AiTranslationClient {
             return new ArrayList<>();
         }
 
+        for (int rateLimitAttempt = 0; rateLimitAttempt <= MAX_RATE_LIMIT_RETRIES; rateLimitAttempt++) {
+            try {
+                return executeTranslationRequest(prompt);
+            } catch (RateLimitException rle) {
+                if (rateLimitAttempt >= MAX_RATE_LIMIT_RETRIES) {
+                    log.error("Exhausted {} rate-limit retries", MAX_RATE_LIMIT_RETRIES);
+                    throw new RuntimeException("Translation failed after rate-limit retries", rle);
+                }
+                long waitMs = rle.getRetryAfterMs();
+                log.warn("Rate limited (429). Waiting {}ms before retry {}/{}", waitMs, rateLimitAttempt + 1, MAX_RATE_LIMIT_RETRIES);
+                try {
+                    Thread.sleep(waitMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting for rate limit", ie);
+                }
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private List<ScreenTranslationResult> executeTranslationRequest(String prompt) {
         try {
             String systemInstruction = "You are a professional translator for MioSalon. "
                     + "Given the following JSON context containing a targetLanguage and tagsToTranslate, "
@@ -106,10 +133,7 @@ public class GeminiTranslationClient implements AiTranslationClient {
                     "temperature": 0.1,
                     "maxOutputTokens": 16384,
                     "responseMimeType": "application/json",
-                    "responseSchema": %s,
-                    "thinkingConfig": {
-                      "thinkingBudget": 0
-                    }
+                    "responseSchema": %s
                   }
                 }
                 """.formatted(objectMapper.writeValueAsString(fullText), RESPONSE_SCHEMA);
@@ -122,6 +146,16 @@ public class GeminiTranslationClient implements AiTranslationClient {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 429) {
+                String body = response.body();
+                long retryAfterMs = 35_000; // default 35s
+                Matcher m = RETRY_SECONDS_PATTERN.matcher(body);
+                if (m.find()) {
+                    retryAfterMs = (long) (Double.parseDouble(m.group(1)) * 1000) + 2000; // add 2s buffer
+                }
+                throw new RateLimitException("Rate limited by Gemini API", retryAfterMs);
+            }
             
             if (response.statusCode() != 200) {
                 log.error("Gemini API error ({}): {}", response.statusCode(), response.body());
@@ -174,10 +208,22 @@ public class GeminiTranslationClient implements AiTranslationClient {
             List<ScreenTranslationResult> results = objectMapper.readValue(responseText, new TypeReference<>() {});
             return results;
 
+        } catch (RateLimitException rle) {
+            throw rle; // propagate to retry loop
         } catch (Exception e) {
             log.error("Exception while translating with Gemini: ", e);
             throw new RuntimeException("Translation failed", e);
         }
+    }
+
+    /** Exception for 429 rate limits with retry-after delay */
+    private static class RateLimitException extends RuntimeException {
+        private final long retryAfterMs;
+        RateLimitException(String message, long retryAfterMs) {
+            super(message);
+            this.retryAfterMs = retryAfterMs;
+        }
+        long getRetryAfterMs() { return retryAfterMs; }
     }
 
     private static final String AUDIT_RESPONSE_SCHEMA = """
@@ -225,10 +271,7 @@ public class GeminiTranslationClient implements AiTranslationClient {
                     "temperature": 0.1,
                     "maxOutputTokens": 8192,
                     "responseMimeType": "application/json",
-                    "responseSchema": %s,
-                    "thinkingConfig": {
-                      "thinkingBudget": 0
-                    }
+                    "responseSchema": %s
                   }
                 }
                 """.formatted(objectMapper.writeValueAsString(prompt), AUDIT_RESPONSE_SCHEMA);

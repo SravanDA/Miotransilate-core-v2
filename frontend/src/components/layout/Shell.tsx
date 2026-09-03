@@ -353,7 +353,7 @@ export function Shell() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-bg-main relative overflow-hidden">
         {/* Responsive Header Bar */}
-        <header className="h-14 flex items-center justify-between px-3 sm:px-6 shrink-0 border-b border-border-subtle gap-2">
+        <header className="h-12 flex items-center justify-between px-3 sm:px-6 shrink-0 border-b border-border-subtle gap-2">
           <div className="flex items-center gap-2.5 text-[14px] min-w-0">
             {/* Mobile menu toggle */}
             <button

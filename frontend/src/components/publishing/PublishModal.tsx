@@ -8,22 +8,15 @@ import {
   X, 
   Globe, 
   CheckCircle, 
-  Warning, 
-  ShieldCheck, 
   CaretDown, 
   CaretRight, 
-  RocketLaunch, 
   ArrowClockwise,
   Check,
-  FileCode,
-  Info,
-  Sparkle,
-  LockKey
+  FileCode
 } from "@phosphor-icons/react";
 import { Dropdown } from "../ui/Dropdown";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tooltip } from "../ui/Tooltip";
 import { useAuth } from "../../contexts/AuthContext";
 import { StoreService } from "../../store/StoreService";
 import type { Environment, Tag, LanguageConfig } from "../../types";
@@ -260,52 +253,20 @@ export function PublishModal({
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      const orig = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = orig;
-      };
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
-
-  const ENV_CONFIGS: { 
-    env: Environment; 
-    label: string; 
-    tag: string; 
-    badgeClass: string; 
-    desc: string; 
-  }[] = [
-    { 
-      env: "DEV", 
-      label: "Development", 
-      tag: "Sandbox", 
-      badgeClass: "bg-accent-blue/10 text-accent-blue border-accent-blue/20", 
-      desc: "For local testing and engineering verification." 
-    },
-    { 
-      env: "QA", 
-      label: "Staging / QA", 
-      tag: "Testing", 
-      badgeClass: "bg-amber-500/10 text-amber-500 border-amber-500/20", 
-      desc: "Pre-release testing and team sign-off environment." 
-    },
-    { 
-      env: "PRODUCTION", 
-      label: "Production", 
-      tag: "Live Users", 
-      badgeClass: "bg-rose-500/10 text-rose-500 border-rose-500/20", 
-      desc: "Live customer-facing salon terminals and client portal." 
-    }
-  ];
 
   // Calculations for stats
   const totalApproved = publishScope === "single" ? singleDiff.totalCount : multiSummary.totalApprovedAcrossAll;
   const totalExcluded = publishScope === "single" 
     ? (singleDiff.totalTagsCount - singleDiff.totalCount) 
     : multiSummary.totalExcludedAcrossAll;
-  const targetVersionDisplay = publishScope === "single" 
-    ? (singleDiff.previousVersion ? `v${singleDiff.previousVersion} → v${singleDiff.nextVersion}` : `v1 (Initial)`)
-    : `${multiSummary.summaries.filter(s => s.approvedCount > 0).length} bundles updated`;
 
   if (typeof document === "undefined") return null;
 
@@ -317,99 +278,87 @@ export function PublishModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={(e) => { if (e.target === e.currentTarget && !isPublishing) onClose(); }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 sm:p-6 backdrop-blur-xs overflow-hidden"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-xs overflow-hidden"
         >
           <motion.div 
-            initial={{ scale: 0.98, opacity: 0, y: 8 }}
+            initial={{ scale: 0.98, opacity: 0, y: 6 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.98, opacity: 0, y: 8 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="bg-bg-card border border-border-subtle rounded-2xl w-full max-w-[880px] max-h-[92vh] flex flex-col overflow-hidden text-text-primary shadow-2xl my-auto"
+            exit={{ scale: 0.98, opacity: 0, y: 6 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+            className="bg-bg-card border border-border-subtle rounded-xl w-full max-w-[780px] max-h-[90vh] flex flex-col overflow-hidden text-text-primary shadow-xl my-auto"
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-sidebar/90 rounded-t-2xl shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent-blue/10 text-accent-blue flex items-center justify-center border border-accent-blue/25 shadow-xs">
-                  <RocketLaunch className="w-5 h-5" weight="duotone" />
+            {/* Clean Dialog Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-bg-card shrink-0">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-[15px] font-semibold text-text-primary tracking-tight">
+                    Release Control Center
+                  </h2>
+                  <span className={cn(
+                    "text-[10px] font-mono font-semibold px-2 py-0.5 rounded border uppercase tracking-wide",
+                    targetEnv === "PRODUCTION"
+                      ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                      : targetEnv === "QA"
+                      ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                      : "bg-accent-blue/10 text-accent-blue border-accent-blue/20"
+                  )}>
+                    {targetEnv}
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <h2 className="text-[16px] font-bold text-text-primary tracking-tight">
-                      Release Control Center
-                    </h2>
-                    <span className={cn(
-                      "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider",
-                      targetEnv === "PRODUCTION"
-                        ? "bg-rose-500/10 text-rose-500 border-rose-500/25"
-                        : targetEnv === "QA"
-                        ? "bg-amber-500/10 text-amber-500 border-amber-500/25"
-                        : "bg-accent-blue/10 text-accent-blue border-accent-blue/25"
-                    )}>
-                      {targetEnv}
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-text-tertiary mt-0.5 font-medium">
-                    <span className="text-text-secondary font-semibold">{pageName}</span> ({pageId}) · Targeted Release Pipeline
-                  </p>
-                </div>
+                <p className="text-[12px] text-text-tertiary mt-0.5">
+                  Deploy verified copy for <span className="text-text-secondary font-medium">{pageName}</span> ({pageId})
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <kbd className="text-[11px] font-mono text-text-tertiary px-2 py-0.5 rounded-md border border-border-subtle bg-bg-main hidden sm:inline-block">
+                <kbd className="text-[10px] font-mono text-text-tertiary px-1.5 py-0.5 rounded border border-border-subtle bg-bg-main hidden sm:inline-block">
                   ESC
                 </kbd>
                 <button 
                   onClick={onClose}
                   disabled={isPublishing}
-                  className="p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 cursor-pointer outline-none"
-                  aria-label="Close modal"
+                  className="p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 cursor-pointer outline-none"
+                  aria-label="Close dialog"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Modal Body */}
+            {/* Post-Publish Executive Receipt */}
             {publishedSummary ? (
-              /* Post-Publish Executive Receipt */
-              <div className="p-8 space-y-6 overflow-y-auto">
-                <div className="flex items-start gap-4 p-5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-400">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                    <CheckCircle className="w-6 h-6 text-emerald-400" weight="fill" />
-                  </div>
+              <div className="p-6 space-y-5 overflow-y-auto">
+                <div className="flex items-start gap-3.5 p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-lg text-emerald-400">
+                  <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" weight="fill" />
                   <div>
-                    <h3 className="text-[15px] font-bold text-emerald-300">
-                      Release Deployed Successfully to {publishedSummary.environment}!
+                    <h3 className="text-[14px] font-semibold text-emerald-300">
+                      Release deployed successfully to {publishedSummary.environment}
                     </h3>
-                    <p className="text-[12px] text-emerald-400/90 mt-1 leading-relaxed">
-                      Deployed <strong className="text-white font-mono">{publishedSummary.totalStringsDeployed} approved strings</strong> into live application bundles at <span className="font-mono">{publishedSummary.timestamp}</span>. Unapproved or draft strings remain safely isolated in the workspace.
+                    <p className="text-[12px] text-emerald-400/90 mt-0.5 leading-relaxed">
+                      Deployed <strong className="font-semibold">{publishedSummary.totalStringsDeployed} approved strings</strong> into live bundles at {publishedSummary.timestamp}. Unapproved drafts remain safely in the workspace.
                     </p>
                   </div>
                 </div>
 
-                {/* Deployed Versions Breakdown */}
                 <div>
-                  <h4 className="text-[11px] font-bold text-text-tertiary uppercase tracking-wider mb-3">
-                    Deployed Bundle Manifest
-                  </h4>
-                  <div className="border border-border-subtle rounded-xl overflow-hidden bg-bg-main">
-                    <div className="grid grid-cols-12 px-4 py-2.5 border-b border-border-subtle text-[11px] font-bold text-text-tertiary uppercase">
+                  <div className="border border-border-subtle rounded-lg overflow-hidden bg-bg-main">
+                    <div className="grid grid-cols-12 px-4 py-2 border-b border-border-subtle text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
                       <div className="col-span-5">Language</div>
-                      <div className="col-span-4 text-center">Release Version</div>
+                      <div className="col-span-4 text-center">Version</div>
                       <div className="col-span-3 text-right">Deployed Strings</div>
                     </div>
-                    <div className="max-h-[260px] overflow-y-auto divide-y divide-border-subtle">
+                    <div className="max-h-[240px] overflow-y-auto divide-y divide-border-subtle text-[12px]">
                       {publishedSummary.results.map((r) => (
-                        <div key={r.language} className="grid grid-cols-12 px-4 py-3 text-[13px] items-center hover:bg-bg-card/40 transition-colors">
-                          <div className="col-span-5 font-semibold text-text-primary flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <div key={r.language} className="grid grid-cols-12 px-4 py-2.5 items-center hover:bg-bg-card/40 transition-colors">
+                          <div className="col-span-5 font-medium text-text-primary flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                             <span>{r.langName}</span>
                             <span className="text-[11px] font-mono text-text-tertiary">({r.language})</span>
                           </div>
-                          <div className="col-span-4 text-center font-mono text-[12px] text-accent-blue font-bold">
+                          <div className="col-span-4 text-center font-mono text-accent-blue font-semibold">
                             v{r.version}
                           </div>
-                          <div className="col-span-3 text-right font-mono text-[12px] text-text-secondary font-medium">
+                          <div className="col-span-3 text-right text-text-secondary">
                             {r.count} strings
                           </div>
                         </div>
@@ -418,330 +367,153 @@ export function PublishModal({
                   </div>
                 </div>
 
-                {/* Footer Action */}
                 <div className="pt-2 flex justify-end">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-5 py-2.5 rounded-lg bg-accent-blue text-white font-semibold text-[13px] hover:bg-accent-blue/90 cursor-pointer outline-none transition-all shadow-sm"
+                    className="px-4 py-1.5 rounded-lg bg-accent-blue text-white font-semibold text-[12px] hover:bg-accent-blue/90 cursor-pointer outline-none transition-all shadow-xs"
                   >
                     Done
                   </button>
                 </div>
               </div>
             ) : (
-              /* Pre-Publish Configuration & Safety Checks */
-              <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
+              /* Pre-Publish Configuration */
+              <div className="flex flex-col flex-1 min-h-0">
                 
-                {/* 1. UPFRONT PLAIN-ENGLISH PRIMER (Education / Trust) */}
-                <div className="p-4 bg-bg-sidebar/80 border border-border-subtle rounded-xl flex items-start gap-3">
-                  <div className="p-1.5 rounded-lg bg-accent-blue/10 text-accent-blue shrink-0 mt-0.5">
-                    <Info className="w-4 h-4" weight="bold" />
-                  </div>
-                  <div className="text-[12px] leading-relaxed">
-                    <span className="font-semibold text-text-primary">How Publishing Works: </span>
-                    <span className="text-text-secondary">
-                      Publishing packages verified translations for this screen and deploys them to your selected environment. 
-                      Only <strong className="text-text-primary font-semibold">Approved</strong> translations go live into production bundles. 
-                      Incomplete drafts, pending reviews, and empty strings stay safely in the workspace and will never display broken UI to live users.
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2. UPFRONT SELECTION CONTROLS (2 Columns: Scope & Target Environment) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Clean Integrated Controls Bar */}
+                <div className="px-6 py-3 border-b border-border-subtle bg-bg-sidebar/40 flex flex-wrap items-center justify-between gap-3">
                   
-                  {/* Left Column: Scope Selection */}
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
-                        1. Select Release Scope
-                      </label>
-                      <span className="text-[11px] text-text-tertiary">
-                        {publishScope === "all" ? `${availableLanguages.length} active languages` : "1 targeted language"}
-                      </span>
+                  {/* Target Environment Segmented Control */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Environment:</span>
+                    <div className="inline-flex p-0.5 rounded-lg bg-bg-main border border-border-subtle text-[12px]">
+                      <button 
+                        type="button"
+                        onClick={() => setTargetEnv("DEV")}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+                          targetEnv === "DEV" ? "bg-bg-card text-text-primary shadow-xs font-semibold" : "text-text-tertiary hover:text-text-secondary"
+                        )}
+                      >
+                        Dev (Sandbox)
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setTargetEnv("QA")}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+                          targetEnv === "QA" ? "bg-bg-card text-text-primary shadow-xs font-semibold" : "text-text-tertiary hover:text-text-secondary"
+                        )}
+                      >
+                        QA (Staging)
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setTargetEnv("PRODUCTION")}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5",
+                          targetEnv === "PRODUCTION" ? "bg-bg-card text-rose-500 shadow-xs font-semibold" : "text-text-tertiary hover:text-text-secondary"
+                        )}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        Prod (Live)
+                      </button>
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {/* All Languages Card */}
+                  {/* Scope Selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Scope:</span>
+                    <div className="inline-flex p-0.5 rounded-lg bg-bg-main border border-border-subtle text-[12px]">
                       <button
                         type="button"
                         onClick={() => setPublishScope("all")}
                         className={cn(
-                          "p-3.5 rounded-xl border text-left transition-all cursor-pointer outline-none flex flex-col justify-between gap-2 relative",
-                          publishScope === "all"
-                            ? "bg-accent-blue/5 border-accent-blue text-text-primary shadow-xs ring-1 ring-accent-blue/30"
-                            : "bg-bg-sidebar/50 border-border-subtle hover:border-border-strong hover:bg-bg-hover text-text-secondary"
+                          "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+                          publishScope === "all" ? "bg-bg-card text-text-primary shadow-xs font-semibold" : "text-text-tertiary hover:text-text-secondary"
                         )}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <div className={cn(
-                            "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                            publishScope === "all" ? "bg-accent-blue text-white" : "bg-bg-main text-text-tertiary"
-                          )}>
-                            <RocketLaunch className="w-4 h-4" weight="bold" />
-                          </div>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent-blue/10 text-accent-blue font-bold uppercase">
-                            Recommended
-                          </span>
-                        </div>
-                        <div>
-                          <div className="text-[13px] font-bold text-text-primary">
-                            All Languages
-                          </div>
-                          <div className="text-[11px] text-text-tertiary mt-0.5 leading-snug">
-                            Deploy all approved copy across all active languages.
-                          </div>
-                        </div>
+                        All Languages ({availableLanguages.length})
                       </button>
-
-                      {/* Single Language Card */}
                       <button
                         type="button"
                         onClick={() => setPublishScope("single")}
                         className={cn(
-                          "p-3.5 rounded-xl border text-left transition-all cursor-pointer outline-none flex flex-col justify-between gap-2",
-                          publishScope === "single"
-                            ? "bg-accent-blue/5 border-accent-blue text-text-primary shadow-xs ring-1 ring-accent-blue/30"
-                            : "bg-bg-sidebar/50 border-border-subtle hover:border-border-strong hover:bg-bg-hover text-text-secondary"
+                          "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+                          publishScope === "single" ? "bg-bg-card text-text-primary shadow-xs font-semibold" : "text-text-tertiary hover:text-text-secondary"
                         )}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <div className={cn(
-                            "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                            publishScope === "single" ? "bg-accent-blue text-white" : "bg-bg-main text-text-tertiary"
-                          )}>
-                            <Globe className="w-4 h-4" weight="bold" />
-                          </div>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg-main text-text-tertiary border border-border-subtle">
-                            Granular
-                          </span>
-                        </div>
-                        <div>
-                          <div className="text-[13px] font-bold text-text-primary">
-                            Single Language
-                          </div>
-                          <div className="text-[11px] text-text-tertiary mt-0.5 leading-snug">
-                            Deploy only one language independently.
-                          </div>
-                        </div>
+                        Single Language
                       </button>
                     </div>
 
-                    {/* Single Language Dropdown Picker */}
                     {publishScope === "single" && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="pt-1"
-                      >
-                        <label className="text-[11px] font-semibold text-text-tertiary mb-1 block">
-                          Choose Language to Release
-                        </label>
-                        <Dropdown
-                          value={activeLangCode}
-                          onChange={(code) => setActiveLangCode(code)}
-                          options={[
-                            { value: "eng", label: "English (Master Reference Copy)" },
-                            ...availableLanguages.map(lang => ({
-                              value: lang.code,
-                              label: `${lang.name} · ${lang.nativeName} (${lang.code})`
-                            }))
-                          ]}
-                          className="w-full h-9 text-[12px]"
-                        />
-                      </motion.div>
+                      <Dropdown
+                        value={activeLangCode}
+                        onChange={setActiveLangCode}
+                        className="w-48 text-[12px]"
+                        options={[
+                          { value: "eng", label: "English (Master)" },
+                          ...availableLanguages.map(l => ({ value: l.code, label: `${l.name} (${l.code})` }))
+                        ]}
+                      />
                     )}
                   </div>
-
-                  {/* Right Column: Target Environment Selection */}
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
-                        2. Select Target Environment
-                      </label>
-                      <span className={cn(
-                        "text-[11px] font-mono font-bold",
-                        targetEnv === "PRODUCTION" ? "text-rose-500" : targetEnv === "QA" ? "text-amber-500" : "text-accent-blue"
-                      )}>
-                        {targetEnv === "PRODUCTION" ? "⚠️ Live Release" : "Test Environment"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      {ENV_CONFIGS.map(({ env, label, tag, desc }) => {
-                        const isSelected = targetEnv === env;
-                        return (
-                          <button
-                            key={env}
-                            type="button"
-                            onClick={() => setTargetEnv(env)}
-                            className={cn(
-                              "p-3 rounded-xl border text-left transition-all cursor-pointer outline-none flex flex-col justify-between gap-1.5",
-                              isSelected
-                                ? env === "PRODUCTION"
-                                  ? "bg-rose-500/10 border-rose-500/40 text-text-primary shadow-xs ring-1 ring-rose-500/30"
-                                  : env === "QA"
-                                  ? "bg-amber-500/10 border-amber-500/40 text-text-primary shadow-xs ring-1 ring-amber-500/30"
-                                  : "bg-accent-blue/10 border-accent-blue/40 text-text-primary shadow-xs ring-1 ring-accent-blue/30"
-                                : "bg-bg-sidebar/50 border-border-subtle hover:border-border-strong hover:bg-bg-hover text-text-secondary"
-                            )}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span className={cn(
-                                "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider",
-                                env === "PRODUCTION" 
-                                  ? "bg-rose-500/20 text-rose-400" 
-                                  : env === "QA" 
-                                  ? "bg-amber-500/20 text-amber-400" 
-                                  : "bg-accent-blue/20 text-accent-blue"
-                              )}>
-                                {tag}
-                              </span>
-                              {isSelected && (
-                                <Check className={cn(
-                                  "w-3.5 h-3.5 font-bold",
-                                  env === "PRODUCTION" ? "text-rose-400" : env === "QA" ? "text-amber-400" : "text-accent-blue"
-                                )} weight="bold" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-[13px] font-bold text-text-primary">
-                                {label}
-                              </div>
-                              <div className="text-[10px] text-text-tertiary mt-0.5 line-clamp-2 leading-tight">
-                                {desc}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </div>
 
-                {/* 3. IMPACT METRIC STRIP (3 High-Level Glance Cards) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Card 1: Approved & Ready */}
-                  <div className="p-3.5 rounded-xl border border-border-subtle bg-bg-main flex flex-col justify-between">
-                    <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" weight="fill" />
-                      Approved & Ready
+                {/* Scannable Summary Tally Strip */}
+                <div className="px-6 py-3 flex items-center justify-between text-[12px] bg-bg-card border-b border-border-subtle/60">
+                  <div className="flex items-center gap-3 text-text-secondary">
+                    <span>
+                      <strong className="text-text-primary font-semibold">{totalApproved}</strong> of {totalApproved + totalExcluded} strings ready to deploy
                     </span>
-                    <div className="mt-2">
-                      <div className="text-2xl font-bold font-mono text-emerald-400">
-                        {totalApproved}
-                      </div>
-                      <div className="text-[11px] text-text-tertiary mt-0.5">
-                        Strings ready to package & deploy
-                      </div>
-                    </div>
+                    <span className="text-border-strong">·</span>
+                    <span className="text-text-tertiary">
+                      {totalExcluded} draft or in-review excluded
+                    </span>
                   </div>
 
-                  {/* Card 2: Safely Excluded */}
-                  <div className="p-3.5 rounded-xl border border-border-subtle bg-bg-main flex flex-col justify-between">
-                    <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                      <LockKey className="w-3.5 h-3.5 text-text-tertiary" />
-                      Safely Excluded
+                  {totalExcluded > 0 && (
+                    <span className="text-[11px] text-amber-500/90 font-medium">
+                      Incomplete strings remain isolated in workspace
                     </span>
-                    <div className="mt-2">
-                      <div className="text-2xl font-bold font-mono text-text-primary">
-                        {totalExcluded}
-                      </div>
-                      <div className="text-[11px] text-text-tertiary mt-0.5">
-                        Drafts or pending review (not deployed)
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Target Version */}
-                  <div className="p-3.5 rounded-xl border border-border-subtle bg-bg-main flex flex-col justify-between">
-                    <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkle className="w-3.5 h-3.5 text-accent-blue" weight="fill" />
-                      Release Version
-                    </span>
-                    <div className="mt-2">
-                      <div className="text-lg font-bold font-mono text-accent-blue truncate">
-                        {targetVersionDisplay}
-                      </div>
-                      <div className="text-[11px] text-text-tertiary mt-0.5">
-                        {publishScope === "single" ? "Target version bump" : "Synchronized build"}
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* 4. SELECTIVE RELEASE SAFEGUARD NOTICE (If incomplete languages) */}
-                {publishScope === "all" && multiSummary.incompleteLanguages.length > 0 && (
-                  <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[12px] flex items-start gap-3 text-amber-300">
-                    <Warning className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" weight="bold" />
-                    <div>
-                      <div className="font-bold text-amber-200 text-[13px]">
-                        Selective Release Safeguard Active ({multiSummary.incompleteLanguages.length} Incomplete Languages)
-                      </div>
-                      <p className="text-[12px] text-amber-300/90 mt-1 leading-relaxed">
-                        Only verified strings marked as <strong>Approved</strong> will be packaged into the release bundle. Incomplete drafts and pending reviews ({multiSummary.totalExcludedAcrossAll} strings across all locales) will remain safely in the workspace and will <strong>not</strong> be published to {targetEnv}.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. LANGUAGE READINESS MATRIX (BREATHABLE TABLE) */}
-                {publishScope === "all" ? (
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[12px] font-bold text-text-primary uppercase tracking-wider">
-                        Language Readiness & Coverage Breakdown
-                      </h4>
-                      <span className="text-[11px] text-text-tertiary">
-                        {multiSummary.summaries.filter(s => s.isReady).length} of {multiSummary.summaries.length} languages 100% complete
-                      </span>
-                    </div>
-
-                    <div className="border border-border-subtle rounded-xl overflow-hidden bg-bg-main">
-                      <div className="grid grid-cols-12 px-4 py-2.5 border-b border-border-subtle text-[11px] font-bold text-text-tertiary uppercase">
+                {/* Language Table as Centerpiece */}
+                <div className="p-6 overflow-y-auto flex-1 space-y-4">
+                  {publishScope === "all" ? (
+                    <div className="border border-border-subtle rounded-lg overflow-hidden bg-bg-main">
+                      <div className="grid grid-cols-12 px-4 py-2.5 border-b border-border-subtle text-[11px] font-semibold text-text-tertiary uppercase tracking-wider bg-bg-sidebar/50">
                         <div className="col-span-4">Language</div>
-                        <div className="col-span-2 text-center">Status</div>
-                        <div className="col-span-2 text-center">Approved / Total</div>
-                        <div className="col-span-2 text-center">Coverage</div>
-                        <div className="col-span-2 text-right">Target Version</div>
+                        <div className="col-span-2 text-center">Approved</div>
+                        <div className="col-span-3 text-center">Coverage</div>
+                        <div className="col-span-1 text-center">Version</div>
+                        <div className="col-span-2 text-right">Status</div>
                       </div>
 
-                      <div className="max-h-[220px] overflow-y-auto divide-y divide-border-subtle">
+                      <div className="max-h-[260px] overflow-y-auto divide-y divide-border-subtle text-[12px]">
                         {multiSummary.summaries.map((s) => (
-                          <div key={s.code} className="grid grid-cols-12 px-4 py-3 text-[13px] items-center hover:bg-bg-card/40 transition-colors">
+                          <div key={s.code} className="grid grid-cols-12 px-4 py-2.5 items-center hover:bg-bg-card/40 transition-colors">
                             {/* Language Name */}
                             <div className="col-span-4 font-medium text-text-primary flex items-center gap-2 truncate">
                               <span className={cn(
-                                "w-2 h-2 rounded-full shrink-0",
+                                "w-1.5 h-1.5 rounded-full shrink-0",
                                 s.isReady ? "bg-emerald-500" : s.approvedCount > 0 ? "bg-amber-500" : "bg-zinc-600"
                               )} />
-                              <span className="truncate font-semibold">{s.name}</span>
+                              <span className="truncate">{s.name}</span>
                               <span className="text-[11px] text-text-tertiary font-mono">({s.code})</span>
                             </div>
 
-                            {/* Status Pill */}
-                            <div className="col-span-2 text-center">
-                              <span className={cn(
-                                "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
-                                s.isReady 
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-                                  : s.approvedCount > 0 
-                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
-                                  : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                              )}>
-                                {s.isReady ? "100% Ready" : s.approvedCount > 0 ? "Partial" : "No Trans"}
-                              </span>
+                            {/* Approved Count */}
+                            <div className="col-span-2 text-center text-text-secondary font-mono">
+                              <span className="text-text-primary font-semibold">{s.approvedCount}</span> / {s.totalTags}
                             </div>
 
-                            {/* Approved / Total */}
-                            <div className="col-span-2 text-center font-mono text-[12px] text-text-secondary">
-                              <span className="text-text-primary font-bold">{s.approvedCount}</span> / {s.totalTags}
-                            </div>
-
-                            {/* Coverage Bar & % */}
-                            <div className="col-span-2 flex flex-col items-center gap-1">
-                              <div className="w-16 h-1.5 bg-bg-card rounded-full overflow-hidden border border-border-subtle">
+                            {/* Progress bar */}
+                            <div className="col-span-3 flex items-center justify-center gap-2">
+                              <div className="w-20 h-1.5 bg-bg-card rounded-full overflow-hidden border border-border-subtle">
                                 <div 
                                   className={cn(
                                     "h-full rounded-full transition-all duration-300",
@@ -750,204 +522,163 @@ export function PublishModal({
                                   style={{ width: `${s.coveragePercent}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] font-mono text-text-tertiary font-bold">
+                              <span className="text-[11px] font-mono text-text-tertiary w-7 text-right">
                                 {s.coveragePercent}%
                               </span>
                             </div>
 
                             {/* Target Version */}
-                            <div className="col-span-2 text-right font-mono text-[12px]">
-                              {s.previousVersion ? (
-                                <span className="text-text-tertiary">
-                                  v{s.previousVersion} <span className="text-accent-blue font-bold">→ v{s.nextVersion}</span>
-                                </span>
-                              ) : (
-                                <span className="text-accent-blue font-bold">v1 (Initial)</span>
-                              )}
+                            <div className="col-span-1 text-center font-mono text-[11px] text-text-secondary">
+                              v{s.nextVersion}
+                            </div>
+
+                            {/* Status */}
+                            <div className="col-span-2 text-right">
+                              <span className={cn(
+                                "text-[10px] font-medium px-2 py-0.5 rounded border",
+                                s.isReady 
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+                                  : s.approvedCount > 0 
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
+                                  : "bg-zinc-800/40 text-zinc-400 border-zinc-700/50"
+                              )}>
+                                {s.isReady ? "100% Ready" : s.approvedCount > 0 ? "Partial" : "No Trans"}
+                              </span>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  /* SINGLE LANGUAGE DETAIL CARD */
-                  <div className="p-4 bg-bg-main border border-border-subtle rounded-xl space-y-3">
-                    <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-accent-blue" />
-                        <span className="text-[13px] font-bold text-text-primary">
-                          Single Language Bundle: {availableLanguages.find(l => l.code === activeLangCode)?.name || activeLangCode}
+                  ) : (
+                    /* Single Language View */
+                    <div className="border border-border-subtle rounded-lg p-4 bg-bg-main space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-accent-blue" />
+                          <span className="text-[13px] font-semibold text-text-primary">
+                            {availableLanguages.find(l => l.code === activeLangCode)?.name || activeLangCode} Bundle
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-mono text-text-tertiary">
+                          Target Release: v{singleDiff.nextVersion}
                         </span>
                       </div>
-                      <span className="text-[12px] font-mono text-text-tertiary">
-                        {singleDiff.previousVersion ? `v${singleDiff.previousVersion} → v${singleDiff.nextVersion}` : 'Initial bundle release (v1)'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 pt-1">
-                      <div className="flex flex-col">
-                        <span className="text-[11px] text-text-tertiary uppercase font-bold">Approved to Deploy</span>
-                        <span className="text-xl font-mono font-bold text-emerald-400 mt-1">{singleDiff.totalCount} strings</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] text-text-tertiary uppercase font-bold">Modified / Added</span>
-                        <span className="text-xl font-mono font-bold text-text-primary mt-1">+{singleDiff.newCount}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] text-text-tertiary uppercase font-bold">Excluded Incomplete</span>
-                        <span className="text-xl font-mono font-bold text-amber-400 mt-1">{singleDiff.totalTagsCount - singleDiff.totalCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 6. PRE-FLIGHT SAFETY CHECKS (AEROSPACE GRADE TRUST) */}
-                <div className="p-4 bg-bg-sidebar/80 border border-border-subtle rounded-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-accent-blue" weight="bold" />
-                      Pre-Flight Automated Safety Checks
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      PASSED
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12px]">
-                    <div className="p-2.5 rounded-lg bg-bg-main border border-border-subtle flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" weight="bold" />
-                      <div>
-                        <div className="font-semibold text-text-primary text-[11px]">Placeholder Integrity</div>
-                        <div className="text-[10px] text-text-tertiary mt-0.5">All variables match English source</div>
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg bg-bg-main border border-border-subtle flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" weight="bold" />
-                      <div>
-                        <div className="font-semibold text-text-primary text-[11px]">Zero-Flicker Bundling</div>
-                        <div className="text-[10px] text-text-tertiary mt-0.5">Drafts excluded to prevent missing UI</div>
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg bg-bg-main border border-border-subtle flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" weight="bold" />
-                      <div>
-                        <div className="font-semibold text-text-primary text-[11px]">Release Authorization</div>
-                        <div className="text-[10px] text-text-tertiary mt-0.5">
-                          {targetEnv === "PRODUCTION" 
-                            ? (canPublishProdDirect ? "Direct Deploy (Founder/Admin)" : "Requires Founder Approval") 
-                            : "Standard Environment Deploy"}
+                      <div className="grid grid-cols-3 gap-4 pt-1 text-[12px]">
+                        <div>
+                          <div className="text-[11px] text-text-tertiary font-medium">Approved to Deploy</div>
+                          <div className="text-lg font-semibold text-emerald-400 mt-0.5">{singleDiff.totalCount} strings</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-text-tertiary font-medium">New or Modified</div>
+                          <div className="text-lg font-semibold text-text-primary mt-0.5">+{singleDiff.newCount}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] text-text-tertiary font-medium">Excluded Incomplete</div>
+                          <div className="text-lg font-semibold text-amber-400 mt-0.5">{singleDiff.totalTagsCount - singleDiff.totalCount}</div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  )}
 
-                {/* 7. INSPECT INCLUDED STRINGS (COLLAPSIBLE DRAWER) */}
-                <div className="border border-border-subtle rounded-xl overflow-hidden bg-bg-main">
-                  <button
-                    type="button"
-                    onClick={() => setShowTagDiffInspection(!showTagDiffInspection)}
-                    className="w-full px-4 py-3 text-[12px] font-semibold text-text-secondary hover:text-text-primary flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <FileCode className="w-4 h-4 text-text-tertiary" />
-                      <span>Inspect Strings Included in this Bundle</span>
-                      <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-bg-card border border-border-subtle text-text-primary font-bold">
-                        {totalApproved} strings
+                  {/* Compact Verification Strip & Payload Inspector */}
+                  <div className="pt-2 border-t border-border-subtle/70 flex flex-wrap items-center justify-between gap-2 text-[11px] text-text-tertiary">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1 text-emerald-500 font-medium">
+                        <Check className="w-3.5 h-3.5" weight="bold" /> Syntax verified
                       </span>
-                    </span>
-                    {showTagDiffInspection ? <CaretDown className="w-4 h-4 text-text-tertiary" /> : <CaretRight className="w-4 h-4 text-text-tertiary" />}
-                  </button>
+                      <span className="flex items-center gap-1 text-emerald-500 font-medium">
+                        <Check className="w-3.5 h-3.5" weight="bold" /> Zero-flicker bundle
+                      </span>
+                      <span className="flex items-center gap-1 text-emerald-500 font-medium">
+                        <Check className="w-3.5 h-3.5" weight="bold" />
+                        {canPublishProdDirect ? "Direct deploy authorized" : "Approval gate active"}
+                      </span>
+                    </div>
 
+                    {singleDiff.approvedTags.length > 0 && (
+                      <button 
+                        type="button"
+                        onClick={() => setShowTagDiffInspection(!showTagDiffInspection)} 
+                        className="text-link hover:underline cursor-pointer font-medium flex items-center gap-1"
+                      >
+                        <FileCode className="w-3.5 h-3.5" />
+                        <span>{showTagDiffInspection ? "Hide payload" : "Inspect payload strings"}</span>
+                        {showTagDiffInspection ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Collapsible Payload Drawer */}
                   {showTagDiffInspection && (
-                    <div className="p-4 border-t border-border-subtle max-h-[160px] overflow-y-auto space-y-2 text-[12px] bg-bg-sidebar/30">
-                      {singleDiff.approvedTags.length === 0 ? (
-                        <div className="text-[12px] text-text-tertiary text-center py-3 italic">
-                          No approved strings to show. Strings must be marked Approved in the workspace before they appear in this payload.
+                    <div className="border border-border-subtle rounded-lg p-3 bg-bg-sidebar/30 max-h-[140px] overflow-y-auto space-y-1.5 text-[11px]">
+                      {singleDiff.approvedTags.slice(0, 15).map(tag => (
+                        <div key={tag.id} className="flex items-center justify-between py-1 border-b border-border-subtle/40 last:border-0">
+                          <code className="font-mono text-text-primary font-medium">{tag.id}</code>
+                          <span className="text-text-tertiary truncate max-w-[420px] italic">
+                            "{tag.values?.[activeLangCode]?.text || tag.english}"
+                          </span>
                         </div>
-                      ) : (
-                        singleDiff.approvedTags.slice(0, 15).map(tag => (
-                          <div key={tag.id} className="flex items-center justify-between py-1.5 border-b border-border-subtle/50 last:border-0">
-                            <code className="font-mono text-text-primary font-semibold text-[11px]">{tag.id}</code>
-                            <span className="text-text-tertiary truncate max-w-[450px] font-serif italic text-[12px]">
-                              "{tag.values?.[activeLangCode]?.text || tag.english}"
-                            </span>
-                          </div>
-                        ))
-                      )}
+                      ))}
                       {singleDiff.approvedTags.length > 15 && (
-                        <div className="text-[11px] text-text-tertiary text-center pt-2 font-mono">
-                          + {singleDiff.approvedTags.length - 15} more approved strings in payload
+                        <div className="text-[10px] text-text-tertiary text-center pt-1 font-mono">
+                          + {singleDiff.approvedTags.length - 15} more strings
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
-              </div>
-            )}
-
-            {/* Modal Footer */}
-            {!publishedSummary && (
-              <div className="px-6 py-4 border-t border-border-subtle flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-bg-sidebar/90 rounded-b-2xl shrink-0">
-                <div className="flex items-center gap-2 text-[12px] text-text-secondary">
-                  <Tooltip content="Only strings with Approved status are bundled and deployed into live customer applications.">
-                    <span className="inline-flex items-center cursor-help text-text-tertiary hover:text-text-primary transition-colors">
-                      <Info className="w-4 h-4" />
-                    </span>
-                  </Tooltip>
-                  <span>
-                    Deploying <strong className="text-text-primary font-bold">{totalApproved} approved strings</strong> to <strong className="text-text-primary font-bold">{targetEnv}</strong>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 justify-end">
-                  <button 
-                    type="button"
-                    onClick={onClose}
-                    disabled={isPublishing}
-                    className="px-4 py-2 rounded-lg border border-border-subtle text-[13px] font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover cursor-pointer outline-none transition-all"
-                  >
-                    Cancel
-                  </button>
-
-                  <button 
-                    type="button"
-                    onClick={handleExecutePublish}
-                    disabled={isPublishing || totalApproved === 0}
-                    className={cn(
-                      "px-5 py-2 rounded-lg font-semibold text-[13px] flex items-center gap-2 cursor-pointer outline-none transition-all shadow-sm",
-                      totalApproved === 0
-                        ? "bg-bg-hover text-text-tertiary cursor-not-allowed border border-border-subtle opacity-60"
-                        : targetEnv === "PRODUCTION"
-                        ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/20"
-                        : "bg-accent-blue hover:bg-accent-blue/90 text-white shadow-accent-blue/20"
-                    )}
-                  >
-                    {isPublishing ? (
-                      <>
-                        <ArrowClockwise className="w-4 h-4 animate-spin" />
-                        <span>Packaging & Deploying...</span>
-                      </>
-                    ) : totalApproved === 0 ? (
-                      <span>No Approved Strings to Deploy</span>
-                    ) : targetEnv === 'PRODUCTION' && !canPublishProdDirect ? (
-                      <span>Request Production Approval</span>
-                    ) : publishScope === "all" ? (
-                      <>
-                        <RocketLaunch className="w-4 h-4" weight="bold" />
-                        <span>Deploy All to {targetEnv}</span>
-                      </>
+                {/* High-Clarity Footer */}
+                <div className="px-6 py-3.5 border-t border-border-subtle flex items-center justify-between bg-bg-card shrink-0">
+                  <div className="text-[12px] text-text-tertiary">
+                    {totalApproved === 0 ? (
+                      <span>No strings eligible to deploy</span>
                     ) : (
-                      <>
-                        <RocketLaunch className="w-4 h-4" weight="bold" />
-                        <span>Deploy to {targetEnv}</span>
-                      </>
+                      <span>
+                        Deploying <strong className="text-text-primary font-semibold">{totalApproved} approved strings</strong> to <strong className="text-text-secondary uppercase">{targetEnv}</strong>
+                      </span>
                     )}
-                  </button>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <button 
+                      type="button"
+                      onClick={onClose}
+                      disabled={isPublishing}
+                      className="px-3.5 py-1.5 rounded-lg border border-border-subtle text-[12px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover cursor-pointer outline-none transition-all"
+                    >
+                      Cancel
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={handleExecutePublish}
+                      disabled={isPublishing || totalApproved === 0}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-all shadow-xs flex items-center gap-2",
+                        totalApproved === 0
+                          ? "bg-bg-main border border-border-subtle text-text-tertiary cursor-not-allowed"
+                          : targetEnv === "PRODUCTION"
+                          ? "bg-rose-600 hover:bg-rose-500 text-white cursor-pointer"
+                          : "bg-accent-blue hover:bg-accent-blue/90 text-white cursor-pointer"
+                      )}
+                    >
+                      {isPublishing ? (
+                        <>
+                          <ArrowClockwise className="w-3.5 h-3.5 animate-spin" />
+                          <span>Publishing...</span>
+                        </>
+                      ) : totalApproved === 0 ? (
+                        "No Approved Strings to Deploy"
+                      ) : targetEnv === "PRODUCTION" && !canPublishProdDirect ? (
+                        "Request Release Approval"
+                      ) : (
+                        `Publish to ${targetEnv === "PRODUCTION" ? "Production" : targetEnv === "QA" ? "Staging" : "Development"}`
+                      )}
+                    </button>
+                  </div>
                 </div>
+
               </div>
             )}
           </motion.div>

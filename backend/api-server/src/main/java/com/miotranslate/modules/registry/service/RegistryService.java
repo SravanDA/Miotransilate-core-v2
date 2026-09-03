@@ -136,7 +136,8 @@ public class RegistryService {
         
         String ecSql = "SELECT ec.tag_id, ec.status, ec.current_version_number, v.text " +
                        "FROM content.english_copies ec " +
-                       "LEFT JOIN content.english_copy_versions v ON ec.tag_id = v.tag_id AND ec.current_version_number = v.version_number " +
+                       "LEFT JOIN content.english_copy_versions v ON ec.tag_id = v.tag_id " +
+                       "  AND COALESCE(ec.current_version_number, (SELECT MAX(v2.version_number) FROM content.english_copy_versions v2 WHERE v2.tag_id = ec.tag_id)) = v.version_number " +
                        "WHERE ec.tag_id IN (SELECT tag_id FROM registry.tags WHERE page_id = ?)";
         
         java.util.Map<String, java.util.Map<String, Object>> ecMap = new java.util.HashMap<>();
@@ -158,13 +159,15 @@ public class RegistryService {
             String tagId = rs.getString("tag_id");
             String lang = rs.getString("language_code");
             transMap.putIfAbsent(tagId, new java.util.HashMap<>());
-            java.util.Map<String, Object> trans = new java.util.HashMap<>();
-            trans.put("status", rs.getString("status"));
-            trans.put("text", rs.getString("text"));
-            trans.put("confidence", rs.getDouble("confidence_score"));
-            trans.put("translatedAtEnglishVersion", rs.getInt("source_english_version"));
-            trans.put("lastUpdated", rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toInstant().toString() : null);
-            transMap.get(tagId).put(lang, trans);
+            
+            java.util.Map<String, Object> tr = new java.util.HashMap<>();
+            tr.put("status", rs.getString("status"));
+            tr.put("text", rs.getString("text"));
+            tr.put("confidence", rs.getBigDecimal("confidence_score"));
+            tr.put("translatedAtEnglishVersion", rs.getInt("source_english_version"));
+            tr.put("lastUpdated", rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toInstant().toString() : null);
+            
+            transMap.get(tagId).put(lang, tr);
         }, pageId);
         
         java.util.List<java.util.Map<String, Object>> tagsList = new java.util.ArrayList<>();
@@ -195,5 +198,100 @@ public class RegistryService {
         result.put("tags", tagsList);
         
         return result;
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public java.util.Map<String, Object> batchImportTags(String pageId, List<java.util.Map<String, Object>> tags, UUID userId) {
+        Page page = getPage(pageId);
+        int importedCount = 0;
+        
+        for (java.util.Map<String, Object> t : tags) {
+            String tagId = (String) t.get("id");
+            if (tagId == null || tagId.trim().isEmpty()) {
+                tagId = (String) t.get("tagId");
+            }
+            if (tagId == null || tagId.trim().isEmpty()) continue;
+            tagId = tagId.trim();
+            
+            String copyType = (String) t.getOrDefault("type", "General");
+            if (copyType == null || copyType.trim().isEmpty()) copyType = "General";
+            
+            String english = (String) t.getOrDefault("english", "");
+            if (english == null) english = "";
+            
+            // 1. Insert or update tag in registry.tags immediately via JDBC
+            int tagInserted = jdbcTemplate.update(
+                "INSERT INTO registry.tags (tag_id, page_id, copy_type, status, created_by, etag_version, created_at, updated_at) " +
+                "VALUES (?, ?, ?, 'ACTIVE', ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+                "ON CONFLICT (tag_id) DO UPDATE SET " +
+                "  page_id = CASE " +
+                "    WHEN EXCLUDED.tag_id LIKE EXCLUDED.page_id || '_%' THEN EXCLUDED.page_id " +
+                "    ELSE registry.tags.page_id " +
+                "  END, " +
+                "  copy_type = EXCLUDED.copy_type, " +
+                "  updated_at = CURRENT_TIMESTAMP",
+                tagId, pageId, copyType, userId
+            );
+            if (tagInserted > 0) {
+                importedCount++;
+            }
+            
+            // 2. Initialize or update English copy
+            if (!english.trim().isEmpty()) {
+                jdbcTemplate.update(
+                    "INSERT INTO content.english_copies (tag_id, status, current_version_number, etag_version, created_at, updated_at) " +
+                    "VALUES (?, 'APPROVED', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+                    "ON CONFLICT (tag_id) DO UPDATE SET status = 'APPROVED', current_version_number = 1, updated_at = CURRENT_TIMESTAMP",
+                    tagId
+                );
+                jdbcTemplate.update(
+                    "INSERT INTO content.english_copy_versions (tag_id, version_number, text, change_reason, status, authored_by, approved_by, approved_at, created_at) " +
+                    "VALUES (?, 1, ?, 'Initial import', 'APPROVED', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+                    "ON CONFLICT (tag_id, version_number) DO UPDATE SET text = EXCLUDED.text, status = 'APPROVED'",
+                    tagId, english.trim(), userId, userId
+                );
+            } else {
+                jdbcTemplate.update(
+                    "INSERT INTO content.english_copies (tag_id, status, etag_version, created_at, updated_at) " +
+                    "VALUES (?, 'NO_COPY', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+                    "ON CONFLICT (tag_id) DO NOTHING",
+                    tagId
+                );
+            }
+            
+            // 3. Initial translations if provided
+            Object valuesObj = t.get("values");
+            if (valuesObj instanceof java.util.Map<?, ?> valuesMap) {
+                for (java.util.Map.Entry<?, ?> entry : valuesMap.entrySet()) {
+                    String langCode = String.valueOf(entry.getKey());
+                    Object valDataObj = entry.getValue();
+                    if (valDataObj instanceof java.util.Map<?, ?> valData) {
+                        String transText = (String) valData.get("text");
+                        if (transText != null && !transText.trim().isEmpty()) {
+                            jdbcTemplate.update(
+                                "INSERT INTO translation.translations (tag_id, language_code, status, current_version_number, etag_version, created_at, updated_at) " +
+                                "VALUES (?, ?, 'APPROVED', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) " +
+                                "ON CONFLICT (tag_id, language_code) DO UPDATE SET status = 'APPROVED', current_version_number = 1, updated_at = CURRENT_TIMESTAMP",
+                                tagId, langCode
+                            );
+                            jdbcTemplate.update(
+                                "INSERT INTO translation.translation_versions (tag_id, language_code, version_number, text, creation_method, source_english_version, status, confidence_score, authored_by_source, created_at) " +
+                                "VALUES (?, ?, 1, ?, 'MIGRATED', 1, 'APPROVED', 0.95, 'USER', CURRENT_TIMESTAMP) " +
+                                "ON CONFLICT (tag_id, language_code, version_number) DO UPDATE SET text = EXCLUDED.text, status = 'APPROVED'",
+                                tagId, langCode, transText.trim()
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        
+        auditService.record("TAGS_BATCH_IMPORTED", "PAGE", pageId, "Batch imported " + importedCount + " tags for page " + page.getPageName());
+        
+        java.util.Map<String, Object> resMap = new java.util.HashMap<>();
+        resMap.put("pageId", pageId);
+        resMap.put("importedCount", importedCount);
+        resMap.put("totalTagsSubmitted", tags.size());
+        return resMap;
     }
 }

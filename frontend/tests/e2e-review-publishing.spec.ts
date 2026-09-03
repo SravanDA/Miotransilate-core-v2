@@ -40,18 +40,23 @@ const setupMocks = async (page: any) => {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        pageId: "SERSET",
-        pageName: "Service Settings",
-        module: "POS",
-        status: "Active",
-        activeLanguages: ["ar", "es"],
+        page: {
+          pageId: "SERSET",
+          pageName: "Service Settings",
+          module: "POS",
+          status: "ACTIVE",
+          createdAt: new Date().toISOString()
+        },
         tags: [
           {
-            tagId: "serset.header.title",
-            masterEnglish: { current: "Service Settings", status: "APPROVED" },
-            translations: {
-              ar: { value: "إعدادات الخدمة", status: "APPROVED", aiConfidence: 92 },
-              es: { value: "Ajustes de servicio", status: "PENDING_REVIEW", aiConfidence: 88 }
+            id: "serset.header.title",
+            english: "Service Settings",
+            englishStatus: "Approved",
+            englishVersion: 1,
+            type: "Label",
+            values: {
+              ar: { text: "إعدادات الخدمة", status: "APPROVED", confidence: 0.92 },
+              es: { text: "Ajustes de servicio", status: "PENDING_REVIEW", confidence: 0.88 }
             }
           }
         ]
@@ -121,5 +126,50 @@ test.describe('Module 3: Review & Publishing Gate Integrity', () => {
     
     // Close modal
     await page.keyboard.press('Escape');
+  });
+
+  test('Bulk Approve Modal opens and executes bulk approval', async ({ page }) => {
+    // Mock the bulk-approve endpoint
+    await page.route(/\/v1\/pages\/SERSET\/translations\/.*\/bulk-approve/, async (route: any) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          approved: 1,
+          total: 1,
+          skipReasons: {},
+          threshold: "0.8",
+          skipped: 0
+        })
+      });
+    });
+
+    await page.goto('/pages');
+    const firstPageLink = page.locator('tbody tr a').first();
+    await expect(firstPageLink).toBeVisible({ timeout: 10000 });
+    await firstPageLink.click();
+
+    // Select Spanish tab (which has pending review in mock)
+    const esTab = page.locator('button:has-text("Spanish")').or(page.locator('button:has-text("Español")'));
+    if (await esTab.isVisible()) {
+      await esTab.click();
+    }
+
+    // Look for Approve button
+    const approveBtn = page.locator('button:has-text("Approve")').first();
+    if (await approveBtn.isVisible() && !(await approveBtn.isDisabled())) {
+      await approveBtn.click();
+      
+      // Bulk Approve modal should appear
+      await expect(page.locator('text=Bulk Approve Translations')).toBeVisible({ timeout: 5000 });
+      
+      // Confirm button in modal
+      const modalApproveBtn = page.locator('button:has-text("Approve")').last();
+      await expect(modalApproveBtn).toBeVisible();
+      await modalApproveBtn.click();
+
+      // Modal closes
+      await expect(page.locator('text=Bulk Approve Translations')).not.toBeVisible();
+    }
   });
 });

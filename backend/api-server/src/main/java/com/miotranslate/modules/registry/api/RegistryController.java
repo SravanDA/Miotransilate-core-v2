@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1")
@@ -66,6 +68,15 @@ public class RegistryController {
         tag.setCreatedBy(SecurityUtils.getCurrentUserId());
         Tag created = registryService.createTag(tag, tag.getCreatedBy());
         return ResponseEntity.ok().eTag(String.valueOf(created.getEtagVersion())).body(created);
+    }
+
+    @PostMapping("/pages/{pageId}/tags/batch-import")
+    @RequiresPermission("PAGE_TAG_CREATE")
+    public ResponseEntity<java.util.Map<String, Object>> batchImportTags(
+            @PathVariable String pageId,
+            @RequestBody List<java.util.Map<String, Object>> tags) {
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return ResponseEntity.ok(registryService.batchImportTags(pageId, tags, userId));
     }
 
     @GetMapping("/pages/{pageId}/tags")

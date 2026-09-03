@@ -144,9 +144,12 @@ export function PageDetail() {
 
  const threshold = StoreService.getConfidenceThreshold();
 
- const pendingReviewTags = useMemo(() => {
-   return tags.filter(t => t.values[selectedLanguage]?.status === "Pending Review");
- }, [tags, selectedLanguage]);
+  const pendingReviewTags = useMemo(() => {
+    return tags.filter(t => {
+      const val = t.values[selectedLanguage];
+      return val && val.text && val.text.trim().length > 0 && val.status !== "Approved";
+    });
+  }, [tags, selectedLanguage]);
 
  const eligibleBulkTags = useMemo(() => {
    return pendingReviewTags.filter(t => (t.values[selectedLanguage]?.confidence || 0) >= threshold);
@@ -221,21 +224,23 @@ export function PageDetail() {
    setIsBulkApproveModalOpen(true);
  };
 
- const executeBulkApprove = () => {
-   if (!pageId) return;
-   
-   eligibleBulkTags.forEach(tag => {
-     StoreService.updateTranslation(pageId, tag.id, selectedLanguage, {
-       status: "Approved"
-     });
-   });
-
-   if (lowConfidenceBulkTags.length > 0) {
-     showToast(`Approved ${eligibleBulkTags.length} high-confidence translations. ${lowConfidenceBulkTags.length} low-confidence tags kept for manual review.`);
-   } else {
-     showToast(`Bulk approved ${eligibleBulkTags.length} translations for ${selectedLanguage}`);
-   }
- };
+  const executeBulkApprove = async () => {
+    if (!pageId) return;
+    
+    try {
+      const res = await StoreService.bulkApproveTranslations(pageId, selectedLanguage);
+      const approvedCount = res?.approved ?? eligibleBulkTags.length;
+      const skippedCount = res?.skipped ?? lowConfidenceBulkTags.length;
+      
+      if (skippedCount > 0) {
+        showToast(`Approved ${approvedCount} translations. ${skippedCount} low-confidence tags kept for manual review.`);
+      } else {
+        showToast(`Bulk approved ${approvedCount} translations for ${selectedLangName}`);
+      }
+    } catch (err: any) {
+      showToast(`Bulk approval failed: ${err?.message || "Unknown error"}`);
+    }
+  };
 
   const handleApproveTag = async (e: React.MouseEvent, tagId: string) => {
     e.stopPropagation();
@@ -1007,7 +1012,7 @@ export function PageDetail() {
             </div>
             ) : (
             <>
-              {(val.status === "Pending Review" || val.status === "Needs Attention") && (can('TRANSLATION_APPROVE') || can('TRANSLATION_BULK_APPROVE') || user?.roles?.includes('FN')) && (
+              {val.status !== "Approved" && val.status !== "No Trans" && val.status !== "No Eng" && val.text && (can('TRANSLATION_APPROVE') || can('TRANSLATION_BULK_APPROVE') || user?.roles?.includes('FN')) && (
                 <Tooltip content="Approve this translation">
                   <button
                     onClick={(e) => handleApproveTag(e, tag.id)}
@@ -1109,7 +1114,7 @@ export function PageDetail() {
           </div>
           ) : (
           <>
-            {(val.status === "Pending Review" || val.status === "Needs Attention") && (can('TRANSLATION_APPROVE') || can('TRANSLATION_BULK_APPROVE') || user?.roles?.includes('FN')) && (
+            {val.status !== "Approved" && val.status !== "No Trans" && val.status !== "No Eng" && val.text && (can('TRANSLATION_APPROVE') || can('TRANSLATION_BULK_APPROVE') || user?.roles?.includes('FN')) && (
               <button
                 onClick={(e) => handleApproveTag(e, tag.id)}
                 className="btn-success h-6 px-2 text-[11px] opacity-0 group-hover:opacity-100"

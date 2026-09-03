@@ -69,13 +69,20 @@ export function parseDelimitedRows(text: string): string[][] {
   let currentField = '';
   let insideQuotes = false;
 
-  // Auto-detect delimiter from first non-empty line
-  const firstLine = cleanText.split(/\r?\n/)[0] || '';
+  // Auto-detect delimiter from first 5 non-empty lines
+  const sampleLines = cleanText.split(/\r?\n/).filter(l => l.trim().length > 0).slice(0, 5).join('\n');
   let delimiter = ',';
-  if (firstLine.includes('\t') && (!firstLine.includes(',') || (firstLine.match(/\t/g)?.length || 0) > (firstLine.match(/,/g)?.length || 0))) {
+  const commaCount = (sampleLines.match(/,/g) || []).length;
+  const tabCount = (sampleLines.match(/\t/g) || []).length;
+  const semiCount = (sampleLines.match(/;/g) || []).length;
+  const pipeCount = (sampleLines.match(/\|/g) || []).length;
+
+  if (tabCount > commaCount && tabCount > semiCount && tabCount > pipeCount) {
     delimiter = '\t';
-  } else if (firstLine.includes(';') && (!firstLine.includes(',') || (firstLine.match(/;/g)?.length || 0) > (firstLine.match(/,/g)?.length || 0))) {
+  } else if (semiCount > commaCount && semiCount > tabCount && semiCount > pipeCount) {
     delimiter = ';';
+  } else if (pipeCount > commaCount && pipeCount > tabCount && pipeCount > semiCount) {
+    delimiter = '|';
   }
 
   for (let i = 0; i < cleanText.length; i++) {
@@ -132,8 +139,8 @@ export function parseDelimitedRows(text: string): string[][] {
   return rows;
 }
 
-export function cleanHeaderToken(header: string): string {
-  return (header || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+export function cleanHeaderToken(header: any): string {
+  return String(header ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 export function formatPageName(pageId: string): string {
@@ -156,13 +163,35 @@ export function formatModuleName(pageId: string, parsedModule?: string): string 
   return formatPageName(pageId);
 }
 
-export function processTableRows(rows: string[][], fileName: string, pageMap: Map<string, PageImport>) {
+export function processTableRows(
+  rows: string[][], 
+  fileName: string, 
+  pageMap: Map<string, PageImport>, 
+  sheetName?: string
+) {
   if (!rows || rows.length === 0) return;
 
   const lowerName = (fileName || '').toLowerCase();
-  const firstRow = rows[0];
-  const normalizedHeaders = firstRow.map(cleanHeaderToken);
 
+  const PAGE_ID_KEYS = ['pageid', 'page', 'screencode', 'screenid', 'pagecode', 'viewid', 'view', 'screen', 'pagekey'];
+  const PAGE_NAME_KEYS = ['pagename', 'name', 'screenname', 'title', 'pagetitle', 'screentitle', 'viewname', 'viewtitle'];
+  const MODULE_KEYS = ['module', 'modulename', 'section', 'category', 'feature', 'group', 'component', 'domain'];
+  const TAG_ID_KEYS = [
+    'tagid', 'tagname', 'tag', 'key', 'stringid', 'token', 'id', 'identifier', 'tagkey', 
+    'tagcode', 'code', 'stringkey', 'keyname', 'labelkey', 'msgid', 'messageid', 
+    'tagidentifier', 'resourcekey', 'tagstring'
+  ];
+  const TYPE_KEYS = ['type', 'copytype', 'element', 'tagtype', 'category', 'kind', 'elementtype'];
+  const ENGLISH_KEYS = [
+    'tagcontent', 'content', 'tagtext', 'english', 'englishtext',
+    'tagenglish', 'englishcopy', 'copy', 'englishmaster', 'master', 'source',
+    'sourcetext', 'sourcestring', 'en', 'text', 'string', 'label', 'value',
+    'message', 'description', 'englishus', 'defaulttext', 'originaltext',
+    'englishvalue', 'englishtranslation', 'displaytext', 'uitext', 'mastercopy',
+    'basecopy', 'englishcontent', 'textcontent'
+  ];
+
+  let headerRowIdx = -1;
   let pageIdIdx = -1;
   let pageNameIdx = -1;
   let moduleIdx = -1;
@@ -171,97 +200,135 @@ export function processTableRows(rows: string[][], fileName: string, pageMap: Ma
   let englishIdx = -1;
   const langColMap: { colIdx: number; langCode: string }[] = [];
 
-  const PAGE_ID_KEYS = ['pageid', 'page', 'screencode', 'screenid', 'pagecode', 'viewid', 'view', 'screen', 'pagekey'];
-  const PAGE_NAME_KEYS = ['pagename', 'name', 'screenname', 'title', 'pagetitle', 'screentitle', 'viewname', 'viewtitle'];
-  const MODULE_KEYS = ['module', 'modulename', 'section', 'category', 'feature', 'group', 'component', 'domain'];
-  const TAG_ID_KEYS = ['tagid', 'tagname', 'tag', 'key', 'stringid', 'token', 'id', 'identifier', 'tagkey', 'tagcode', 'code'];
-  const TYPE_KEYS = ['type', 'copytype', 'element', 'tagtype', 'category', 'kind', 'elementtype'];
-  const ENGLISH_KEYS = [
-    'tagcontent', 'content', 'tagtext', 'tagstring', 'english', 'englishtext',
-    'tagenglish', 'englishcopy', 'copy', 'englishmaster', 'master', 'source',
-    'sourcetext', 'sourcestring', 'en', 'text', 'string', 'label', 'value',
-    'message', 'description', 'englishus', 'defaulttext', 'originaltext'
-  ];
+  // 1. Scan first 10 non-empty rows to find header row
+  for (let r = 0; r < Math.min(rows.length, 10); r++) {
+    const row = rows[r];
+    if (!row || row.length === 0 || !row.some(c => String(c ?? '').trim().length > 0)) continue;
+    
+    const tokens = row.map(cleanHeaderToken);
+    let matchedTagId = -1;
+    let matchedEnglish = -1;
+    let matchedPageId = -1;
 
-  normalizedHeaders.forEach((h, idx) => {
-    if (PAGE_ID_KEYS.includes(h)) {
-      pageIdIdx = idx;
-    } else if (PAGE_NAME_KEYS.includes(h)) {
-      pageNameIdx = idx;
-    } else if (MODULE_KEYS.includes(h)) {
-      moduleIdx = idx;
-    } else if (TAG_ID_KEYS.includes(h)) {
-      tagIdIdx = idx;
-    } else if (TYPE_KEYS.includes(h)) {
-      typeIdx = idx;
-    } else if (ENGLISH_KEYS.includes(h)) {
-      englishIdx = idx;
-    } else {
-      // Check for translation target language columns
-      for (const [key, code] of Object.entries(KNOWN_LANGUAGES)) {
-        if (h === key || h === `trans${key}` || h.includes(key)) {
-          langColMap.push({ colIdx: idx, langCode: code });
-          break;
+    tokens.forEach((h, idx) => {
+      if (PAGE_ID_KEYS.includes(h)) matchedPageId = idx;
+      else if (TAG_ID_KEYS.includes(h)) matchedTagId = idx;
+      else if (ENGLISH_KEYS.includes(h)) matchedEnglish = idx;
+    });
+
+    if ((matchedTagId !== -1 && matchedEnglish !== -1) || (matchedPageId !== -1 && matchedTagId !== -1)) {
+      headerRowIdx = r;
+      tokens.forEach((h, idx) => {
+        if (PAGE_ID_KEYS.includes(h)) {
+          pageIdIdx = idx;
+        } else if (PAGE_NAME_KEYS.includes(h)) {
+          pageNameIdx = idx;
+        } else if (MODULE_KEYS.includes(h)) {
+          moduleIdx = idx;
+        } else if (TAG_ID_KEYS.includes(h)) {
+          tagIdIdx = idx;
+        } else if (TYPE_KEYS.includes(h)) {
+          typeIdx = idx;
+        } else if (ENGLISH_KEYS.includes(h)) {
+          englishIdx = idx;
+        } else {
+          for (const [key, code] of Object.entries(KNOWN_LANGUAGES)) {
+            if (h === key || h === `trans${key}` || h.includes(key)) {
+              langColMap.push({ colIdx: idx, langCode: code });
+              break;
+            }
+          }
         }
-      }
+      });
+      break;
     }
-  });
-
-  const isHeaderRow = pageIdIdx !== -1 || tagIdIdx !== -1 || englishIdx !== -1;
-  const dataRows = isHeaderRow ? rows.slice(1) : rows;
-
-  if (!isHeaderRow && firstRow.length === 3) {
-    pageIdIdx = 0;
-    tagIdIdx = 1;
-    englishIdx = 2;
-  } else if (!isHeaderRow && firstRow.length >= 4) {
-    pageIdIdx = 0;
-    tagIdIdx = 1;
-    typeIdx = 2;
-    englishIdx = 3;
-  } else if (isHeaderRow && pageIdIdx === -1 && tagIdIdx !== -1 && englishIdx !== -1) {
-    pageIdIdx = -999;
   }
 
+  let dataRows: string[][] = [];
+  if (headerRowIdx >= 0) {
+    dataRows = rows.slice(headerRowIdx + 1);
+  } else {
+    // No header detected. Fallback based on column count
+    const firstNonEmpty = rows.find(r => r && r.some(c => String(c ?? '').trim().length > 0)) || rows[0];
+    if (firstNonEmpty.length === 2) {
+      pageIdIdx = -999;
+      tagIdIdx = 0;
+      englishIdx = 1;
+    } else if (firstNonEmpty.length === 3) {
+      pageIdIdx = 0;
+      tagIdIdx = 1;
+      englishIdx = 2;
+    } else if (firstNonEmpty.length >= 4) {
+      pageIdIdx = 0;
+      tagIdIdx = 1;
+      typeIdx = 2;
+      englishIdx = 3;
+    }
+    dataRows = rows;
+  }
+
+  // Derive default fallback Page ID from sheetName or fileName
+  let defaultPageId = "";
+  if (sheetName && !/^sheet\s*\d+$/i.test(sheetName.trim())) {
+    defaultPageId = sheetName.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+  }
+  if (!defaultPageId) {
+    defaultPageId = lowerName
+      .replace(/\.(csv|tsv|txt|xlsx?|json)$/i, '')
+      .replace(/_translations?$/i, '')
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .toUpperCase() || "PAGE_DEFAULT";
+  }
+
+  for (const knownKey of Object.keys(PAGE_META_LOOKUP)) {
+    if (defaultPageId.startsWith(knownKey)) {
+      defaultPageId = knownKey;
+      break;
+    }
+  }
+
+  let lastSeenPageId = defaultPageId;
+
   for (const row of dataRows) {
-    if (!row || row.length === 0 || !row.some(c => String(c).trim().length > 0)) continue;
+    if (!row || row.length === 0 || !row.some(c => String(c ?? '').trim().length > 0)) continue;
 
     let pageId = "";
     let pageName = "";
     let moduleName = "";
 
-    if (pageIdIdx === -999) {
-      let derived = lowerName
-        .replace(/\.(csv|tsv|txt|xlsx?|json)$/i, '')
-        .replace(/_translations?$/i, '')
-        .replace(/[^a-z0-9]/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '')
-        .toUpperCase() || "PAGE_DEFAULT";
-
-      // Match known page prefixes e.g. SERSET8595887364225503877 -> SERSET
-      for (const knownKey of Object.keys(PAGE_META_LOOKUP)) {
-        if (derived.startsWith(knownKey)) {
-          derived = knownKey;
-          break;
+    if (pageIdIdx >= 0 && row[pageIdIdx] !== undefined) {
+      const cellVal = String(row[pageIdIdx] ?? '').trim().toUpperCase();
+      if (cellVal.length > 0) {
+        let cleanId = cellVal;
+        for (const knownKey of Object.keys(PAGE_META_LOOKUP)) {
+          if (cleanId.startsWith(knownKey)) {
+            cleanId = knownKey;
+            break;
+          }
         }
+        pageId = cleanId;
+        lastSeenPageId = cleanId;
+      } else {
+        // Forward-fill for merged cells or grouped rows
+        pageId = lastSeenPageId;
       }
-
-      pageId = derived;
-      pageName = formatPageName(pageId);
-      moduleName = formatModuleName(pageId);
     } else {
-      pageId = (row[pageIdIdx >= 0 ? pageIdIdx : 0] || "").toString().trim().toUpperCase();
-      if (!pageId) continue;
-      
-      pageName = pageNameIdx >= 0 && row[pageNameIdx] 
-        ? String(row[pageNameIdx]).trim() 
-        : formatPageName(pageId);
-        
-      moduleName = moduleIdx >= 0 && row[moduleIdx]
-        ? String(row[moduleIdx]).trim() 
-        : formatModuleName(pageId);
+      pageId = lastSeenPageId;
     }
+
+    if (!pageId) {
+      pageId = defaultPageId;
+    }
+
+    pageName = pageNameIdx >= 0 && row[pageNameIdx] 
+      ? String(row[pageNameIdx]).trim() 
+      : formatPageName(pageId);
+      
+    moduleName = moduleIdx >= 0 && row[moduleIdx]
+      ? String(row[moduleIdx]).trim() 
+      : formatModuleName(pageId);
 
     if (!pageMap.has(pageId)) {
       pageMap.set(pageId, {
@@ -274,16 +341,19 @@ export function processTableRows(rows: string[][], fileName: string, pageMap: Ma
     }
 
     const currentPage = pageMap.get(pageId)!;
-    const tagId = tagIdIdx >= 0 && row[tagIdIdx] ? String(row[tagIdIdx]).trim() : "";
-    const english = englishIdx >= 0 && row[englishIdx] ? String(row[englishIdx]).trim() : "";
-    let copyType = typeIdx >= 0 && row[typeIdx] ? String(row[typeIdx]).trim() : "General";
+    const rawTagId = tagIdIdx >= 0 && row[tagIdIdx] !== undefined ? String(row[tagIdIdx]).trim() : "";
+    const cleanTagId = rawTagId.replace(/^["']|["']$/g, '').trim();
+    
+    const rawEnglish = englishIdx >= 0 && row[englishIdx] !== undefined ? String(row[englishIdx]).trim() : "";
+    const cleanEnglish = rawEnglish.replace(/^["']|["']$/g, '').trim();
 
+    let copyType = typeIdx >= 0 && row[typeIdx] ? String(row[typeIdx]).trim() : "General";
     if (copyType.length > 30 || copyType.includes(" ")) {
       copyType = "General";
     }
 
-    if (tagId || english) {
-      const generatedTagId = tagId || `TAG_${pageId}_${currentPage.tags.length + 1}`;
+    if (cleanTagId || cleanEnglish) {
+      const generatedTagId = cleanTagId || `TAG_${pageId}_${currentPage.tags.length + 1}`;
       
       const values: Record<string, { text: string; status?: string; confidence?: number }> = {};
       for (const lang of langColMap) {
@@ -297,13 +367,12 @@ export function processTableRows(rows: string[][], fileName: string, pageMap: Ma
         }
       }
 
-      // Check if tag already parsed from an earlier row/file to update non-destructively
       const existingTagIdx = currentPage.tags.findIndex(t => t.id === generatedTagId);
       if (existingTagIdx >= 0) {
         const existing = currentPage.tags[existingTagIdx];
         currentPage.tags[existingTagIdx] = {
           ...existing,
-          english: english || existing.english,
+          english: cleanEnglish || existing.english,
           type: copyType !== "General" ? copyType : existing.type,
           values: { ...(existing.values || {}), ...values }
         };
@@ -311,7 +380,7 @@ export function processTableRows(rows: string[][], fileName: string, pageMap: Ma
         currentPage.tags.push({
           id: generatedTagId,
           type: copyType,
-          english: english,
+          english: cleanEnglish,
           values: Object.keys(values).length > 0 ? values : undefined
         });
       }
@@ -329,11 +398,13 @@ export function processSingleFile(file: InputFile, pageMap: Map<string, PageImpo
     const parsed = JSON.parse(text);
     const pages: PageImport[] = Array.isArray(parsed) 
       ? parsed 
-      : (parsed.pages && Array.isArray(parsed.pages) ? parsed.pages : [parsed]);
+      : parsed.pages ? (Array.isArray(parsed.pages) ? parsed.pages : Object.values(parsed.pages))
+      : [parsed];
 
     for (const p of pages) {
-      if (!p.pageId) continue;
-      const pageId = p.pageId.toUpperCase();
+      const pageId = (p.pageId || (p as any).id || "").toString().trim().toUpperCase();
+      if (!pageId) continue;
+
       if (!pageMap.has(pageId)) {
         pageMap.set(pageId, {
           pageId,
@@ -343,20 +414,24 @@ export function processSingleFile(file: InputFile, pageMap: Map<string, PageImpo
           tags: []
         });
       }
-      const pageEntry = pageMap.get(pageId)!;
-      if (p.tags && Array.isArray(p.tags)) {
-        for (const t of p.tags) {
-          const exIdx = pageEntry.tags.findIndex(ex => ex.id === t.id);
-          if (exIdx >= 0) {
-            pageEntry.tags[exIdx] = { ...pageEntry.tags[exIdx], ...t };
-          } else {
-            pageEntry.tags.push({
-              id: t.id,
-              type: t.type || "General",
-              english: t.english || "",
-              values: t.values
-            });
-          }
+
+      const currentPage = pageMap.get(pageId)!;
+      const rawTags = p.tags || [];
+      const tagsArray: TagImport[] = Array.isArray(rawTags)
+        ? rawTags
+        : Object.entries(rawTags).map(([id, t]: [string, any]) => ({
+            id,
+            english: t.eng || t.english || t.text || "",
+            type: t.type || "General",
+            values: t.values
+          }));
+
+      for (const t of tagsArray) {
+        const existingTagIdx = currentPage.tags.findIndex(exist => exist.id === t.id);
+        if (existingTagIdx >= 0) {
+          currentPage.tags[existingTagIdx] = { ...currentPage.tags[existingTagIdx], ...t };
+        } else {
+          currentPage.tags.push(t);
         }
       }
     }
@@ -371,7 +446,7 @@ export function processSingleFile(file: InputFile, pageMap: Map<string, PageImpo
       const sheet = workbook.Sheets[sheetName];
       if (!sheet) continue;
       const sheetRows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, raw: false, defval: "" });
-      processTableRows(sheetRows, fileName, pageMap);
+      processTableRows(sheetRows, fileName, pageMap, sheetName);
     }
   }
   // 3. CSV / TSV / TXT

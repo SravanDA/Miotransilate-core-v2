@@ -120,6 +120,16 @@ export class ApiService {
     return resData;
   }
 
+  static async batchImportTags(pageId: string, tags: Array<{
+    id: string;
+    type?: string;
+    english?: string;
+    values?: Record<string, { text: string; status?: string; confidence?: number }>;
+  }>) {
+    const res = await apiClient.post(`${API_BASE}/pages/${pageId}/tags/batch-import`, tags);
+    return res.data;
+  }
+
   static async updateTagType(tagId: string, copyType: string) {
     const res = await apiClient.patch(`${API_BASE}/tags/${tagId}`, {
       copyType: copyType || "General"

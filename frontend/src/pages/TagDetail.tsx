@@ -773,14 +773,27 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
         <div className="flex items-center gap-2 shrink-0">
           {!isEditingTrans ? (
             <>
-              {(currentVal.status === "Pending Review" || currentVal.status === "Needs Attention") && can('TRANSLATION_APPROVE') && (
-                <button 
-                  onClick={() => setIsReviewModalOpen(true)}
-                  className="btn-secondary"
-                >
-                  <CheckCircle className="w-4 h-4 text-accent-blue" weight="bold" />
-                  <span>Review AI Draft</span>
-                </button>
+              {currentVal.status !== "Approved" && currentVal.text && (can('TRANSLATION_APPROVE') || user?.roles?.includes('FN')) && (
+                <>
+                  <button 
+                    onClick={() => setIsReviewModalOpen(true)}
+                    className="btn-secondary"
+                  >
+                    <CheckCircle className="w-4 h-4 text-accent-blue" weight="bold" />
+                    <span>Review AI Draft</span>
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (!pageId || !tagId) return;
+                      await StoreService.approveTranslation(pageId, tagId, selectedLanguage);
+                      showToast(`Approved ${langConfig?.name || selectedLanguage} translation`);
+                    }}
+                    className="btn-success h-8 px-3 text-[12px] flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" weight="bold" />
+                    <span>Approve</span>
+                  </button>
+                </>
               )}
 
               {(can('TRANSLATION_CREATE') || user?.roles?.includes('FN')) && (

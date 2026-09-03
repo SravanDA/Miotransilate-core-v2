@@ -10,8 +10,6 @@ import {
   PencilSimple, 
   Trash, 
   Sparkle as Sparkles,
-  CheckCircle,
-  X,
   CircleNotch,
   DownloadSimple
 } from "@phosphor-icons/react";
@@ -59,7 +57,6 @@ export function PageList() {
   const [selectedModule, setSelectedModule] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedPresetFilter, setSelectedPresetFilter] = useState<"all" | "incomplete" | "ready">("all");
-  const [selectedLangFilter, setSelectedLangFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("coverage");
  
  const parentRef = useRef<HTMLDivElement>(null);
@@ -147,14 +144,7 @@ export function PageList() {
         matchesPreset = page.totalTags > 0 && page.overallCoverageScore === 1;
       }
 
-      // Language filter (e.g. only show pages where Spanish is < 100%)
-      let matchesLang = true;
-      if (selectedLangFilter) {
-        const langCov = page.coverageMap[selectedLangFilter];
-        matchesLang = !langCov || langCov.approved < langCov.total || langCov.total === 0;
-      }
-
-      return matchesSearch && matchesModule && matchesStatus && matchesPreset && matchesLang;
+      return matchesSearch && matchesModule && matchesStatus && matchesPreset;
     }).sort((a, b) => {
       if (sortBy === "coverage") {
         return b.overallCoverageScore - a.overallCoverageScore;
@@ -163,7 +153,7 @@ export function PageList() {
       if (sortBy === "tags") return b.totalTags - a.totalTags;
       return 0;
     });
-  }, [pageMetrics, searchQuery, selectedModule, selectedStatus, selectedPresetFilter, selectedLangFilter, sortBy]);
+  }, [pageMetrics, searchQuery, selectedModule, selectedStatus, selectedPresetFilter, sortBy]);
 
  const handleCreatePage = (e: React.FormEvent) => {
  e.preventDefault();
@@ -292,67 +282,7 @@ CAMREW,Campaign & Rewards,Campaign & Rewards,CAMREW_SAVE,Button,Save,Guardar,ح�
          <Plus className="w-3.5 h-3.5" weight="bold" />
          <span>Add Page</span>
        </button>
-     </div>
-   )}
-  </div>
-
-  {/* Macro Coverage & Release Readiness Strip */}
-  <div className="bg-bg-card border border-border-subtle rounded-xl px-3.5 py-2  flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-    <div className="flex items-center gap-2.5 text-[12px] flex-wrap">
-      {/* Workspace totals with unified typography & tabular numbers */}
-      <div className="flex items-center gap-1.5 text-text-tertiary font-medium text-[12px] shrink-0">
-        <span className="text-text-primary font-semibold tabular-nums">{macroSummary.totalPages}</span>
-        <span>{macroSummary.totalPages === 1 ? "page" : "pages"}</span>
-        <span className="text-border-strong/80 mx-0.5">•</span>
-        <span className="text-text-primary font-semibold tabular-nums">{macroSummary.totalStrings}</span>
-        <span>strings</span>
       </div>
-
-      <div className="h-3.5 w-px bg-border-subtle shrink-0 hidden sm:block" />
-
-      {/* Language readiness pills with consistent font, x-height & baseline */}
-      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
-        {macroSummary.langMetrics.map((lang) => {
-          const isFilterActive = selectedLangFilter === lang.code;
-          return (
-            <button
-              key={lang.code}
-              type="button"
-              onClick={() => setSelectedLangFilter(isFilterActive ? null : lang.code)}
-              className={`h-6 px-2 rounded-md border text-[11px] font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer outline-none shrink-0 ${
-                isFilterActive
-                  ? "bg-accent-blue/15 border-accent-blue/60 text-accent-blue font-semibold "
-                  : lang.isReady
-                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-500 hover:bg-emerald-500/15"
-                    : lang.percent > 0
-                      ? "bg-bg-main border-border-subtle text-text-secondary hover:border-border-strong hover:text-text-primary"
-                      : "bg-bg-main/60 border-border-subtle/80 text-text-tertiary hover:text-text-secondary hover:border-border-strong"
-              }`}
-              title={`Click to filter pages needing ${lang.name} translation`}
-            >
-              <span className="font-semibold uppercase tracking-wider">{lang.code}</span>
-              <span className={`tabular-nums ${lang.isReady ? "text-emerald-500 font-semibold" : isFilterActive ? "text-accent-blue" : "text-text-tertiary"}`}>
-                {lang.percent}%
-              </span>
-              {lang.isReady ? (
-                <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" weight="fill" />
-              ) : isFilterActive ? (
-                <X className="w-2.5 h-2.5 text-accent-blue shrink-0" weight="bold" />
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-
-    {selectedLangFilter && (
-      <button
-        type="button"
-        onClick={() => setSelectedLangFilter(null)}
-        className="text-[11px] font-medium text-accent-blue hover:text-accent-blue/80 transition-colors cursor-pointer outline-none shrink-0 self-end sm:self-auto"
-      >
-        Clear filter
-      </button>
     )}
   </div>
 

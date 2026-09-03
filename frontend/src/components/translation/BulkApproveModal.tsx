@@ -24,7 +24,7 @@ export function BulkApproveModal({
   totalPending,
   eligibleCount,
   lowConfidenceCount,
-  threshold = 95
+  threshold = 80
 }: BulkApproveModalProps) {
   useEffect(() => {
     if (!isOpen) return;
@@ -47,6 +47,8 @@ export function BulkApproveModal({
   }, [isOpen]);
 
   if (typeof document === "undefined") return null;
+
+  const countToApprove = eligibleCount > 0 ? eligibleCount : totalPending;
 
   return createPortal(
     <AnimatePresence>
@@ -87,15 +89,17 @@ export function BulkApproveModal({
                   <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5" weight="bold" />
                   <div>
                     <h4 className="text-[13px] font-medium text-text-primary">
-                      {eligibleCount} High-Confidence Translations Ready
+                      {eligibleCount > 0 ? eligibleCount : totalPending} Translations Ready
                     </h4>
                     <p className="text-[12px] text-text-secondary mt-0.5">
-                      These meet or exceed the {threshold}% confidence gate and will be marked as "Approved".
+                      {eligibleCount > 0 
+                        ? `These meet or exceed the ${threshold}% confidence gate and will be marked as "Approved".`
+                        : `Ready to be marked as "Approved".`}
                     </p>
                   </div>
                 </div>
 
-                {lowConfidenceCount > 0 && (
+                {lowConfidenceCount > 0 && eligibleCount > 0 && (
                   <div className="flex items-start gap-3 p-3 bg-bg-main border border-border-subtle rounded-lg">
                     <AlertCircle className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" weight="bold" />
                     <div>
@@ -124,10 +128,10 @@ export function BulkApproveModal({
                   onConfirm();
                   onClose();
                 }}
-                disabled={eligibleCount === 0}
+                disabled={countToApprove === 0}
                 className="btn-primary"
               >
-                Approve {eligibleCount} Strings
+                Approve {countToApprove} Strings
               </button>
             </div>
           </motion.div>

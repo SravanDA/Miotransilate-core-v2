@@ -100,8 +100,6 @@ test.describe('Module 1: Authentication, Shell & Navigation', () => {
     await switchThemeBtn.click();
     
     // HTML root class should have changed
-    const newClass = await page.locator('html').getAttribute('class');
-    expect(newClass).toBeDefined();
-    expect(newClass).not.toEqual(initialClass);
+    await expect(page.locator('html')).not.toHaveClass(new RegExp(`^${initialClass}$`));
   });
 });

@@ -44,7 +44,7 @@ public class TranslationService {
     private final TranslationEngine translationEngine;
     private final TranslationPersistenceService persistenceService;
 
-    @org.springframework.beans.factory.annotation.Value("${miotranslate.bulk-approve.confidence-threshold:0.85}")
+    @org.springframework.beans.factory.annotation.Value("${miotranslate.bulk-approve.confidence-threshold:0.80}")
     private BigDecimal bulkApproveThreshold;
 
     public TranslationService(TranslationRepository translationRepository,
@@ -145,9 +145,11 @@ public class TranslationService {
         ConcurrencyUtils.validateETag(ifMatchETag, translation.getEtagVersion(), "TRANSLATION", tagId + "/" + languageCode);
         
         TranslationVersion latest = versionRepository.findTopByTagIdAndLanguageCodeOrderByVersionNumberDesc(tagId, languageCode).orElseThrow();
-        if (!"DRAFT".equals(latest.getStatus())) throw new IllegalStateException("Only DRAFT can be submitted");
+        if (!"DRAFT".equals(latest.getStatus()) && !"PENDING_REVIEW".equals(latest.getStatus())) {
+            throw new IllegalStateException("Only DRAFT or PENDING_REVIEW can be submitted for review");
+        }
         
-        latest.setStatus("IN_REVIEW");
+        latest.setStatus("PENDING_REVIEW");
         translation.setStatus("PENDING_REVIEW");
         translation.setEtagVersion(translation.getEtagVersion() + 1);
         
@@ -176,6 +178,9 @@ public class TranslationService {
             translation.setStaleTriggeredAt(null);
         } else if ("REJECT".equals(action)) {
             latest.setStatus("REJECTED");
+            translation.setStatus("DRAFT");
+        } else if ("RETURN_FOR_REVISION".equals(action)) {
+            latest.setStatus("DRAFT");
             translation.setStatus("DRAFT");
         }
         
@@ -293,10 +298,10 @@ public class TranslationService {
                 continue;
             }
 
-            // Gate 1: Only DRAFT status is eligible for bulk approve.
-            // NEEDS_ATTENTION, BLOCKED, and already-APPROVED are excluded.
+            // Gate 1: Both DRAFT and PENDING_REVIEW statuses are eligible for bulk approve.
+            // Already-APPROVED tags are not re-processed.
             String headStatus = translation.getStatus();
-            if (!"DRAFT".equals(headStatus)) {
+            if (!"DRAFT".equals(headStatus) && !"PENDING_REVIEW".equals(headStatus)) {
                 if (!"APPROVED".equals(headStatus)) {  // Don't count already-approved as "skipped"
                     skippedCount++;
                     skipReasons.put(tag.getTagId(), "STATUS_" + headStatus);

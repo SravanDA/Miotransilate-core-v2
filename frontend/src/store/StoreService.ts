@@ -48,7 +48,7 @@ export class StoreService {
     pageDetails: {} as Record<string, { page: Page; tags: Tag[] }>,
     deployments: [] as DeploymentRecord[],
     approvalRequests: [] as import("../types").PublishApprovalRequest[],
-    confidenceThreshold: 95,
+    confidenceThreshold: 80,
     lengthConflictConfig: getStoredLengthConflictConfig(),
   };
 
@@ -161,22 +161,29 @@ export class StoreService {
       }
 
       if (p.tags && p.tags.length > 0) {
-        // Sync tags in small batches
-        const chunks = [];
-        for (let i = 0; i < p.tags.length; i += 10) {
-          chunks.push(p.tags.slice(i, i + 10));
-        }
-        for (const chunk of chunks) {
-          await Promise.allSettled(
-            chunk.map(t => {
-              totalTagsCount++;
-              return ApiService.createTag(pageId, {
-                id: t.id,
-                type: t.type || "General",
-                english: t.english
-              });
-            })
-          );
+        try {
+          // Use atomic batch import endpoint for ultra-fast, lossless ingestion
+          await ApiService.batchImportTags(pageId, p.tags);
+          totalTagsCount += p.tags.length;
+        } catch (batchErr) {
+          console.warn("Batch import fallback to sequential creation:", batchErr);
+          // Fallback if batch endpoint unavailable
+          const chunks = [];
+          for (let i = 0; i < p.tags.length; i += 10) {
+            chunks.push(p.tags.slice(i, i + 10));
+          }
+          for (const chunk of chunks) {
+            await Promise.allSettled(
+              chunk.map(t => {
+                totalTagsCount++;
+                return ApiService.createTag(pageId, {
+                  id: t.id,
+                  type: t.type || "General",
+                  english: t.english
+                });
+              })
+            );
+          }
         }
 
         // Sync translations for tags that have translation values
@@ -383,8 +390,41 @@ export class StoreService {
 
     try {
       await ApiService.approveTranslation(tagId, langCode);
+      await this.refreshPageDetail(pageId);
     } catch (e) {
       console.warn("Backend approve translation error:", e);
+    }
+  }
+
+  static async bulkApproveTranslations(pageId: string, langCode: string) {
+    const tags = this.getTags(pageId);
+    const threshold = this.getConfidenceThreshold();
+    const now = new Date().toISOString();
+
+    // Optimistically mark eligible translations as Approved
+    tags.forEach(t => {
+      const val = t.values?.[langCode];
+      if (val && val.text && val.status !== "Approved") {
+        if ((val.confidence || 0) >= threshold) {
+          t.values[langCode] = {
+            ...val,
+            status: "Approved",
+            lastUpdated: now
+          };
+          t.updatedAt = now;
+        }
+      }
+    });
+    this.emit();
+
+    try {
+      const res = await ApiService.bulkApproveTranslations(pageId, langCode);
+      await this.refreshPageDetail(pageId);
+      return res;
+    } catch (e) {
+      console.warn("Backend bulk approve error:", e);
+      await this.refreshPageDetail(pageId);
+      throw e;
     }
   }
 

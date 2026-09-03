@@ -5,7 +5,7 @@ import {
   ArrowLeft, WarningCircle as AlertCircle, FloppyDisk as Save,
   ChatCircle as MessageSquare, User, CheckCircle, PencilSimple as Edit3,
   ArrowBendDownRight as Reply, CaretDown, FileText, Check, Trash,
-  ClockCounterClockwise, Star, CircleNotch, Plus, Tag as TagIcon, Stack,
+  ClockCounterClockwise, CircleNotch, Plus, Tag as TagIcon, Stack,
   PaperPlaneRight,
   Sparkle as Sparkles
 } from "@phosphor-icons/react";
@@ -23,7 +23,6 @@ import type { Tag, Comment, TranslationValue } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { ApiService } from "../services/ApiService";
-import { BookmarkService } from "../services/BookmarkService";
 import { RecentlyEditedService } from "../services/RecentlyEditedService";
 
 function timeAgo(dateStr: string): string {
@@ -353,20 +352,20 @@ export function TagDetail() {
 
  const showToast = (msg: string) => toast(msg);
 
- const [isBookmarked, setIsBookmarked] = useState(tagId ? BookmarkService.isBookmarked(tagId) : false);
+  // const [isBookmarked, setIsBookmarked] = useState(tagId ? BookmarkService.isBookmarked(tagId) : false);
 
- const handleToggleBookmark = () => {
-   if (!tagId || !pageId) return;
-    const isNow = BookmarkService.toggleBookmark({
-      id: tagId,
-      type: "tag",
-      pageId,
-      tagId,
-      name: tagId
-    });
-   setIsBookmarked(isNow);
-   showToast(isNow ? "Tag bookmarked" : "Bookmark removed");
- };
+  // const handleToggleBookmark = () => {
+  //   if (!tagId || !pageId) return;
+  //    const isNow = BookmarkService.toggleBookmark({
+  //      id: tagId,
+  //      type: "tag",
+  //      pageId,
+  //      tagId,
+  //      name: tagId
+  //    });
+  //   setIsBookmarked(isNow);
+  //   showToast(isNow ? "Tag bookmarked" : "Bookmark removed");
+  // };
 
   const handleSaveEnglish = async () => {
     if (!pageId || !tagId) return;
@@ -547,17 +546,18 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
  </Link>
  <div className="flex items-center gap-3 flex-wrap">
  <h1 className="text-xl font-bold text-text-primary font-mono">{tag.id}</h1>
- <button
-     onClick={handleToggleBookmark}
-     className={`h-8 px-2.5 rounded-lg border transition-all cursor-pointer outline-none  active:scale-[0.98] inline-flex items-center justify-center ${
-       isBookmarked 
-         ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20" 
-         : "bg-bg-card text-text-tertiary border-border-subtle hover:border-border-strong hover:text-text-primary hover:bg-bg-hover"
-     }`}
-     title={isBookmarked ? "Remove bookmark" : "Bookmark this tag"}
-   >
-     <Star className="w-3.5 h-3.5" weight={isBookmarked ? "fill" : "regular"} />
-   </button>
+  {/* Bookmark button commented out for now:
+  <button
+      onClick={handleToggleBookmark}
+      className={`h-8 px-2.5 rounded-lg border transition-all cursor-pointer outline-none  active:scale-[0.98] inline-flex items-center justify-center ${
+        isBookmarked 
+          ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20" 
+          : "bg-bg-card text-text-tertiary border-border-subtle hover:border-border-strong hover:text-text-primary hover:bg-bg-hover"
+      }`}
+      title={isBookmarked ? "Remove bookmark" : "Bookmark this tag"}
+    >
+      <Star className="w-3.5 h-3.5" weight={isBookmarked ? "fill" : "regular"} />
+    </button> */}
  <CopyTypeSelector
     value={tag.type}
     disabled={!can('PAGE_TAG_CREATE') && !can('ENGLISH_AUTHOR') && !user?.roles?.includes('FN')}

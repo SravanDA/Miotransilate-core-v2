@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   ArrowSquareOut as ExternalLink, Check,
-  WarningCircle as AlertCircle, FileText, RocketLaunch, Star, Clock 
+  WarningCircle as AlertCircle, FileText, RocketLaunch 
 } from "@phosphor-icons/react";
 import { StoreService } from "../store/StoreService";
 import { ApiService } from "../services/ApiService";
-import { BookmarkService } from "../services/BookmarkService";
-import { RecentlyEditedService } from "../services/RecentlyEditedService";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dropdown } from "../components/ui/Dropdown";
 import { CopyButton } from "../components/ui/CopyButton";
@@ -249,49 +247,6 @@ export function MyWork() {
           );
         })}
       </div>
-
-      {/* Quick Access: Recently Edited & Bookmarks */}
-      {(!isDev && activeTab !== "publish" && (RecentlyEditedService.getRecentEdits().length > 0 || BookmarkService.getBookmarks().length > 0)) && (
-        <div className="mb-4 p-3 bg-bg-card border border-border-subtle rounded-xl flex items-center gap-4 overflow-x-auto scrollbar-none text-[12px]">
-          {BookmarkService.getBookmarks().length > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-warning">
-                <Star className="w-3.5 h-3.5" weight="fill" /> Bookmarks:
-              </span>
-              <div className="flex items-center gap-1.5">
-                {BookmarkService.getBookmarks().slice(0, 4).map((b) => (
-                  <Link
-                    key={b.id}
-                    to={b.type === "page" ? `/pages/${b.pageId}` : `/pages/${b.pageId}/tags/${b.tagId}`}
-                    className="px-2 py-0.5 bg-bg-main border border-border-subtle hover:border-warning/50 rounded text-text-primary text-[11px] font-mono transition-colors"
-                  >
-                    {b.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {RecentlyEditedService.getRecentEdits().length > 0 && (
-            <div className="flex items-center gap-2 shrink-0 ml-auto">
-              <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-text-tertiary">
-                <Clock className="w-3.5 h-3.5" /> Recent:
-              </span>
-              <div className="flex items-center gap-1.5">
-                {RecentlyEditedService.getRecentEdits().slice(0, 5).map((r) => (
-                  <Link
-                    key={r.id}
-                    to={r.tagId ? `/pages/${r.pageId}/tags/${r.tagId}` : `/pages/${r.pageId}`}
-                    className="px-2 py-0.5 bg-bg-main border border-border-subtle hover:border-accent-blue/50 rounded text-text-primary text-[11px] font-mono transition-colors"
-                  >
-                    {r.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Main Content Area */}
       <div className="bg-bg-card border border-border-subtle rounded-xl overflow-hidden flex flex-col">

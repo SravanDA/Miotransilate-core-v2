@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { 
   MagnifyingGlass as Search, Check, X,
   CircleNotch, ClockCounterClockwise, Trash, DownloadSimple,
-  PencilSimple, Star, Plus, UploadSimple, CheckCircle,
+  PencilSimple, Plus, UploadSimple, CheckCircle,
   DotsThreeVertical, CaretDown, CaretUp, ArrowsDownUp,
   WarningCircle as AlertCircle
 } from "@phosphor-icons/react";
@@ -28,7 +28,6 @@ import { CopyTypeSelector } from "../components/translation/CopyTypeSelector";
 import { CopyButton } from "../components/ui/CopyButton";
 import { StoreService, type LengthConflictConfig } from "../store/StoreService";
 import { ApiService } from "../services/ApiService";
-import { BookmarkService } from "../services/BookmarkService";
 import { ExportService } from "../services/ExportService";
 import { Dropdown } from "../components/ui/Dropdown";
 import { engine } from "../engine/TranslationEngine";
@@ -51,7 +50,7 @@ export function PageDetail() {
  const [activeLangs, setActiveLangs] = useState(StoreService.getActiveLanguages());
  const [selectedLanguage, setSelectedLanguage] = useState(activeLangs[0]?.code || "en");
  const [showDeprecateModal, setShowDeprecateModal] = useState(false);
- const [isPageBookmarked, setIsPageBookmarked] = useState(pageId ? BookmarkService.isBookmarked(pageId) : false);
+ // const [isPageBookmarked, setIsPageBookmarked] = useState(pageId ? BookmarkService.isBookmarked(pageId) : false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const isConflictsFilter = searchParams.get("conflicts") === "true";
@@ -94,7 +93,8 @@ export function PageDetail() {
 
  const [searchQuery, setSearchQuery] = useState("");
  const [selectedStatus, setSelectedStatus] = useState("All");
- const [selectedType, setSelectedType] = useState("All");
+ const selectedType = "All";
+ // const [selectedType, setSelectedType] = useState("All");
  
  const [isAddTagOpen, setIsAddTagOpen] = useState(false);
  const [newTagId, setNewTagId] = useState("");
@@ -131,13 +131,13 @@ export function PageDetail() {
     }
   }, [isMoreMenuOpen]);
 
- const availableCopyTypes = useMemo(() => {
-   const types = new Set<string>(["Button", "Label", "Header", "Placeholder", "Error", "Tooltip", "General"]);
-   tags.forEach(t => {
-     if (t.type && t.type.trim()) types.add(t.type);
-   });
-   return Array.from(types);
- }, [tags]);
+  // const availableCopyTypes = useMemo(() => {
+  //   const types = new Set<string>(["Button", "Label", "Header", "Placeholder", "Error", "Tooltip", "General"]);
+  //   tags.forEach(t => {
+  //     if (t.type && t.type.trim()) types.add(t.type);
+  //   });
+  //   return Array.from(types);
+  // }, [tags]);
 
  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
  const showToast = (msg: string) => toast(msg);
@@ -461,17 +461,17 @@ export function PageDetail() {
     setEditedName(pageInfo.name);
   };
 
-  const handleTogglePageBookmark = () => {
-    if (!pageId) return;
-    const isNow = BookmarkService.toggleBookmark({
-      id: pageId,
-      type: "page",
-      pageId,
-      name: pageInfo.name
-    });
-    setIsPageBookmarked(isNow);
-    showToast(isNow ? "Page bookmarked" : "Bookmark removed");
-  };
+  // const handleTogglePageBookmark = () => {
+  //   if (!pageId) return;
+  //   const isNow = BookmarkService.toggleBookmark({
+  //     id: pageId,
+  //     type: "page",
+  //     pageId,
+  //     name: pageInfo.name
+  //   });
+  //   setIsPageBookmarked(isNow);
+  //   showToast(isNow ? "Page bookmarked" : "Bookmark removed");
+  // };
 
   const rowVirtualizer = useVirtualizer({
   count: filteredTags.length,
@@ -532,10 +532,11 @@ export function PageDetail() {
         </button>
       </div>
     )}
+  {/* Bookmark button commented out:
   <Tooltip content={isPageBookmarked ? "Remove bookmark" : "Bookmark this page"}>
     <button
       onClick={handleTogglePageBookmark}
-      className={`h-8 px-2.5 rounded-lg border transition-all cursor-pointer outline-none  active:scale-[0.98] inline-flex items-center justify-center ${
+      className={`h-8 px-2.5 rounded-lg border transition-all cursor-pointer outline-none active:scale-[0.98] inline-flex items-center justify-center ${
         isPageBookmarked 
           ? "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20" 
           : "bg-bg-card text-text-tertiary border-border-subtle hover:border-border-strong hover:text-text-primary hover:bg-bg-hover"
@@ -543,8 +544,8 @@ export function PageDetail() {
     >
       <Star className="w-3.5 h-3.5" weight={isPageBookmarked ? "fill" : "regular"} />
     </button>
-  </Tooltip>
- <span className="px-2 py-0.5 bg-bg-active text-text-secondary text-[11px] font-mono font-bold rounded">
+  </Tooltip> */}
+  <span className="px-2 py-0.5 bg-bg-active text-text-secondary text-[11px] font-mono font-bold rounded">
  {pageId || "PAGE"}
  </span>
   <div className="flex items-center gap-1.5 text-[13px] font-normal text-text-primary select-none">
@@ -619,7 +620,7 @@ export function PageDetail() {
  {/* Toolbar Card */}
  <div className="bg-bg-card p-3 rounded-xl border border-border-subtle flex flex-col gap-3">
  <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
- <div className="grid grid-cols-1 sm:grid-cols-3 md:flex items-center gap-2.5 w-full md:w-auto">
+ <div className="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-2.5 w-full md:w-auto">
  <Dropdown
  value={selectedLanguage}
  onChange={setSelectedLanguage}
@@ -646,15 +647,16 @@ export function PageDetail() {
           ]}
         />
 
-  <Dropdown
-  value={selectedType}
-  onChange={setSelectedType}
-  className="w-full md:w-36"
-  options={[
-  { value: "All", label: "Copy Type" },
-  ...availableCopyTypes.map(type => ({ value: type, label: type }))
-  ]}
-  />
+   {/* Copy Type filter commented out for now:
+   <Dropdown
+   value={selectedType}
+   onChange={setSelectedType}
+   className="w-full md:w-36"
+   options={[
+   { value: "All", label: "Copy Type" },
+   ...availableCopyTypes.map(type => ({ value: type, label: type }))
+   ]}
+   /> */}
  </div>
 
   <div className="flex items-center gap-2 flex-1 w-full md:max-w-md">
@@ -878,7 +880,7 @@ export function PageDetail() {
    />
  </th>
  <th className="px-4 py-2.5 w-[180px] min-w-[180px] max-w-[180px] bg-bg-sidebar shrink-0 whitespace-nowrap">TAG ID</th>
- <th className="px-3 py-2.5 w-[90px] min-w-[90px] bg-bg-sidebar shrink-0 whitespace-nowrap">TYPE</th>
+ {/* <th className="px-3 py-2.5 w-[90px] min-w-[90px] bg-bg-sidebar shrink-0 whitespace-nowrap">TYPE</th> */}
  <th className="px-4 py-2.5 min-w-[180px] max-w-[260px] bg-bg-sidebar">ENGLISH</th>
  <th className="px-4 py-2.5 min-w-[180px] max-w-[260px] bg-bg-sidebar">
  {selectedLanguage === "eng" || selectedLanguage === "en" ? "VERSION" : (activeLangs.find(l => l.code === selectedLanguage)?.name.toUpperCase() || "TRANSLATION")}
@@ -913,7 +915,7 @@ export function PageDetail() {
       <>
         {rowVirtualizer.getVirtualItems()[0].start > 0 && (
           <tr>
-            <td colSpan={7} style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px`, padding: 0, border: 0 }} />
+            <td colSpan={6} style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px`, padding: 0, border: 0 }} />
           </tr>
         )}
         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -940,7 +942,8 @@ export function PageDetail() {
             {tag.id}
             </Link>
             </td>
-             <td className="px-3 py-2 w-[90px] min-w-[90px] shrink-0 whitespace-nowrap">
+            {/* TYPE column commented out for now:
+            <td className="px-3 py-2 w-[90px] min-w-[90px] shrink-0 whitespace-nowrap">
              <CopyTypeSelector
                value={tag.type}
                disabled={!can('PAGE_TAG_CREATE') && !can('ENGLISH_AUTHOR') && !user?.roles?.includes('FN')}
@@ -951,7 +954,7 @@ export function PageDetail() {
                  }
                }}
              />
-             </td>
+            </td> */}
             <td className="px-4 py-2 font-medium min-w-[180px] max-w-[260px] text-[13px]">
               <div className="group/copy flex items-center justify-between gap-1.5">
                 <span className="truncate block" title={tag.english || "(Draft)"}>
@@ -1033,7 +1036,7 @@ export function PageDetail() {
         })}
         {rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end > 0 && (
           <tr>
-            <td colSpan={7} style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px`, padding: 0, border: 0 }} />
+            <td colSpan={6} style={{ height: `${rowVirtualizer.getTotalSize() - rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end}px`, padding: 0, border: 0 }} />
           </tr>
         )}
       </>
@@ -1052,7 +1055,8 @@ export function PageDetail() {
           {tag.id}
           </Link>
           </td>
-           <td className="px-3 py-2 w-[90px] min-w-[90px] shrink-0 whitespace-nowrap">
+          {/* TYPE column commented out for now:
+          <td className="px-3 py-2 w-[90px] min-w-[90px] shrink-0 whitespace-nowrap">
            <CopyTypeSelector
              value={tag.type}
              disabled={!can('PAGE_TAG_CREATE') && !can('ENGLISH_AUTHOR') && !user?.roles?.includes('FN')}
@@ -1063,7 +1067,7 @@ export function PageDetail() {
                }
              }}
            />
-           </td>
+          </td> */}
           <td className="px-4 py-2 font-medium min-w-[180px] max-w-[260px] text-[13px]">
             <div className="group/copy flex items-center justify-between gap-1.5">
               <span className="truncate block" title={tag.english || "(Draft)"}>
@@ -1136,7 +1140,7 @@ export function PageDetail() {
   </>
   ) : (
  <tr>
- <td colSpan={7} className="px-5 py-24 text-center">
+ <td colSpan={6} className="px-5 py-24 text-center">
  <div className="flex flex-col items-center justify-center py-20 text-text-tertiary bg-bg-hover/30 rounded-xl border border-dashed border-border-subtle">
  <EmptyStateGraphic className="mb-4 opacity-80" />
  <h3 className="text-[14px] font-bold text-text-primary mb-1.5">No tags found</h3>

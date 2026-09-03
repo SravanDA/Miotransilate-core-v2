@@ -81,11 +81,11 @@ test.describe('Module 5: Administration, Languages, Roles & Settings', () => {
     });
   });
 
-  test('Settings - Switch across all 4 administration tabs', async ({ page }) => {
+  test('Settings - Switch across all 3 administration tabs', async ({ page }) => {
     await page.goto('/settings');
     await expect(page.locator('h1:has-text("Settings")')).toBeVisible();
     
-    // Tab 1: Languages
+    // Tab 1: Languages (actual tab labels from Settings.tsx)
     await page.locator('button:has-text("Languages")').first().click();
     await expect(page.locator('button:has-text("Add Language")')).toBeVisible();
     
@@ -96,26 +96,24 @@ test.describe('Module 5: Administration, Languages, Roles & Settings', () => {
     // Tab 3: AI & Automation
     await page.locator('button:has-text("AI & Automation")').first().click();
     await expect(page.locator('text=Confidence Threshold')).toBeVisible();
-    
-    // Tab 4: Import & Export
-    await page.locator('button:has-text("Import & Export")').first().click();
-    await expect(page.locator('text=Export Full Catalog')).toBeVisible();
   });
 
-  test('Settings - Add Language modal opens, accepts inputs, and submits', async ({ page }) => {
+  test('Settings - Add Language inline form opens, accepts inputs, and submits', async ({ page }) => {
     await page.goto('/settings');
     await page.locator('button:has-text("Languages")').first().click();
     
-    // Open Add Language form
+    // Open Add Language inline form
     await page.locator('button:has-text("Add Language")').click();
     
-    // Enter inputs
-    await page.locator('input[placeholder="e.g., pt-BR"]').fill('pt');
-    await page.locator('input[placeholder="e.g., Portuguese"]').fill('Portuguese');
+    // Actual placeholders: "Code (e.g. it)" and "Name (e.g. Italian)"
+    await page.locator('input[placeholder="Code (e.g. it)"]').fill('pt');
+    await page.locator('input[placeholder="Name (e.g. Italian)"]').fill('Portuguese');
     
-    // Submit
-    await page.locator('button[type="submit"]:has-text("Add Language")').click();
-    await expect(page.locator('text=Language Portuguese added.')).toBeVisible();
+    // Submit button says "Save" (not "Add Language")
+    await page.locator('button:has-text("Save")').click();
+    
+    // Toast says "Added Portuguese to languages"
+    await expect(page.locator('text=Added Portuguese to languages')).toBeVisible();
   });
 
   test('Settings - Invite User Modal opens and closes', async ({ page }) => {
@@ -124,10 +122,13 @@ test.describe('Module 5: Administration, Languages, Roles & Settings', () => {
     
     // Open Invite Form
     await page.locator('button:has-text("Invite User")').click();
-    await expect(page.locator('button:has-text("Create User")')).toBeVisible();
+    
+    // Modal title is "Invite New User", submit button says "Send Invite" (not "Create User")
+    await expect(page.locator('text=Invite New User')).toBeVisible();
+    await expect(page.locator('button:has-text("Send Invite")')).toBeVisible();
     
     // Close form
     await page.locator('button:has-text("Cancel")').click();
-    await expect(page.locator('button:has-text("Create User")')).not.toBeVisible();
+    await expect(page.locator('text=Invite New User')).not.toBeVisible();
   });
 });

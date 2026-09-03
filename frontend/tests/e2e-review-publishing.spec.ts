@@ -1,80 +1,123 @@
 import { test, expect } from '@playwright/test';
 
+const MOCK_PAGES = [
+  { pageId: "SERSET", pageName: "Service Settings", module: "POS", status: "Active", name: "Service Settings" },
+  { pageId: "CUSINS", pageName: "Customer Insights", module: "CRM", status: "Active", name: "Customer Insights" }
+];
+
+const setupMocks = async (page: any) => {
+  await page.route(/\/v1\/auth\/me/, async (route: any) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        user: {
+          userId: "a0000000-0000-0000-0000-000000000001",
+          displayName: "Lead Reviewer",
+          email: "lead@miosalonsoftware.com",
+          roles: ["FN", "ADMIN"],
+          permissions: ["ADMIN_CONFIG", "PUBLISH_DEV", "AUDIT_VIEW", "SUBMIT_FOR_REVIEW", "EXPORT", "TRANSLATION_EDIT", "ADMIN_USERS", "ROLLBACK", "TRANSLATION_APPROVE", "ADMIN_MIGRATION", "PUBLISH_PRODUCTION", "PUBLISH_QA", "TRANSLATION_CREATE", "ENGLISH_APPROVE", "ENGLISH_AUTHOR", "TRANSLATION_BULK_APPROVE", "ADMIN_LANGUAGES", "CONTENT_VIEW", "PAGE_TAG_CREATE", "COMMENT_CREATE", "HISTORY_VIEW"]
+        },
+        mustChangePassword: false
+      })
+    });
+  });
+
+  await page.route(/\/v1\/pages$/, async (route: any) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(MOCK_PAGES)
+      });
+    } else {
+      route.continue();
+    }
+  });
+
+  await page.route(/\/v1\/pages\/SERSET\/detail/, async (route: any) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        pageId: "SERSET",
+        pageName: "Service Settings",
+        module: "POS",
+        status: "Active",
+        activeLanguages: ["ar", "es"],
+        tags: [
+          {
+            tagId: "serset.header.title",
+            masterEnglish: { current: "Service Settings", status: "APPROVED" },
+            translations: {
+              ar: { value: "إعدادات الخدمة", status: "APPROVED", aiConfidence: 92 },
+              es: { value: "Ajustes de servicio", status: "PENDING_REVIEW", aiConfidence: 88 }
+            }
+          }
+        ]
+      })
+    });
+  });
+};
+
 test.describe('Module 3: Review & Publishing Gate Integrity', () => {
   test.beforeEach(async ({ page, context }) => {
     await context.addInitScript(() => {
       window.localStorage.setItem('miotranslate_token', 'mock_token_123');
     });
-
-    await page.route(/\/v1\/auth\/me/, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: {
-            userId: "a0000000-0000-0000-0000-000000000001",
-            displayName: "Lead Reviewer",
-            email: "lead@miosalonsoftware.com",
-            roles: ["FN", "ADMIN"],
-            permissions: ["ADMIN_CONFIG", "PUBLISH_DEV", "AUDIT_VIEW", "SUBMIT_FOR_REVIEW", "EXPORT", "TRANSLATION_EDIT", "ADMIN_USERS", "ROLLBACK", "TRANSLATION_APPROVE", "ADMIN_MIGRATION", "PUBLISH_PRODUCTION", "PUBLISH_QA", "TRANSLATION_CREATE", "ENGLISH_APPROVE", "ENGLISH_AUTHOR", "TRANSLATION_BULK_APPROVE", "ADMIN_LANGUAGES", "CONTENT_VIEW", "PAGE_TAG_CREATE", "COMMENT_CREATE", "HISTORY_VIEW"]
-          },
-          mustChangePassword: false
-        })
-      });
-    });
+    await setupMocks(page);
   });
 
-  test('Translation Review Modal renders 4 action buttons and comment input', async ({ page }) => {
+  test('Page Detail toolbar renders Approve and Publish action buttons', async ({ page }) => {
     await page.goto('/pages');
-    await page.locator('tbody tr td a').first().click();
-    await page.locator('tbody tr td a').first().click();
     
-    // Check if Review AI Draft button or Auto-Translate is available
-    const reviewBtn = page.locator('button:has-text("Review AI Draft")');
-    if (await reviewBtn.isVisible()) {
-      await reviewBtn.click();
-      
-      // Verify Modal rendered with 4 actions
-      await expect(page.locator('button:has-text("Approve Translation")')).toBeVisible();
-      await expect(page.locator('button:has-text("Edit & Approve")')).toBeVisible();
-      await expect(page.locator('button:has-text("Return for Revision")')).toBeVisible();
-      await expect(page.locator('button:has-text("Reject")')).toBeVisible();
-      
-      // Close modal
-      await page.locator('button:has-text("Cancel")').first().click();
-    }
+    // Wait for and click first page link
+    const firstPageLink = page.locator('tbody tr a').first();
+    await expect(firstPageLink).toBeVisible({ timeout: 10000 });
+    await firstPageLink.click();
+    
+    // The approval button says "Approve" (not "Bulk Approve") or "Approved" if all done
+    const approveBtn = page.locator('button:has-text("Approve")').or(page.locator('button:has-text("Approved")'));
+    await expect(approveBtn.first()).toBeVisible({ timeout: 10000 });
+    
+    // Publish button is always visible for FN role
+    await expect(page.locator('button:has-text("Publish")')).toBeVisible();
   });
 
-  test('Bulk Approve Modal opens or shows pending count toast', async ({ page }) => {
+  test('Page Detail 3-dot menu shows Export JSON and Export CSV', async ({ page }) => {
     await page.goto('/pages');
-    await page.locator('tbody tr td a').first().click();
+    const firstPageLink = page.locator('tbody tr a').first();
+    await expect(firstPageLink).toBeVisible({ timeout: 10000 });
+    await firstPageLink.click();
     
-    const bulkBtn = page.locator('button:has-text("Bulk Approve")');
-    await expect(bulkBtn).toBeVisible();
-    await bulkBtn.click();
+    // Wait for page detail
+    await expect(page.locator('button:has-text("Publish")')).toBeVisible({ timeout: 10000 });
     
-    // Either modal opens with Confidence Threshold or toast notifies status
-    await expect(
-      page.locator('text=Bulk Approve Translations')
-        .or(page.locator('text=Confidence Threshold'))
-        .or(page.locator('text=No pending review translations'))
-    ).toBeVisible();
+    // Click the 3-dot button (only button with both shadow-xs and w-8 classes)
+    await page.locator('button[class*="shadow-xs"][class*="w-8"]').click();
+    
+    // Export options appear in dropdown
+    await expect(page.locator('button:has-text("Export JSON")')).toBeVisible();
+    await expect(page.locator('button:has-text("Export CSV")')).toBeVisible();
   });
 
-  test('Publish Modal displays environment selection and pre-publish diff summary', async ({ page }) => {
+  test('Publish Modal displays environment selection and pre-publish configuration', async ({ page }) => {
     await page.goto('/pages');
-    await page.locator('tbody tr td a').first().click();
+    const firstPageLink = page.locator('tbody tr a').first();
+    await expect(firstPageLink).toBeVisible({ timeout: 10000 });
+    await firstPageLink.click();
     
     const publishBtn = page.locator('button:has-text("Publish")');
-    await expect(publishBtn).toBeVisible();
+    await expect(publishBtn).toBeVisible({ timeout: 10000 });
     await publishBtn.click();
     
-    // Verify Publish Modal and Pre-Publish Changes
-    await expect(page.locator('text=Publish Content Bundle')).toBeVisible();
+    // Verify Publish Modal opened - check for environment labels
+    await expect(page.locator('text=Dev').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=QA').first()).toBeVisible();
+    await expect(page.locator('text=Prod').first()).toBeVisible();
+    
+    // Pre-Publish Changes section
     await expect(page.locator('text=Pre-Publish Changes')).toBeVisible();
-    await expect(page.locator('button:has-text("Dev")')).toBeVisible();
-    await expect(page.locator('button:has-text("QA")')).toBeVisible();
-    await expect(page.locator('button:has-text("Prod")')).toBeVisible();
     
     // Close modal
     await page.keyboard.press('Escape');

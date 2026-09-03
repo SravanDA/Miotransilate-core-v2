@@ -47,18 +47,22 @@ test.describe('Module 1: Authentication, Shell & Navigation', () => {
     const page = await freshContext.newPage();
     await page.goto('/pages');
     await expect(page).toHaveURL(/.*login/);
-    await expect(page.locator('h1')).toContainText(/MioTranslate/i);
+    // Login heading says "MioSalon Translate"
+    await expect(page.locator('h1')).toContainText(/MioSalon/i);
     await freshContext.close();
   });
 
   test('Renders Shell navigation and user profile', async ({ page }) => {
     await page.goto('/pages');
-    await expect(page.locator('text=MioTranslate').first()).toBeVisible();
+    // Brand header is "MioSalon" + "Translate" as separate spans
+    await expect(page.locator('text=MioSalon').first()).toBeVisible();
+    // Main nav: Pages, Overview
     await expect(page.locator('text=Pages').first()).toBeVisible();
-    await expect(page.locator('text=My Work').first()).toBeVisible();
-    await expect(page.locator('text=Coverage').first()).toBeVisible();
-    await expect(page.locator('text=Deployments').first()).toBeVisible();
+    await expect(page.locator('text=Overview').first()).toBeVisible();
+    // Bottom nav: History, Settings, Guide
     await expect(page.locator('text=History').first()).toBeVisible();
+    await expect(page.locator('text=Settings').first()).toBeVisible();
+    await expect(page.locator('text=Guide').first()).toBeVisible();
   });
 
   test('Global Search command palette (Cmd+K) opens and navigates', async ({ page }) => {
@@ -67,28 +71,37 @@ test.describe('Module 1: Authentication, Shell & Navigation', () => {
     // Open via header button
     await page.locator('button:has-text("Search everything...")').click();
     
-    const searchInput = page.locator('input[placeholder*="Search pages, tags"]');
+    // Use .first() because there may be duplicate search inputs in desktop + mobile
+    const searchInput = page.locator('input[placeholder*="Search pages, tags"]').first();
     await expect(searchInput).toBeVisible();
     
-    // Search for My Work
-    await searchInput.fill('My Work');
+    // Search for Overview
+    await searchInput.fill('Overview');
     await page.keyboard.press('Enter');
     
-    await expect(page).toHaveURL(/.*work/);
-    await expect(page.locator('h1:has-text("My Work")')).toBeVisible();
+    await expect(page).toHaveURL(/.*overview/);
+    await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
   });
 
   test('Theme switcher toggles between dark and light modes', async ({ page }) => {
     await page.goto('/pages');
     
-    const themeBtn = page.locator('button[title="Toggle theme"]');
-    await expect(themeBtn).toBeVisible();
+    // Record initial theme
+    const initialClass = await page.locator('html').getAttribute('class');
     
-    // Toggle theme
-    await themeBtn.click();
+    // Theme toggle is inside the user dropdown menu
+    // The user profile area is in the sidebar bottom — click the chevron dropdown button
+    const userArea = page.locator('text=Test Founder').first();
+    await userArea.click();
     
-    // HTML root should update class
-    const htmlClass = await page.locator('html').getAttribute('class');
-    expect(htmlClass).toBeDefined();
+    // Click "Switch Theme" button inside dropdown
+    const switchThemeBtn = page.locator('button:has-text("Switch Theme")');
+    await expect(switchThemeBtn).toBeVisible();
+    await switchThemeBtn.click();
+    
+    // HTML root class should have changed
+    const newClass = await page.locator('html').getAttribute('class');
+    expect(newClass).toBeDefined();
+    expect(newClass).not.toEqual(initialClass);
   });
 });

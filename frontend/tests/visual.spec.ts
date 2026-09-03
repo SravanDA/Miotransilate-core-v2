@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Setup Mocking Helper for Visual Tests
 const mockAPI = async (page: any) => {
-  await page.route(/\/v1\/dashboard\/coverage/, async (route) => {
+  await page.route(/\/v1\/dashboard\/coverage/, async (route: any) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -15,7 +15,7 @@ const mockAPI = async (page: any) => {
     });
   });
 
-  await page.route(/\/v1\/pages/, async (route) => {
+  await page.route(/\/v1\/pages/, async (route: any) => {
     if (route.request().method() === 'GET' && !route.request().url().includes('/tags')) {
       await route.fulfill({
         status: 200,
@@ -30,7 +30,7 @@ const mockAPI = async (page: any) => {
     }
   });
 
-  await page.route(/\/v1\/auth\/me/, async (route) => {
+  await page.route(/\/v1\/auth\/me/, async (route: any) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -47,7 +47,7 @@ const mockAPI = async (page: any) => {
     });
   });
 
-  await page.route(/\/v1\/dashboard\/environments/, async (route) => {
+  await page.route(/\/v1\/dashboard\/environments/, async (route: any) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -68,40 +68,30 @@ test.describe('Pixel-Level Visual Regression Audits', () => {
     await mockAPI(page);
   });
 
-  test('Coverage Dashboard Visual Audit', async ({ page }) => {
-    await page.goto('/coverage');
-    // Wait for the matrix to render completely by looking for "Quick Sale"
-    await expect(page.locator('table >> text=Quick Sale')).toBeVisible();
-    await expect(page.locator('table >> text=Settings')).toBeVisible();
+  test('Pages List Visual Audit', async ({ page }) => {
+    // /coverage redirects to /pages now
+    await page.goto('/pages');
+    // Wait for pages to render
+    await expect(page.locator('h1:has-text("Pages")')).toBeVisible();
+    await expect(page.locator('table')).toBeVisible();
     
     // Take full page screenshot and compare
-    await expect(page).toHaveScreenshot('coverage-dashboard-matrix.png', {
+    await expect(page).toHaveScreenshot('pages-list.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.05
     });
   });
 
-  test('Deployment History Visual Audit', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("miotranslate_deployments_v2", JSON.stringify([
-        { 
-          id: "1", 
-          pageId: "SERSET", 
-          pageName: "Service Settings", 
-          language: "ar", 
-          environment: "PRODUCTION", 
-          version: 4, 
-          publishedAt: "2023-10-01T12:00:00Z", 
-          status: "SUCCESSFUL" 
-        }
-      ]));
-    });
-    await page.goto('/deployments');
-    // Wait for deployments to load
-    await expect(page.getByRole('heading', { name: 'PRODUCTION' })).toBeVisible();
-    await expect(page.getByText('v4', { exact: true })).toBeVisible();
+  test('Overview Dashboard Visual Audit', async ({ page }) => {
+    // /deployments redirects to /overview
+    await page.goto('/overview');
+    // Wait for overview to load
+    await expect(page.locator('h1:has-text("Overview")')).toBeVisible();
     
-    await expect(page).toHaveScreenshot('deployment-history.png', {
+    // Verify the queue cards are visible
+    await expect(page.locator('text=Translations').first()).toBeVisible();
+    
+    await expect(page).toHaveScreenshot('overview-dashboard.png', {
       fullPage: true,
       maxDiffPixelRatio: 0.05
     });

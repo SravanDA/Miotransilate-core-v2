@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Setup Mocking Helper
 const mockAPI = async (page: any) => {
-  await page.route(/\/v1\/pages/, async (route) => {
+  await page.route(/\/v1\/pages/, async (route: any) => {
     if (route.request().method() === 'GET' && !route.request().url().includes('/tags')) {
       await route.fulfill({
         status: 200,
@@ -17,7 +17,7 @@ const mockAPI = async (page: any) => {
     }
   });
 
-  await page.route(/\/v1\/auth\/me/, async (route) => {
+  await page.route(/\/v1\/auth\/me/, async (route: any) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -34,7 +34,7 @@ const mockAPI = async (page: any) => {
     });
   });
 
-  await page.route(/\/v1\/(admin\/)?languages/, async (route) => {
+  await page.route(/\/v1\/(admin\/)?languages/, async (route: any) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
         status: 200,
@@ -57,7 +57,7 @@ const mockAPI = async (page: any) => {
     }
   });
 
-  await page.route(/\/v1\/(admin\/)?config/, async (route) => {
+  await page.route(/\/v1\/(admin\/)?config/, async (route: any) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -101,15 +101,15 @@ test.describe('Logical End-to-End Workflows', () => {
     // Click Add Language
     await page.locator('button:has-text("Add Language")').click();
     
-    // Fill form
-    await page.fill('input[placeholder="e.g., pt-BR"]', 'pt');
-    await page.fill('input[placeholder="e.g., Portuguese"]', 'Portuguese');
+    // Actual placeholders: "Code (e.g. it)" and "Name (e.g. Italian)"
+    await page.fill('input[placeholder="Code (e.g. it)"]', 'pt');
+    await page.fill('input[placeholder="Name (e.g. Italian)"]', 'Portuguese');
     
-    // Submit
-    await page.locator('button[type="submit"]:has-text("Add Language")').click();
+    // Submit button says "Save"
+    await page.locator('button:has-text("Save")').click();
     
-    // Verify success toast
-    await expect(page.locator('text=Language Portuguese added.')).toBeVisible();
+    // Actual toast: "Added Portuguese to languages"
+    await expect(page.locator('text=Added Portuguese to languages')).toBeVisible();
   });
 
   test('Settings Page - AI & Automation Config tab loads correctly', async ({ page }) => {
@@ -122,4 +122,3 @@ test.describe('Logical End-to-End Workflows', () => {
     await expect(page.getByText('Confidence Threshold')).toBeVisible();
   });
 });
-

@@ -13,7 +13,7 @@ import { TranslationStatusBadge } from "../components/translation/TranslationSta
 import { TranslationReviewModal } from "../components/translation/TranslationReviewModal";
 import { TranslationLengthGauge } from "../components/translation/TranslationLengthGauge";
 import { ConfidenceBadge } from "../components/translation/ConfidenceBadge";
-import { CopyTypeSelector } from "../components/translation/CopyTypeSelector";
+// import { CopyTypeSelector } from "../components/translation/CopyTypeSelector";
 import { StatusCompleted, StatusInProgress, StatusBacklog, StatusTodo } from "../components/ui/LinearIcons";
 import { CopyButton } from "../components/ui/CopyButton";
 import { StoreService } from "../store/StoreService";
@@ -558,17 +558,18 @@ className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-te
     >
       <Star className="w-3.5 h-3.5" weight={isBookmarked ? "fill" : "regular"} />
     </button> */}
- <CopyTypeSelector
-    value={tag.type}
-    disabled={!can('PAGE_TAG_CREATE') && !can('ENGLISH_AUTHOR') && !user?.roles?.includes('FN')}
-    onChange={async (newType) => {
-      if (pageId && tagId) {
-        await StoreService.updateTagType(pageId, tagId, newType);
-        showToast(`Copy type updated to ${newType}`);
-      }
-    }}
-    size="md"
-  />
+  {/* CopyTypeSelector commented out:
+  <CopyTypeSelector
+     value={tag.type}
+     disabled={!can('PAGE_TAG_CREATE') && !can('ENGLISH_AUTHOR') && !user?.roles?.includes('FN')}
+     onChange={async (newType) => {
+       if (pageId && tagId) {
+         await StoreService.updateTagType(pageId, tagId, newType);
+         showToast(`Copy type updated to ${newType}`);
+       }
+     }}
+     size="md"
+   /> */}
  <span className="px-2 py-0.5 bg-accent-blue/10 text-accent-blue text-[11px] font-semibold rounded border border-accent-blue/20">
  v{tag.englishVersion}
  </span>

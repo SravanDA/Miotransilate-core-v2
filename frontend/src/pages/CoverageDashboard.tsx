@@ -25,6 +25,14 @@ export function CoverageDashboard() {
  const [searchQuery, setSearchQuery] = useState("");
  const [selectedModule, setSelectedModule] = useState("All");
 
+ const availableModules = useMemo(() => {
+   const set = new Set<string>();
+   registeredPages.forEach(p => {
+     if (p.module && p.module.trim()) set.add(p.module.trim());
+   });
+   return Array.from(set);
+ }, [registeredPages]);
+
  const pageMetrics = useMemo(() => {
  return registeredPages.map(p => {
  const cov = StoreService.getPageCoverage(p.pageId);
@@ -175,11 +183,7 @@ export function CoverageDashboard() {
  className="w-full sm:w-36 flex-1 sm:flex-none min-w-[120px]"
  options={[
  { value: "All", label: "All Modules" },
- { value: "POS", label: "POS" },
- { value: "Cal", label: "Calendar" },
- { value: "Staff", label: "Staff" },
- { value: "CRM", label: "CRM" },
- { value: "Rpt", label: "Reporting" },
+ ...availableModules.map(m => ({ value: m, label: m }))
  ]}
  />
  </div>

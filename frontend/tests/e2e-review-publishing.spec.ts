@@ -121,8 +121,8 @@ test.describe('Module 3: Review & Publishing Gate Integrity', () => {
     await expect(page.locator('text=QA').first()).toBeVisible();
     await expect(page.locator('text=Prod').first()).toBeVisible();
     
-    // Pre-Publish Changes section
-    await expect(page.locator('text=Pre-Publish Changes')).toBeVisible();
+    // Verify Release Control Center
+    await expect(page.locator('text=Release Control Center').first()).toBeVisible();
     
     // Close modal
     await page.keyboard.press('Escape');

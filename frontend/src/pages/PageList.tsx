@@ -53,7 +53,6 @@ export function PageList() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedModule, setSelectedModule] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedPresetFilter, setSelectedPresetFilter] = useState<"all" | "incomplete" | "ready">("all");
   const [sortBy, setSortBy] = useState("coverage");
@@ -63,7 +62,7 @@ export function PageList() {
  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
  const [newPageId, setNewPageId] = useState("");
  const [newPageName, setNewPageName] = useState("");
- const [newModule, setNewModule] = useState("POS");
+ const [newModule, setNewModule] = useState("");
 
  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -132,7 +131,6 @@ export function PageList() {
     return pageMetrics.filter(page => {
       const matchesSearch = page.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         page.pageId.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesModule = selectedModule === "All" || page.module === selectedModule;
       const matchesStatus = selectedStatus === "All" || page.status === selectedStatus;
 
       // Preset filter (all / incomplete / ready)
@@ -143,7 +141,7 @@ export function PageList() {
         matchesPreset = page.totalTags > 0 && page.overallCoverageScore === 1;
       }
 
-      return matchesSearch && matchesModule && matchesStatus && matchesPreset;
+      return matchesSearch && matchesStatus && matchesPreset;
     }).sort((a, b) => {
       if (sortBy === "coverage") {
         return b.overallCoverageScore - a.overallCoverageScore;
@@ -152,7 +150,7 @@ export function PageList() {
       if (sortBy === "tags") return b.totalTags - a.totalTags;
       return 0;
     });
-  }, [pageMetrics, searchQuery, selectedModule, selectedStatus, selectedPresetFilter, sortBy]);
+  }, [pageMetrics, searchQuery, selectedStatus, selectedPresetFilter, sortBy]);
 
  const handleCreatePage = (e: React.FormEvent) => {
  e.preventDefault();
@@ -313,20 +311,7 @@ export function PageList() {
       </div>
     </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-3 md:flex items-center gap-2 w-full md:w-auto">
-      <Dropdown
-        value={selectedModule}
-        onChange={setSelectedModule}
-        className="w-full md:w-32"
-        options={[
-          { value: "All", label: "Module" },
-          { value: "POS", label: "POS" },
-          { value: "Cal", label: "Calendar" },
-          { value: "Staff", label: "Staff" },
-          { value: "CRM", label: "CRM" },
-          { value: "Rpt", label: "Reporting" },
-        ]}
-      />
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
 
       <Dropdown
         value={selectedStatus}
@@ -688,18 +673,13 @@ export function PageList() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold text-text-tertiary uppercase">Module</label>
-            <Dropdown
+            <label className="text-[11px] font-bold text-text-tertiary uppercase">Module (Optional)</label>
+            <input
+              type="text"
               value={newModule}
-              onChange={setNewModule}
-              className="w-full"
-              options={[
-                { value: "POS", label: "POS" },
-                { value: "CRM", label: "CRM" },
-                { value: "Cal", label: "Calendar" },
-                { value: "Staff", label: "Staff" },
-                { value: "Rpt", label: "Reporting" },
-              ]}
+              onChange={(e) => setNewModule(e.target.value)}
+              placeholder="e.g., Settings, POS, Billing"
+              className="w-full h-8 px-2.5 bg-bg-main border border-border-strong rounded-md text-[13px] text-text-primary focus:border-accent-blue outline-none transition-colors"
             />
           </div>
 

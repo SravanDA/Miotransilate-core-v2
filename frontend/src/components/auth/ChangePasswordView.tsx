@@ -84,16 +84,6 @@ export const ChangePasswordView: React.FC = () => {
         setError("Current password is incorrect. Please verify and try again.");
       } else if (status === 400 || msg === "TOO_MANY_ATTEMPTS") {
         setError(msg || "Password does not meet security requirements.");
-      } else if (!err.response) {
-        // Mock fallback if backend is offline/mocked
-        const token = localStorage.getItem("miotranslate_token") || "mock-token";
-        if (user) {
-          login(token, user, false);
-          toast("Password updated successfully!");
-          navigate("/", { replace: true });
-          return;
-        }
-        setError("Unable to connect to the authentication service.");
       } else {
         setError(msg || "Failed to update password. Please try again.");
       }

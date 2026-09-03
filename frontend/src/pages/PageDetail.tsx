@@ -24,7 +24,7 @@ import {
   StatusCanceled, 
   StatusPlanned 
 } from "../components/ui/LinearIcons";
-import { CopyTypeSelector } from "../components/translation/CopyTypeSelector";
+// import { CopyTypeSelector } from "../components/translation/CopyTypeSelector";
 import { CopyButton } from "../components/ui/CopyButton";
 import { StoreService, type LengthConflictConfig } from "../store/StoreService";
 import { ApiService } from "../services/ApiService";
@@ -99,7 +99,8 @@ export function PageDetail() {
  const [isAddTagOpen, setIsAddTagOpen] = useState(false);
  const [newTagId, setNewTagId] = useState("");
  const [newEnglish, setNewEnglish] = useState("");
- const [newCopyType, setNewCopyType] = useState<string>("Button");
+ const newCopyType = "General";
+ // const [newCopyType, setNewCopyType] = useState<string>("Button");
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [isBulkApproveModalOpen, setIsBulkApproveModalOpen] = useState(false);
@@ -1253,6 +1254,7 @@ export function PageDetail() {
               className="w-full h-8 px-2.5 bg-bg-main border border-border-strong rounded-md text-[13px] text-text-primary font-mono focus:border-accent-blue outline-none transition-colors"
             />
           </div>
+          {/* Copy Type (Optional) - Commented out since type is removed:
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-bold text-text-tertiary uppercase">Copy Type (Optional)</label>
@@ -1264,7 +1266,7 @@ export function PageDetail() {
               size="md"
               className="w-full"
             />
-          </div>
+          </div> */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-bold text-text-tertiary uppercase">English Copy</label>
             <input

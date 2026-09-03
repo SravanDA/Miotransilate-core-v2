@@ -15,14 +15,6 @@ import {
 } from "@phosphor-icons/react";
 import { StoreService } from "../../store/StoreService";
 
-const PAGE_NAME_MAPPINGS: Record<string, string> = {
-  SERSET: "Service Settings",
-  CUSINS: "Customer Insights",
-  CAMREW: "Campaign & Rewards",
-  POTSALESET: "POS / Sale Settings",
-  STAFFSET: "Staff Settings",
-  CUSWISH: "Customer Wishlist"
-};
 
 // Exact Linear horizontal tag glyph matching the reference image 1:1
 export const LinearTagIcon = ({ className = "w-4 h-4 text-[#6773e4] shrink-0" }: { className?: string }) => (
@@ -153,7 +145,7 @@ export const Breadcrumbs: React.FC = () => {
 
   // Resolve page info
   const cachedPage = pageId ? StoreService.getPage(pageId) : null;
-  const pageName = cachedPage?.name || (pageId ? PAGE_NAME_MAPPINGS[pageId] || pageId : "MioTranslate");
+  const pageName = cachedPage?.name || pageId || "MioTranslate";
 
   const tagIcon = <LinearTagIcon className="w-4 h-4 text-[#6773e4] shrink-0" />;
 

@@ -751,7 +751,7 @@ export function PageDetail() {
         <div className="h-4 w-px bg-border-subtle mx-0.5 hidden sm:block" />
       )}
 
-      {/* Bulk Approve — Solid Green #4CB782 when pending, Dark Green #236B47 when fully approved */}
+      {/* Bulk Approve — Primary Solid Green #4CB782 when pending, Dark Green #236B47 when fully approved */}
       {can('TRANSLATION_APPROVE') && (
         <Tooltip content={isFullyApproved ? "All translations for this language are approved" : "Approve translations ready for review"}>
           <button
@@ -774,20 +774,17 @@ export function PageDetail() {
         </Tooltip>
       )}
 
-      {/* Approve All Languages — only when 2+ languages have pending translations */}
+      {/* Approve All Languages — Secondary Outline button, only when 2+ languages have pending translations */}
       {can('TRANSLATION_APPROVE') && languagesPendingInfo.length >= 2 && (
-        <>
-          <div className="h-4 w-px bg-border-subtle mx-0.5 hidden sm:block" />
-          <Tooltip content={`Approve pending translations across ${languagesPendingInfo.length} languages at once`}>
-            <button
-              onClick={() => setIsBulkApproveAllLangsOpen(true)}
-              className="h-8 px-2.5 inline-flex items-center justify-center gap-1.5 rounded-lg text-[12px] font-medium transition-all shadow-xs outline-none bg-[#4CB782] hover:bg-[#43a575] text-white cursor-pointer active:scale-[0.98]"
-            >
-              <Check className="w-3.5 h-3.5 text-white shrink-0" weight="bold" />
-              <span>Approve {languagesPendingInfo.length} Languages</span>
-            </button>
-          </Tooltip>
-        </>
+        <Tooltip content={`Approve pending translations across ${languagesPendingInfo.length} languages at once`}>
+          <button
+            onClick={() => setIsBulkApproveAllLangsOpen(true)}
+            className="h-8 px-2.5 inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/35 bg-bg-card hover:bg-emerald-500/10 hover:border-emerald-500/60 text-emerald-600 dark:text-emerald-400 text-[12px] font-medium transition-all cursor-pointer active:scale-[0.98] outline-none shadow-xs"
+          >
+            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" weight="bold" />
+            <span>Approve {languagesPendingInfo.length} Languages</span>
+          </button>
+        </Tooltip>
       )}
     </div>
 

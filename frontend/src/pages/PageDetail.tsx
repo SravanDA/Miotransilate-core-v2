@@ -11,6 +11,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { PublishModal } from "../components/publishing/PublishModal";
 import { BulkApproveModal } from "../components/translation/BulkApproveModal";
+import { BulkApproveAllLanguagesModal, computeLanguagePendingInfo } from "../components/translation/BulkApproveAllLanguagesModal";
 import { BulkTranslatePageModal } from "../components/translation/BulkTranslatePageModal";
 import { LengthConflictsModal } from "../components/translation/LengthConflictsModal";
 import { Sparkles as LucideSparkles } from "lucide-react";
@@ -104,6 +105,7 @@ export function PageDetail() {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [isBulkApproveModalOpen, setIsBulkApproveModalOpen] = useState(false);
+  const [isBulkApproveAllLangsOpen, setIsBulkApproveAllLangsOpen] = useState(false);
   const [isBulkTranslateModalOpen, setIsBulkTranslateModalOpen] = useState(false);
   
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
@@ -165,6 +167,11 @@ export function PageDetail() {
     const approvedCount = tags.filter(t => t.values[selectedLanguage]?.status === "Approved").length;
     return approvedCount === tags.length;
   }, [tags, selectedLanguage]);
+
+  // Multi-language pending info for "Approve N Languages" button
+  const languagesPendingInfo = useMemo(() => {
+    return computeLanguagePendingInfo(tags, activeLangs, threshold);
+  }, [tags, activeLangs, threshold]);
 
   const missingEnglishCount = useMemo(() => {
     return tags.filter(t => !t.english || !t.english.trim()).length;
@@ -240,6 +247,20 @@ export function PageDetail() {
       }
     } catch (err: any) {
       showToast(`Bulk approval failed: ${err?.message || "Unknown error"}`);
+    }
+  };
+
+  const executeBulkApproveAllLanguages = async () => {
+    if (!pageId) return;
+    let totalApproved = 0;
+    try {
+      for (const lang of languagesPendingInfo) {
+        const res = await StoreService.bulkApproveTranslations(pageId, lang.code);
+        totalApproved += res?.approved ?? lang.eligibleCount;
+      }
+      showToast(`Approved ${totalApproved} translations across ${languagesPendingInfo.length} languages`);
+    } catch (err: any) {
+      showToast(`Multi-language approval failed: ${err?.message || "Unknown error"}`);
     }
   };
 
@@ -751,6 +772,22 @@ export function PageDetail() {
             )}
           </button>
         </Tooltip>
+      )}
+
+      {/* Approve All Languages — only when 2+ languages have pending translations */}
+      {can('TRANSLATION_APPROVE') && languagesPendingInfo.length >= 2 && (
+        <>
+          <div className="h-4 w-px bg-border-subtle mx-0.5 hidden sm:block" />
+          <Tooltip content={`Approve pending translations across ${languagesPendingInfo.length} languages at once`}>
+            <button
+              onClick={() => setIsBulkApproveAllLangsOpen(true)}
+              className="h-8 px-2.5 inline-flex items-center justify-center gap-1.5 rounded-lg text-[12px] font-medium transition-all shadow-xs outline-none bg-[#4CB782] hover:bg-[#43a575] text-white cursor-pointer active:scale-[0.98]"
+            >
+              <Check className="w-3.5 h-3.5 text-white shrink-0" weight="bold" />
+              <span>Approve {languagesPendingInfo.length} Languages</span>
+            </button>
+          </Tooltip>
+        </>
       )}
     </div>
 
@@ -1325,6 +1362,15 @@ export function PageDetail() {
     totalPending={pendingReviewTags.length}
     eligibleCount={eligibleBulkTags.length}
     lowConfidenceCount={lowConfidenceBulkTags.length}
+    threshold={threshold}
+  />
+
+  {/* Bulk Approve All Languages Modal */}
+  <BulkApproveAllLanguagesModal
+    isOpen={isBulkApproveAllLangsOpen}
+    onClose={() => setIsBulkApproveAllLangsOpen(false)}
+    onConfirm={executeBulkApproveAllLanguages}
+    languages={languagesPendingInfo}
     threshold={threshold}
   />
 

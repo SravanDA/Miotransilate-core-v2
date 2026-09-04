@@ -584,25 +584,18 @@ export function PageDetail() {
     )}
   </div>
  </div>
- <div className="flex items-center gap-3 text-[12px] text-text-tertiary">
-   <span>Module: <strong className="text-text-primary">{pageInfo.module}</strong> · Tags: <strong className="text-text-primary">{tags.length}</strong></span>
-   <Link
-     to={`/history?entityId=${pageId}&entityType=PAGE`}
-     className="inline-flex items-center gap-1 text-[11px] font-semibold text-link hover:underline outline-none ml-2"
-   >
-     <ClockCounterClockwise className="w-3.5 h-3.5" />
-     <span>Audit History</span>
-   </Link>
-   {(can('PAGE_TAG_CREATE') || user?.roles?.includes('FN')) && pageInfo.status !== "Deprecated" && (
-     <button
-       onClick={() => setShowDeprecateModal(true)}
-       className="inline-flex items-center gap-1 text-[11px] font-semibold text-text-tertiary hover:text-danger transition-colors cursor-pointer outline-none"
-     >
-       <Trash className="w-3.5 h-3.5" />
-       <span>Deprecate</span>
-     </button>
-   )}
- </div>
+  <div className="flex items-center gap-3 text-[12px] text-text-tertiary">
+    <span>Module: <strong className="text-text-primary">{pageInfo.module}</strong> · Tags: <strong className="text-text-primary">{tags.length}</strong></span>
+    {(can('PAGE_TAG_CREATE') || user?.roles?.includes('FN')) && pageInfo.status !== "Deprecated" && (
+      <button
+        onClick={() => setShowDeprecateModal(true)}
+        className="inline-flex items-center gap-1 text-[11px] font-semibold text-text-tertiary hover:text-danger transition-colors cursor-pointer outline-none ml-1"
+      >
+        <Trash className="w-3.5 h-3.5" />
+        <span>Deprecate</span>
+      </button>
+    )}
+  </div>
  </div>
   {/* Macro Coverage Readiness Strip */}
   <div className="pt-3 border-t border-border-subtle flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
@@ -831,9 +824,19 @@ export function PageDetail() {
               <span className="text-[10px] text-text-tertiary uppercase font-mono">.csv</span>
             </button>
 
+            <div className="h-px bg-border-subtle my-1" />
+
+            <Link
+              to={`/history?entityId=${pageId}&entityType=PAGE`}
+              onClick={() => setIsMoreMenuOpen(false)}
+              className="w-full h-8 px-2.5 flex items-center gap-2 text-[12px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-md transition-colors cursor-pointer outline-none"
+            >
+              <ClockCounterClockwise className="w-3.5 h-3.5 shrink-0" weight="bold" />
+              <span>Audit History</span>
+            </Link>
+
             {can('ENGLISH_AUTHOR') && (
               <>
-                <div className="h-px bg-border-subtle my-1" />
                 <button
                   onClick={() => {
                     setIsAddTagOpen(true);

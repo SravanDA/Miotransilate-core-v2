@@ -9,7 +9,7 @@ import {
    WarningCircle, 
    Globe,
    FileText,
-   Play
+   Translate
 } from "@phosphor-icons/react";
 import { StoreService } from "../../store/StoreService";
 import { engine } from "../../engine/TranslationEngine";
@@ -334,7 +334,7 @@ export function BulkTranslatePageModal({
               type="button"
               disabled={isRunning}
               onClick={onClose}
-              className="btn-secondary"
+              className="h-8 px-3 rounded-lg border border-border-subtle text-[12px] font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover cursor-pointer outline-none transition-all disabled:opacity-50 whitespace-nowrap"
             >
               {isFinished ? "Close" : "Cancel"}
             </button>
@@ -343,7 +343,7 @@ export function BulkTranslatePageModal({
                 type="button"
                 disabled={isRunning || selectedLangs.length === 0 || validEnglishCount === 0}
                 onClick={handleStartBulkTranslation}
-                className="btn-primary"
+                className="h-8 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold transition-all shadow-xs outline-none bg-accent-blue hover:bg-accent-blue/90 text-white cursor-pointer active:scale-[0.98] disabled:opacity-45 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {isRunning ? (
                   <>
@@ -352,8 +352,12 @@ export function BulkTranslatePageModal({
                   </>
                 ) : (
                   <>
-                    <Play className="w-3.5 h-3.5" weight="fill" />
-                    <span>Start Bulk Translation</span>
+                    <Translate className="w-3.5 h-3.5" weight="bold" />
+                    <span>
+                      {selectedLangs.length > 0
+                        ? `Translate ${selectedLangs.length} Language${selectedLangs.length > 1 ? "s" : ""}`
+                        : "Translate Languages"}
+                    </span>
                   </>
                 )}
               </button>
@@ -361,7 +365,7 @@ export function BulkTranslatePageModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="btn-primary"
+                className="h-8 px-4 inline-flex items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold transition-all shadow-xs outline-none bg-accent-blue hover:bg-accent-blue/90 text-white cursor-pointer active:scale-[0.98] whitespace-nowrap"
               >
                 <Check className="w-3.5 h-3.5" weight="bold" />
                 <span>Done</span>
